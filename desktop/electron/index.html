@@ -1,25 +1,37 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Hello World!</title>
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
-    />
-    <meta
-      http-equiv="X-Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
-    />
-  </head>
-  <body>
-    <h1>Hello World!</h1>
-    We are using Node.js <span id="node-version"></span>, Chromium
-    <span id="chrome-version"></span>, and Electron
-    <span id="electron-version"></span>.
 
-    <!-- You can also require other files to run in this process -->
-    <script src="./dist/renderer.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <title>Hello World!</title>
+  <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" /> -->
+  <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+</head>
+
+<body>
+  <h1>Hello World!</h1>
+  We are using Node.js <span id="node-version"></span>, Chromium
+  <span id="chrome-version"></span>, and Electron
+  <span id="electron-version"></span>.
+
+  <script>
+    function myFunction() {
+      console.log("bingo");
+      const fake = "code /Users/grimmer/git/vite-react-app";
+      console.log({ window });
+      window.electronAPI.invokeVSCode(fake);
+      /**
+       * todo:
+       * 1. fetch win(project) path data from server 
+       * 2. use VSCode command line to open, e.g. send "code /Users/grimmer/git/vite-react-app" to Electron main process to execute
+       * */
+    }
+  </script>
+
+  <button type="button" onclick="myFunction()">Click Me!</button>
+  <!-- You can also require other files to run in this process -->
+  <script src="./dist/renderer.js"></script>
+</body>
+
 </html>

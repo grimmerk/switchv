@@ -1,5 +1,8 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
+
+import {exec} from 'child_process'
+
 
 function createWindow() {
   // Create the browser window.
@@ -10,6 +13,20 @@ function createWindow() {
     },
     width: 800,
   });
+
+  /** https://www.electronjs.org/docs/latest/tutorial/ipc */
+  ipcMain.on('invoke-vscode', (event, command) => {
+    console.log("invoke", {event, command});
+
+    exec(command, (error, stdout, stderr) => { 
+      console.log(stdout);
+    });
+
+
+    // const webContents = event.sender
+    // const win = BrowserWindow.fromWebContents(webContents)
+    // win.setTitle(title)
+  })
 
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, "../index.html"));
