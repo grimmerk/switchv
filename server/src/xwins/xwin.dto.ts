@@ -7,5 +7,7 @@
 export class CreateXwinDto {
   paths: string[];
   workspace_path: string;
-  deactivate = false;
+
+  /* should always false since there is no way found to detect close/deactivate window event) */
+  // deactivate = false;
 }
