@@ -50,7 +50,8 @@ export function activate(context: vscode.ExtensionContext) {
 	// WorkspaceFoldersChangeEvent ??
 
 	vscode.workspace.onDidChangeWorkspaceFolders(e => {
-		console.log({ e })
+		console.log(`vscode.workspace.onDidChangeWorkspaceFolders`)
+		// console.log({ e })
 		postData();
 
 		for (const added of e.added) { // {uri:{path}, name}
@@ -71,6 +72,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-	console.log("deactivate");
+	console.log("deactivate but seems not triggered yet ");
 	postData(true);
 }
