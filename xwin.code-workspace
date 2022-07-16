@@ -7,6 +7,9 @@
 			"path": "server"
 		},
 		{
+			"path": "desktop"
+		},
+		{
 			"path": ".",
 			"name": "root"
 		}
