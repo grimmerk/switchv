@@ -17,7 +17,8 @@
 	"settings": {
 		"files.exclude": {
 			"server": true,
-			"extension": true
+			"extension": true,
+			"desktop": true
 		},
 	},
 	"launch": {
