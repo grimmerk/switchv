@@ -5,7 +5,28 @@
 		},
 		{
 			"path": "server"
+		},
+		{
+			"path": ".",
+			"name": "root"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.exclude": {
+			"server": true,
+			"extension": true
+		},
+	},
+	"launch": {
+		"configurations": [],
+		"compounds": [
+			{
+				"name": "Debug Server & Extension",
+				"configurations": [
+					"Debug Server",
+					"Debug Extension"
+				]
+			}
+		]
+	}
 }
