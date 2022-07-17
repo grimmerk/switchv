@@ -50,7 +50,6 @@ function createWindow() {
  */
 app.whenReady().then(() => {
 
-  // ref: https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/ 
   const tray = new TrayGenerator(mainWindow);
   tray.createTray();
   // ref: https://www.electronjs.org/docs/latest/tutorial/tray
