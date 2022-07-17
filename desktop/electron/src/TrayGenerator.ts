@@ -52,8 +52,9 @@ export class TrayGenerator {
     const icon = nativeImage.createFromPath('path/to/asset.png');
     this.tray = new Tray(icon);
 
+    const appTitle = 'XWin(alt+cmd+i)';
     this.tray.setToolTip('This is my XWin application')
-    this.tray.setTitle('This is my XWin title')
+    this.tray.setTitle(appTitle)
 
     // this.tray = new Tray(path.join(__dirname, './assets/IconTemplate.png'));
     this.tray.setIgnoreDoubleClickEvents(true);
