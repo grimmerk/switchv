@@ -8,8 +8,6 @@ $ pnpm install
 
 ## Running the app
 
-To generate SQLite DB file (`./prisma/dev.db`) for the first time: `pnpm db:migrate`. `pnpm db:view` can be used to view DB data.
-
 ```bash
 # development
 $ pnpm start
