@@ -7,31 +7,90 @@
   <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
   <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" /> -->
   <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+
+
 </head>
 
 <body>
-  <h1>Hello World!</h1>
+  <!-- <h1>Hello World!</h1>
   We are using Node.js <span id="node-version"></span>, Chromium
   <span id="chrome-version"></span>, and Electron
-  <span id="electron-version"></span>.
+  <span id="electron-version"></span>. -->
 
-  <script>
-    function myFunction() {
-      console.log("bingo");
-      const fake = "code /Users/grimmer/git/vite-react-app";
-      console.log({ window });
-      window.electronAPI.invokeVSCode(fake);
-      /**
-       * todo:
-       * 1. fetch win(project) path data from server 
-       * 2. use VSCode command line to open, e.g. send "code /Users/grimmer/git/vite-react-app" to Electron main process to execute
-       * */
-    }
-  </script>
-
-  <button type="button" onclick="myFunction()">Click Me!</button>
   <!-- You can also require other files to run in this process -->
   <script src="./dist/renderer.js"></script>
+
+  <!-- react part -->
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useEffect, useState } = React;
+
+    function invokeVSCode(path) {
+      console.log({ path });
+      window.electronAPI.invokeVSCode(`code ${path}`);
+      /**
+       * todo:
+       * 1. x fetch win(project) path data from server 
+       * 2. x use VSCode command line to open, e.g. send "code /Users/grimmer/git/vite-react-app" to Electron main process to execute
+       * */
+    }
+
+    function MyApp() {
+      const [pathInfoArray, setPathInfoArray] = useState([]);
+
+      useEffect(() => {
+        const fetchData = async () => {
+          console.log("fetchData")
+          const url = "http://localhost:3000/xwins";
+
+          try {
+            const resp = await fetch(url);
+            const json = await resp.json();
+            console.log({ json })
+            if (json.length === 0) {
+              const fake = "/Users/grimmer/git/vite-react-app";
+              setPathInfoArray([{ path: fake }])
+            } else {
+              setPathInfoArray(json)
+            }
+          } catch (err) {
+            console.log({ err })
+          }
+        };
+
+        fetchData();
+
+      }, []);
+
+      // update UI 
+      const buttonList = pathInfoArray.map((pathInfo) => {
+        const { path } = pathInfo;
+        return (
+          <div key={path} >
+            <button onClick={(e) => {
+              invokeVSCode(path)
+            }} >
+              {path}
+            </button>
+          </div>);
+      })
+
+      return (
+        <div>
+          <h1>Hello, world!!!</h1>
+          {buttonList}
+        </div>
+      );
+    }
+    console.log("in react")
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<MyApp />);
+  </script>
+
 </body>
 
 </html>
