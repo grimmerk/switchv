@@ -11,7 +11,7 @@ function postData(deactivate = false) {
 	});
 	const { workspaceFile } = vscode.workspace;
 	const workspace_path = workspaceFile?.path ?? ""
-	const url = "http://localhost:3000/xwins/"
+	const url = "http://localhost:55688/xwins/"
 	axios.post(url, {
 		paths,
 		workspace_path,
