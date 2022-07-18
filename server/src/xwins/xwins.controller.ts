@@ -48,7 +48,14 @@ export class XWinsController {
   async create(@Body() createCatDto: CreateXwinDto): Promise<VSWindowModel> {
     // addXWinToInMemoryDB(createCatDto);
 
+    console.log('post VSCode win', createCatDto);
+
     const { paths, workspace_path } = createCatDto;
+    if (!paths.length) {
+      console.log('no paths, return directly');
+      return;
+    }
+
     let path = '';
     let isSpace = false;
     let folders = [];
@@ -109,6 +116,8 @@ export class XWinsController {
 
   @Get()
   async findAll(): Promise<VSWindowModel[]> {
+    console.log('get VSCode win');
+
     //return getXWinFromInMemoryDB();
 
     //return this.postService.post({ id: Number(id) });
