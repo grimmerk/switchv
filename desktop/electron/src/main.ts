@@ -4,12 +4,14 @@ import * as path from "path";
 import { exec } from 'child_process'
 import {TrayGenerator} from './TrayGenerator';
 
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 // eslint-disable-next-line global-require
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+let tray:any = null;
 let mainWindow:BrowserWindow = null;
 let serverProcess:any; 
 function createWindow() {
@@ -34,7 +36,13 @@ function createWindow() {
   ipcMain.on('invoke-vscode', (event, command) => {
     console.log("invoke", {event, command});
 
-    exec(command, (error, stdout, stderr) => { 
+    mainWindow.setTitle("changed");
+
+    tray.tray.setTitle(`XWin(${command?command[command.length-1]:"n"})`);
+
+    // FIXME: win/linux has difference path
+    const fullCmd = `/usr/local/bin/code ${command}`
+    exec(fullCmd, (error, stdout, stderr) => { 
       console.log(stdout);
     });
 
@@ -83,7 +91,7 @@ app.whenReady().then(() => {
 
   }
 
-  const tray = new TrayGenerator(mainWindow);
+  tray = new TrayGenerator(mainWindow);
   tray.createTray();
   // ref: https://www.electronjs.org/docs/latest/tutorial/tray
   // const icon = nativeImage.createFromPath('path/to/asset.png');

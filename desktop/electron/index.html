@@ -30,7 +30,7 @@
 
     function invokeVSCode(path) {
       console.log({ path });
-      window.electronAPI.invokeVSCode(`code ${path}`);
+      window.electronAPI.invokeVSCode(`${path}`);
       /**
        * todo:
        * 1. x fetch win(project) path data from server 
