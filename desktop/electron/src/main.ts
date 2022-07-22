@@ -41,6 +41,11 @@ function createWindow() {
     tray.tray.setTitle(`XWin(${command?command[command.length-1]:"n"})`);
 
     // FIXME: win/linux has difference path
+    // ref:
+    // 1. https://stackoverflow.com/questions/44405523/spawn-child-node-process-from-electron
+    // 2. https://stackoverflow.com/questions/62885809/nodejs-child-process-npm-command-not-found
+    // 3. https://github.com/electron/fiddle/issues/365#issuecomment-616630874
+    // const fullCmd = `code ${command}`
     const fullCmd = `/usr/local/bin/code ${command}`
     exec(fullCmd, (error, stdout, stderr) => { 
       console.log(stdout);
