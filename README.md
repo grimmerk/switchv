@@ -25,6 +25,7 @@ Use this to quickly open and switch projects.
 - desktop/electron 
   - pnpm install
   - pnpm start (not set VSCode debugging yet)
+  - package as mac app: `pnpm make`. It is about 196MB. Try Tauri? 
 
 
 tips:
