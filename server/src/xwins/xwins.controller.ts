@@ -129,7 +129,7 @@ export class XWinsController {
 
       include: { embeddedWindows: true },
       // https://www.prisma.io/docs/concepts/components/prisma-client/pagination
-      take: 10,
+      take: 50,
       // Skip the cursor
       // skip: 2,
       // cursor: {
