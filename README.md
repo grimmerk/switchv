@@ -49,8 +49,7 @@ steps:
 
 two issues 
 1. TODO: how to use vercel/pkg bundle deb.db in nestjs, instead of manual copy????
-
-2. TODO: close the packaged app via cmd+q seems not close xwin-server-macos process? check by command: lsof -i:55688. Use ctrl+c to stop development (running via npm run start) is OK. (add close button on tray to help? I guess it is not helping)
+2. x TODO: close the packaged app via cmd+q seems not close xwin-server-macos process? check by command: lsof -i:55688. Use ctrl+c to stop development (running via npm run start) is OK. (add close button on tray to help? I guess it is not helping). Solved by electron send kill server process in the before-quick event handler. Another person suggests to add one more step to handle SIGINT signal on server side, ref https://stackoverflow.com/questions/71523442/child-process-doesnt-exit.
 
 ### server 
 ref: 
