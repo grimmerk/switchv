@@ -40,15 +40,15 @@ export class TrayGenerator {
       }
   };
 
-//   rightClickMenu = () => {
-//     const menu = [
-//         {
-//           role: 'quit',
-//           accelerator: 'Command+Q'
-//         }
-//       ];
-//       this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
-//   }
+  rightClickMenu = () => {
+    const menu:any = [
+        {
+          role: 'quit',
+          accelerator: 'Command+Q'
+        }
+      ];
+      this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
+  }
 
   createTray = () => {
     const icon = nativeImage.createFromPath('path/to/asset.png');
@@ -67,6 +67,6 @@ export class TrayGenerator {
     this.tray.setIgnoreDoubleClickEvents(true);
   
     this.tray.on('click', this.toggleWindow);
-    // this.tray.on('right-click', this.rightClickMenu);
+    this.tray.on('right-click', this.rightClickMenu);
   };
 }

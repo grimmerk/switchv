@@ -145,7 +145,9 @@ app.on("window-all-closed", () => {
 // mainWindow.removeAllListeners('close'); ? seems not important
 app.once('before-quit', () => {
   console.log("before quit, kill server process")
-  serverProcess.kill();
+  if (serverProcess) {
+    serverProcess.kill();
+  }
 });
 
 // In this file you can include the rest of your app"s specific main process
