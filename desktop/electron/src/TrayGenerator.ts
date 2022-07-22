@@ -1,4 +1,5 @@
 import {  nativeImage, BrowserWindow, Tray, Menu } from "electron";
+import { app} from "electron";
 
 
 // copy from https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
@@ -27,6 +28,7 @@ export class TrayGenerator {
     this.mainWindow.show();
     // this.mainWindow.setVisibleOnAllWorkspaces(true);
     this.mainWindow.focus();
+
     // this.mainWindow.setVisibleOnAllWorkspaces(false);    
   };
 
@@ -52,8 +54,13 @@ export class TrayGenerator {
     const icon = nativeImage.createFromPath('path/to/asset.png');
     this.tray = new Tray(icon);
 
-    const appTitle = 'XWin(alt+cmd+i)';
-    this.tray.setToolTip('This is my XWin application')
+    let appTitle = ""
+    if (app.isPackaged) {
+      appTitle = `XWinP`;
+    } else {
+      appTitle = 'XWin(alt+cmd+i)';
+    }
+    this.tray.setToolTip(`XWin app, path:${__dirname}`)
     this.tray.setTitle(appTitle)
 
     // this.tray = new Tray(path.join(__dirname, './assets/IconTemplate.png'));

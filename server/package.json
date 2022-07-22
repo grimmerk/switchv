@@ -5,7 +5,9 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "bin": "dist/main.js",
   "scripts": {
+    "db:type": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:view": "prisma studio",
     "prebuild": "rimraf dist",
@@ -72,5 +74,10 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "pkg": {
+    "assets": [
+      "node_modules/.prisma/client/*"
+    ]
   }
 }

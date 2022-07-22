@@ -57,6 +57,29 @@ function createWindow() {
  */
 app.whenReady().then(() => {
 
+  if (app.isPackaged) {
+    // spwan a procees
+    console.log("launch serer ", __dirname)
+    
+    // ref: const child = exec(`node ./index.js --config ./config.js ${flags} --json ${timestamp}.json --console none`);
+    // TODO: how to use vercel/pkg bundle deb.db in nestjs  ????
+    // exec(`${__dirname}/xwin-server-macos`,  {env: {'DATABASE_URL': 'file:dev.db'}}, (error, stdout, stderr) => { 
+
+    // works in development, not test in production but should work
+    // exec(`${__dirname}/xwin-server-macos`,  {env: {'DATABASE_URL': 'file:/Users/grimmer/git/xwin/server/prisma/dev.db'}}, (error, stdout, stderr) => { 
+    
+    // works in production &  development
+    // TODO: close the packaged app seems not close xwin-server-macos? check by command: lsof -i:55688. Development (npm run start) is OK
+    //  add close button on tray?
+    exec(`${__dirname}/xwin-server-macos`,  {env: {'DATABASE_URL': `file:${__dirname}/prisma/dev.db`}}, (error, stdout, stderr) => { 
+        console.log("laun3", error, stderr)      
+        console.log(stdout);
+    });
+
+    console.log("launch serer2 ")
+
+  }
+
   const tray = new TrayGenerator(mainWindow);
   tray.createTray();
   // ref: https://www.electronjs.org/docs/latest/tutorial/tray
