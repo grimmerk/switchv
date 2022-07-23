@@ -45,6 +45,8 @@ ref: https://pnpm.io/pnpm-cli
 
 5. Insecure Content-Security-Policy warning 
 
+6. React App is called twice initially
+
 ## notes about packaging a macOS app
 
 steps: 

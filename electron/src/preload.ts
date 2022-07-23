@@ -4,7 +4,8 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  invokeVSCode: (path:string) => ipcRenderer.send('invoke-vscode', path)
+  invokeVSCode: (path:string) => ipcRenderer.send('invoke-vscode', path),
+  onFocusWindow: (callback:any) => ipcRenderer.on('window-focus', callback)
 })
 
 // All of the Node.js APIs are available in the preload process.

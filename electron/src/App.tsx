@@ -4,17 +4,20 @@ function invokeVSCode(path: string) {
   console.log({ path });
   console.log({ window });
   (window as any).electronAPI.invokeVSCode(`${path}`);
-  /**
-   * todo:
-   * 1. x fetch win(project) path data from server 
-   * 2. x use VSCode command line to open, e.g. send "code /Users/grimmer/git/vite-react-app" to Electron main process to execute
-   * */
 }
 
+/** Caution it will be invoked twice !! */
+let loadTimes = 0;
 function App() {
+  console.log("App");
+
   const [pathInfoArray, setPathInfoArray] = useState([]);
 
   useEffect(() => {
+    if (loadTimes > 0) {
+      return;
+    };
+    loadTimes += 1;
     const fetchData = async () => {
       console.log("fetchData")
       const url = "http://localhost:55688/xwins";
@@ -33,6 +36,13 @@ function App() {
         console.log({ err })
       }
     };
+
+    console.log("register onFocus");
+
+    (window as any).electronAPI.onFocusWindow((_event: any) => {
+      console.log("on focus !!!!!!")
+      fetchData();
+    })
 
     fetchData();
 

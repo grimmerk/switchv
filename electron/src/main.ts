@@ -48,8 +48,12 @@ const hideWindow = () =>{
 }
 
 const onBlur = (event:any)=>{
-  console.log("onBlur:", event);
   hideWindow();
+}
+
+const onFocus = (event:any)=>{
+  console.log("onFocus:");
+  mainWindow.webContents.send('window-focus');
 }
 
 const createWindow = (): BrowserWindow => {
@@ -85,7 +89,8 @@ const createWindow = (): BrowserWindow => {
   }
 
   window.on('blur', onBlur);
-  
+  window.on('focus', onFocus);
+
   // mainWindow.on('close', function (event) {
   //   console.log("mainWindow close");  
   //   // if below is setup, app.window-all-closed will not be fired 
@@ -116,7 +121,7 @@ app.on('window-all-closed', () => {
   }
 });
 
-/** not test yet */
+/** not triggered yet */
 app.on('activate', () => {
   console.log('activate')
   // On OS X it's common to re-create a window in the app when the
