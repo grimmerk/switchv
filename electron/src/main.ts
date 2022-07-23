@@ -158,6 +158,7 @@ const trayToggleEvtHandler = () => {
     showWindow();
   } else if (mainWindow.isVisible()) {
     console.log("is visible, to hide")
+    hideWindow();
   } else {
     console.log("is not visible, to show")
     showWindow();
