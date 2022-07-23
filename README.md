@@ -37,7 +37,7 @@ ref: https://pnpm.io/pnpm-cli
 
 1. after click one window item, show VSCode, first time "cmd+option+i" trigger does not effect and always need the second time. 
 
-2. after using ctrl+w to close XWin, the window object will be destroyed and can not be used anymore (will throw exception)
+2. [fixed] after using ctrl+w to close XWin, the window object will be destroyed and can not be used anymore (will throw exception)
 
 3. Sometimes tray menu will not show. It seems to be because too many menu apps?
 

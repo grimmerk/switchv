@@ -9,6 +9,12 @@ import {TrayGenerator} from './TrayGenerator';
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
+console.log({NODE_ENV: process.env.NODE_ENV});
+console.log({DEBUG_PROD: process.env.DEBUG_PROD}); // undefined in local dev 
+
+// BUG: https://stackoverflow.com/a/71994055/7354486
+// somehow isPackaged does not work after using webpack to build react in Electron (via electron forge)  
+// if (app.isPackaged) {
 const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 // default: http://localhost:3000/main_window
@@ -22,20 +28,35 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-let tray:any = null;
+let tray:TrayGenerator = null;
 let mainWindow:BrowserWindow = null;
 let serverProcess:any; 
 
-const createWindow = (): void => {
+// ref: https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/ 
+// NOTE: setVisibleOnAllWorkspaces is needed ?
+const showWindow = () => {
+  // const position = this.getWindowPosition();
+  // mainWindow.setPosition(position.x, position.y, false);
+  mainWindow.show();
+  // mainWindow.setVisibleOnAllWorkspaces(true);
+  mainWindow.focus();
+  // mainWindow.setVisibleOnAllWorkspaces(false);    
+};
+
+const hideWindow = () =>{
+  mainWindow.hide();
+}
+
+const createWindow = (): BrowserWindow => {
   // Create the browser window.
-  mainWindow = new BrowserWindow({
+  const window = new BrowserWindow({
     height: 600,
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     }
 
-    //  hide window by default
+    // hide window by default
     // show: false,
     // frame: false,
     // fullscreenable: false,
@@ -43,35 +64,58 @@ const createWindow = (): void => {
   });
 
   // and load the index.html of the app.
-  mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // Open the DevTools.
   // const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
-  console.log({isDebug})
+  // console.log({isDebug})
+
   if (true){ //isDebug){//!app.isPackaged) {
-    mainWindow.webContents.openDevTools();
+    window.webContents.openDevTools();
   }
+  
+  if (tray) {
+    // TODO: change to use some Tray method & not set tray here
+    tray.mainWindow = window;
+  }
+  
+  // mainWindow.on('close', function (event) {
+  //   console.log("mainWindow close");  
+  //   // if below is setup, app.window-all-closed will not be fired 
+  //   // if(!application.isQuiting){
+  //   // event.preventDefault();
+  //   // mainWindow.hide();
+  //   // // }  
+  //   // return false;
+  // });
+
+  return window;
 };
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', ()=>{
+  console.log("on ready");
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
+  console.log('window-all-closed');
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
+/** not test yet */
 app.on('activate', () => {
+  console.log('activate')
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    mainWindow = createWindow();
   }
 });
 
@@ -94,7 +138,24 @@ ipcMain.on('invoke-vscode', (event, path) => {
   exec(fullCmd, (error, stdout, stderr) => { 
     console.log(stdout);
   });
+  
+  hideWindow();
 });  
+
+
+const trayToggleEvtHandler = () => {
+  console.log("tray toggle callback");
+  if (BrowserWindow.getAllWindows().length === 0) {
+    console.log("no window, create one")
+    mainWindow = createWindow();
+    showWindow();
+  } else if (mainWindow.isVisible()) {
+    console.log("is visible, to hide")
+  } else {
+    console.log("is not visible, to show")
+    showWindow();
+  }  
+};
 
 /** 
  * what is the difference between whenReady & .on('ready)???
@@ -103,6 +164,8 @@ ipcMain.on('invoke-vscode', (event, path) => {
 // })
 (async ()=>{
   await app.whenReady();
+  mainWindow = createWindow();
+  console.log("when ready");
 
   if (!isDebug) {
     // spwan a procees
@@ -129,24 +192,36 @@ ipcMain.on('invoke-vscode', (event, path) => {
     });
   }
 
-  tray = new TrayGenerator(mainWindow);
-  tray.createTray();
+
+  let title = "XWin"
+  if (!isDebug) {    
+
+    console.log({NODE_ENV: process.env.NODE_ENV});
+    console.log({DEBUG_PROD: process.env.DEBUG_PROD}); 
+  
+    const node_evn = process.env.NODE_ENV??"" 
+    const debug_prod = process.env.DEBUG_PROD??"" 
+
+    title = `${title}P.`;
+    title = `${title}${node_evn}`;
+    title = `${title}${debug_prod}`;
+  } else {
+    title = `${title}(alt+cmd+i)`;
+  }
+  tray = new TrayGenerator(mainWindow, title, trayToggleEvtHandler);
 
   // https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#global-shortcuts
   globalShortcut.register('Alt+CommandOrControl+I', () => {
-    console.log('Electron loves global shortcuts!')
-    tray.toggleWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      console.log("no window, create one")
+      mainWindow = createWindow();
+      showWindow();
+    } else {
+      tray.onTrayClick();
+    }
   })
 })();
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
-});
 
 // ref:
 // 1. https://stackoverflow.com/questions/36031465/electron-kill-child-process-exec

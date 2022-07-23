@@ -2,16 +2,24 @@ import {  nativeImage, BrowserWindow, Tray, Menu } from "electron";
 import { app} from "electron";
 
 
-// copy from https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
+// ref: 
+// https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
 export class TrayGenerator {
   tray:Tray;
   mainWindow:BrowserWindow
+  onTrayClickCallback:any;
+  title: string;
 
-  constructor(mainWindow:BrowserWindow) {
+  constructor(mainWindow:BrowserWindow, title: string, onTrayClickCallback:any) {
 
     this.tray = null;
     this.mainWindow = mainWindow;
+    this.onTrayClickCallback = onTrayClickCallback;
+
+    this.createTray(title);
   }
+
+  // not used now
   getWindowPosition = () => {
     const windowBounds = this.mainWindow.getBounds();
     const trayBounds = this.tray.getBounds();
@@ -20,24 +28,10 @@ export class TrayGenerator {
     return { x, y };
   };
 
-  // ref: https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/ 
-  // NOTE: setVisibleOnAllWorkspaces is needed ?
-  showWindow = () => {
-    const position = this.getWindowPosition();
-    // this.mainWindow.setPosition(position.x, position.y, false);
-    this.mainWindow.show();
-    // this.mainWindow.setVisibleOnAllWorkspaces(true);
-    this.mainWindow.focus();
-
-    // this.mainWindow.setVisibleOnAllWorkspaces(false);    
-  };
-
-  toggleWindow = () => {
-    if (this.mainWindow.isVisible()) {
-        this.mainWindow.hide();
-      } else {
-        this.showWindow();
-      }
+  onTrayClick = () => {
+    if (this.onTrayClickCallback) {
+      this.onTrayClickCallback();
+    }
   };
 
   rightClickMenu = () => {
@@ -50,7 +44,7 @@ export class TrayGenerator {
       this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
   }
 
-  createTray = () => {
+  createTray = (title:string) => {
     const icon = nativeImage.createFromPath('path/to/asset.png');
 
     // ref: https://www.electronjs.org/docs/latest/tutorial/tray
@@ -68,28 +62,13 @@ export class TrayGenerator {
     // note: your contextMenu, Tooltip and Title code will go here!
 
     this.tray = new Tray(icon);
-
-    let appTitle = ""
-
-  // Open the DevTools.
-    const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
-
-    // BUG: https://stackoverflow.com/a/71994055/7354486
-    // somehow isPackaged does not work after using webpack to build react in Electron (via electron forge)  
-    // if (app.isPackaged) {
-
-    if (!isDebug) {
-      appTitle = `XWinP`;
-    } else {
-      appTitle = 'XWin(alt+cmd+i)';
-    }
     this.tray.setToolTip(`XWin app, path:${__dirname}`)
-    this.tray.setTitle(appTitle)
+    this.tray.setTitle(title)
 
     // this.tray = new Tray(path.join(__dirname, './assets/IconTemplate.png'));
-    this.tray.setIgnoreDoubleClickEvents(true);
+    // this.tray.setIgnoreDoubleClickEvents(true);
   
-    this.tray.on('click', this.toggleWindow);
+    this.tray.on('click', this.onTrayClick);
     this.tray.on('right-click', this.rightClickMenu);
   };
 }
