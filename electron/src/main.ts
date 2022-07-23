@@ -11,11 +11,10 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
-
-//  http://localhost:3000/main_window
-console.log("MAIN_WINDOW_WEBPACK_ENTRY:", MAIN_WINDOW_WEBPACK_ENTRY) 
-// undefind 
-console.log("MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY:", MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY)
+// default: http://localhost:3000/main_window
+// console.log("MAIN_WINDOW_WEBPACK_ENTRY:", MAIN_WINDOW_WEBPACK_ENTRY) 
+// default: undefind. Its value is from package.json entryPoints/preload/js value 
+// console.log("MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY:", MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY)
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
