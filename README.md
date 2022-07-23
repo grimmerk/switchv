@@ -43,6 +43,8 @@ ref: https://pnpm.io/pnpm-cli
 
 4. Frontend usually fails to fetch data from server since the server is starting firstly. Need refresh. Add some waiting time. 
 
+5. Insecure Content-Security-Policy warning 
+
 ## notes about packaging a macOS app
 
 steps: 
