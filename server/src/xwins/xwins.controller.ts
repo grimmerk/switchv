@@ -51,7 +51,7 @@ export class XWinsController {
     console.log('post VSCode win', createCatDto);
 
     const { paths, workspace_path } = createCatDto;
-    if (!paths.length) {
+    if (!paths?.length) {
       console.log('no paths, return directly');
       return;
     }
