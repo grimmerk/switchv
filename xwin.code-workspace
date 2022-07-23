@@ -7,7 +7,7 @@
 			"path": "server"
 		},
 		{
-			"path": "desktop"
+			"path": "electron"
 		},
 		{
 			"path": ".",
@@ -18,7 +18,7 @@
 		"files.exclude": {
 			"server": true,
 			"extension": true,
-			"desktop": true
+			"electron": true
 		},
 	},
 	"launch": {
