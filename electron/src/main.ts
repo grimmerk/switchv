@@ -219,12 +219,12 @@ const trayToggleEvtHandler = () => {
     // title = `${title}1${node_evn}`;
     // title = `${title}2${debug_prod}`;
   } else {
-    title = `${title}(alt+cmd+i)`;
+    title = `${title}(cmd+option+n)`;
   }
   tray = new TrayGenerator(mainWindow, title, trayToggleEvtHandler);
 
   // https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#global-shortcuts
-  globalShortcut.register('Alt+CommandOrControl+I', () => {
+  globalShortcut.register('Alt+CommandOrControl+N', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       console.log("no window, create one")
       mainWindow = createWindow();
