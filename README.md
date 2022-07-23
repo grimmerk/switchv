@@ -50,12 +50,12 @@ ref: https://pnpm.io/pnpm-cli
 ## notes about packaging a macOS app
 
 steps: 
-1. in server, execute `yarn start` to generate dist folder
-2. `yarn global add pkg`
-3. add `"version": "0.0.1"` field in `generated server/node_modules/.prisma/client/package.json`
-4. in server, `pkg .`
-5. copy server's `xwin-server-macos` and `prisma folder` containing `dev.db` into electron folder 
-6. in electron, `yarn make` to generate out folder 
+1. bundle server 
+  1. in server, execute `yarn start` to generate dist folder
+  2. `yarn global add pkg`
+  3. add `"version": "0.0.1"` field in `generated server/node_modules/.prisma/client/package.json`
+  4. in server, `pkg .`
+2. in electron, `yarn make` to generate out folder 
 
 two issues 
 1. TODO: how to use vercel/pkg bundle deb.db in nestjs, instead of manual copy????

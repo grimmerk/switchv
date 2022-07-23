@@ -21,8 +21,8 @@
     "forge": {
       "packagerConfig": {
         "extraResource": [
-          "xwin-server-macos",
-          "prisma"
+          "../server/xwin-server-macos",
+          "../server/prisma"
         ]
       },
       "makers": [

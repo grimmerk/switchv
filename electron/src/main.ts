@@ -9,8 +9,8 @@ import {TrayGenerator} from './TrayGenerator';
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
-console.log({NODE_ENV: process.env.NODE_ENV});
-console.log({DEBUG_PROD: process.env.DEBUG_PROD}); // undefined in local dev 
+console.log({NODE_ENV: process.env.NODE_ENV});     // defined in dev/packaged 
+// console.log({DEBUG_PROD: process.env.DEBUG_PROD}); // not defined in dev/packaged 
 
 // BUG: https://stackoverflow.com/a/71994055/7354486
 // somehow isPackaged does not work after using webpack to build react in Electron (via electron forge)  
@@ -209,15 +209,15 @@ const trayToggleEvtHandler = () => {
   let title = "XWin"
   if (!isDebug) {    
 
-    console.log({NODE_ENV: process.env.NODE_ENV});
-    console.log({DEBUG_PROD: process.env.DEBUG_PROD}); 
+    // console.log({NODE_ENV: process.env.NODE_ENV});
+    // console.log({DEBUG_PROD: process.env.DEBUG_PROD}); 
   
-    const node_evn = process.env.NODE_ENV??"" 
-    const debug_prod = process.env.DEBUG_PROD??"" 
+    // const node_evn = process.env.NODE_ENV??"" 
+    // const debug_prod = process.env.DEBUG_PROD??"" 
 
     title = `${title}P.`;
-    title = `${title}${node_evn}`;
-    title = `${title}${debug_prod}`;
+    // title = `${title}1${node_evn}`;
+    // title = `${title}2${debug_prod}`;
   } else {
     title = `${title}(alt+cmd+i)`;
   }
