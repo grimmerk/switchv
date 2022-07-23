@@ -47,6 +47,11 @@ const hideWindow = () =>{
   mainWindow.hide();
 }
 
+const onBlur = (event:any)=>{
+  console.log("onBlur:", event);
+  hideWindow();
+}
+
 const createWindow = (): BrowserWindow => {
   // Create the browser window.
   const window = new BrowserWindow({
@@ -78,6 +83,8 @@ const createWindow = (): BrowserWindow => {
     // TODO: change to use some Tray method & not set tray here
     tray.mainWindow = window;
   }
+
+  window.on('blur', onBlur);
   
   // mainWindow.on('close', function (event) {
   //   console.log("mainWindow close");  
