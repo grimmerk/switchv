@@ -41,6 +41,8 @@ ref: https://pnpm.io/pnpm-cli
 
 3. Sometimes tray menu will not show. It seems to be because too many menu apps?
 
+4. Frontend usually fails to fetch data from server since the server is starting firstly. Need refresh. Add some waiting time. 
+
 ## notes about packaging a macOS app
 
 steps: 
@@ -48,9 +50,8 @@ steps:
 2. `yarn global add pkg`
 3. add `"version": "0.0.1"` field in `generated server/node_modules/.prisma/client/package.json`
 4. in server, `pkg .`
-5. in electron, `yarn start` to generate dist folder 
-6. copy server's `xwin-server-macos` and `prisma folder` into dist folder 
-7. `yarn make`
+5. copy server's `xwin-server-macos` and `prisma folder` containing `dev.db` into electron folder 
+6. in electron, `yarn make` to generate out folder 
 
 two issues 
 1. TODO: how to use vercel/pkg bundle deb.db in nestjs, instead of manual copy????
