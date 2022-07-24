@@ -147,7 +147,10 @@ ipcMain.on('invoke-vscode', (event, path) => {
   // 2. https://stackoverflow.com/questions/62885809/nodejs-child-process-npm-command-not-found
   // 3. https://github.com/electron/fiddle/issues/365#issuecomment-616630874
   // const fullCmd = `code ${command}`
-  const fullCmd = `/usr/local/bin/code ${path}`
+  // const fullCmd = `/usr/local/bin/code ${path}`
+  // https://github.com/microsoft/vscode/issues/60579#issuecomment-925627701
+  // open -b com.microsoft.VSCodeInsiders
+  const fullCmd = `open -b com.microsoft.VSCode ${path}` // work in packaged app too, but not work for VSCode insider & -r option
   exec(fullCmd, (error, stdout, stderr) => { 
     console.log(stdout);
   });
