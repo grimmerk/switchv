@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
+import Highlighter from 'react-highlight-words';
+
 /** candidates */
 // import SelectSearch from 'react-select-search';
 // import GridTable from '@nadavshaar/react-grid-table';
 import Select from 'react-select';
 // import { components } from 'react-select';
 // const { Control }: { Control: any } = components;
+
 
 function invokeVSCode(path: string) {
   console.log({ path });
@@ -52,16 +55,26 @@ const retryFetchData = async (): Promise<any[]> => {
 //   { value: "Dustin", label: "Dustin", customAbbreviation: "D" }
 // ];
 
+/** highlight https://github.com/JedWatson/react-select/issues/5 */
+
 /** https://stackoverflow.com/questions/52819756/react-select-replacing-components-for-custom-option-content */
-const formatOptionLabel = ({ value, label, customAbbreviation }: { value: any, label: any, customAbbreviation?: any }) => {
+const formatOptionLabel = ({ value, label, customAbbreviation }: { value: any, label: any, customAbbreviation?: any }, { inputValue }: { inputValue: any }) => {
   // https://stackoverflow.com/a/34899885/7354486
   const path = label.slice(0, label.lastIndexOf('/'));
   const name = label.slice(label.lastIndexOf('/') + 1);
   return (
     <div style={{ display: "flex" }}>
-      <div>{name}</div>
+      <div>
+        <Highlighter
+          searchWords={[inputValue]}
+          textToHighlight={name}
+        />
+      </div>
       <div style={{ marginLeft: "10px", color: "#ccc" }}>
-        {path}
+        <Highlighter
+          searchWords={[inputValue]}
+          textToHighlight={path}
+        />
       </div>
     </div>
   );
