@@ -136,7 +136,7 @@ app.on('activate', () => {
 // code. You can also put them in separate files and import them here.
 
 /** https://www.electronjs.org/docs/latest/tutorial/ipc */
-ipcMain.on('invoke-vscode', (event, path) => {
+ipcMain.on('invoke-vscode', (event, path, option) => {
   console.log("invoke", {event, path});
 
   tray.tray.setTitle(`XWin(${path?path[path.length-1]:"n"})`);
@@ -147,7 +147,26 @@ ipcMain.on('invoke-vscode', (event, path) => {
   // 2. https://stackoverflow.com/questions/62885809/nodejs-child-process-npm-command-not-found
   // 3. https://github.com/electron/fiddle/issues/365#issuecomment-616630874
   // const fullCmd = `code ${command}`
-  const fullCmd = `/usr/local/bin/code ${path}`
+  //const child = spawn('open', ['-b', 'com.microsoft.VSCode', '--args', argv], options);
+  // https://github.com/microsoft/vscode/issues/102975#issuecomment-661647219
+  //const fullCmd = `open -b com.microsoft.VSCode --args -r ${path}`
+
+
+
+  let fullCmd="";
+  if (option) {
+    // reuse 
+    // https://stackoverflow.com/a/47473271/7354486
+    // https://code.visualstudio.com/docs/editor/command-line#_opening-vs-code-with-urls
+    fullCmd = `open vscode://file/${path}`;
+  } else {
+    // NOTE: VSCode insider needs to use "com.microsoft.VSCodeInsiders" instead 
+    fullCmd = `open -b com.microsoft.VSCode ${path}`;
+  }
+  // reuse: open vscode://file/  
+  // force: open -b "com.microsoft.VSCode" <- 
+
+  console.log({fullCmd})
   exec(fullCmd, (error, stdout, stderr) => { 
     console.log(stdout);
   });

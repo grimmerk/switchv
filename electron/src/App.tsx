@@ -15,9 +15,9 @@ function invokeVSCode(path: string, optionPress = false) {
   console.log({ window });
   // press option for VSCode -r --reuse-window
   // Force to open a file or folder in an already opened window.
-  const cmd = `${optionPress ? "-r " : ""}${path}`;
+  const option = `${optionPress ? "-r " : ""}`;
   // console.log({ cmd });
-  (window as any).electronAPI.invokeVSCode(`${cmd}`);
+  (window as any).electronAPI.invokeVSCode(`${path}`, option);
 }
 
 function hideApp() {
