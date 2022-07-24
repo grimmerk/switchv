@@ -19,19 +19,19 @@ Use this to quickly open and switch projects.
 - server 
   - `yarn install` 
   - For the first time or every time db scheme changes, execute `yarn db:migrate` to generate SQLite DB file (`./prisma/dev.db`) and generate TypeScript interface. `yarn db:view` can be used to view DB data.
-    - ~~To generate TypeScript DB interface, `yarn db:type` (db:migrate will also automatically do this part)~~
+    - ~~To generate TypeScript DB interface via `yarn db:type`~~ (db:migrate will also automatically do this part, yarn install will also include generated types in node_modules/.prisma/index.d.ts)
   - F5 debug or `yarn start:debug`
 - desktop/electron 
   - `yarn install`
   - `yarn start` (not set VSCode debugging yet)
   - package as mac app: `yarn make`. It (Electron part) is about 196MB. Server vercel/pkg build is 119MB. Total it is 316MB. Try Tauri to reduce electron part? 
 
-### pnpm tips:
+~~pnpm tips:~~
 
-- `pnpm install` vs `npm install`
-- `pnpm dlx` vs `npx` 
+- ~~`pnpm install` vs `npm install`~~
+- ~~`pnpm dlx` vs `npx`~~ 
 
-ref: https://pnpm.io/pnpm-cli
+~~ref: https://pnpm.io/pnpm-cli~~
 
 ## issues/todos 
 
@@ -51,7 +51,7 @@ ref: https://pnpm.io/pnpm-cli
 
 ### debugger issue 
 
-**To debug main process **
+**To debug main process**
 
 Below is a workaround way to debug main process: Its reference is 
 https://github.com/electron-userland/electron-forge/issues/1369#issuecomment-1172913835
