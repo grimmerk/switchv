@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 // import SelectSearch from 'react-select-search';
 // import GridTable from '@nadavshaar/react-grid-table';
 import Select from 'react-select';
+// import { components } from 'react-select';
+// const { Control }: { Control: any } = components;
 
 function invokeVSCode(path: string) {
   console.log({ path });
@@ -38,17 +40,32 @@ const retryFetchData = async (): Promise<any[]> => {
   return json;
 }
 
-const options = [
-  { value: 'blues', label: 'Blues' },
-  { value: 'rock', label: 'Rock' },
-  { value: 'jazz', label: 'Jazz' },
-  { value: 'orchestra', label: 'Orchestra' }
-];
+// const CustomControl = ({ children, ...props }: { children: any }) => (
+//   < Control {...props}>
+//     👍 {children}
+//   </Control >
+// );
 
-// const SelectSearchOptions = [
-//   { name: 'Swedish', value: 'sv' },
-//   { name: 'English', value: 'en' },
+// const options = [
+//   { value: "Abe", label: "Abe", customAbbreviation: "A" },
+//   { value: "John", label: "John", customAbbreviation: "J" },
+//   { value: "Dustin", label: "Dustin", customAbbreviation: "D" }
 // ];
+
+/** https://stackoverflow.com/questions/52819756/react-select-replacing-components-for-custom-option-content */
+const formatOptionLabel = ({ value, label, customAbbreviation }: { value: any, label: any, customAbbreviation?: any }) => {
+  // https://stackoverflow.com/a/34899885/7354486
+  const path = label.slice(0, label.lastIndexOf('/'));
+  const name = label.slice(label.lastIndexOf('/') + 1);
+  return (
+    <div style={{ display: "flex" }}>
+      <div>{name}</div>
+      <div style={{ marginLeft: "10px", color: "#ccc" }}>
+        {path}
+      </div>
+    </div>
+  );
+};
 
 /** Caution it will be invoked twice due to <React.StrictMode> !! */
 let loadTimes = 0;
@@ -97,7 +114,6 @@ function App() {
 
   return (
     <div>
-      {/* <SelectSearch search={true} options={SelectSearchOptions} placeholder="Choose your language" /> */}
       <Select autoFocus={true}
         value={selectedOptions}
         openMenuOnFocus={true}
@@ -107,6 +123,7 @@ function App() {
           invokeVSCode(evt.value);
         }}
         components={{ DropdownIndicator: null }}
+        formatOptionLabel={formatOptionLabel}
         options={pathArray} />
     </div>
   );
