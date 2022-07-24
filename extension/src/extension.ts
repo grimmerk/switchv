@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
 
-function postData(deactivate = false) {
+function getCurrentWinInfo(){
 	const paths = vscode.workspace.workspaceFolders?.map(folder => {
 		const path = folder.uri.path;
 		console.log({ path })
@@ -11,6 +11,15 @@ function postData(deactivate = false) {
 	});
 	const { workspaceFile } = vscode.workspace;
 	const workspace_path = workspaceFile?.path ?? ""
+	return {
+		paths, 
+		workspace_path
+	}
+}
+
+function postData(deactivate = false) {
+	const {paths, workspace_path} = getCurrentWinInfo();
+
 	const url = "http://localhost:55688/xwins/"
 	axios.post(url, {
 		paths,
@@ -20,9 +29,6 @@ function postData(deactivate = false) {
 		console.log(response);
 	})
 }
-
-
-
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -48,6 +54,20 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// onDidChangeWorkspaceFolders
 	// WorkspaceFoldersChangeEvent ??
+	vscode.window.onDidChangeWindowState(e=>{
+		// console.log({"state:":e})
+		const {paths, workspace_path} = getCurrentWinInfo();
+		// console.log("state2,",paths, workspace_path, e  )
+
+		if (e.focused)		 {
+			console.log("focusd")
+			postData()
+		} else {
+			console.log("not focusd")
+		}
+
+		// e: {focused: false}}
+	});
 
 	vscode.workspace.onDidChangeWorkspaceFolders(e => {
 		console.log(`vscode.workspace.onDidChangeWorkspaceFolders`)
