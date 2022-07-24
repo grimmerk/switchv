@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import Highlighter from 'react-highlight-words';
 
@@ -10,10 +10,14 @@ import Select from 'react-select';
 // const { Control }: { Control: any } = components;
 
 
-function invokeVSCode(path: string) {
+function invokeVSCode(path: string, optionPress = false) {
   console.log({ path });
   console.log({ window });
-  (window as any).electronAPI.invokeVSCode(`${path}`);
+  // press option for VSCode -r --reuse-window
+  // Force to open a file or folder in an already opened window.
+  const cmd = `${optionPress ? "-r " : ""}${path}`;
+  // console.log({ cmd });
+  (window as any).electronAPI.invokeVSCode(`${cmd}`);
 }
 
 function sleep(ms: number) {
@@ -57,6 +61,8 @@ const retryFetchData = async (): Promise<any[]> => {
 
 /** highlight https://github.com/JedWatson/react-select/issues/5 */
 
+const OPTION_KEY = 18
+
 /** https://stackoverflow.com/questions/52819756/react-select-replacing-components-for-custom-option-content */
 const formatOptionLabel = ({ value, label, customAbbreviation }: { value: any, label: any, customAbbreviation?: any }, { inputValue }: { inputValue: any }) => {
   // https://stackoverflow.com/a/34899885/7354486
@@ -85,6 +91,8 @@ let loadTimes = 0;
 function App() {
   console.log("App");
 
+  const optionPress = useRef(false);
+
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [pathInfoArray, setPathInfoArray] = useState([]);
 
@@ -93,6 +101,26 @@ function App() {
       return;
     };
     loadTimes += 1;
+
+    // cmd: 93
+    function handleKeyDown(e: any) {
+      console.log(`down"${e.keyCode}`);
+      // 93: cmd. 18:option
+      if (e.keyCode === OPTION_KEY) {
+        optionPress.current = true;
+      }
+    }
+    function handleKeyUp(e: any) {
+      console.log(`up"${e.keyCode}`);
+      if (e.keyCode === OPTION_KEY) {
+        optionPress.current = false;
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+
+
     const fetchData = async () => {
       const json = await retryFetchData();
       // const resp = await fetch(url);
@@ -115,6 +143,11 @@ function App() {
 
     fetchData();
 
+    // Don't forget to clean up
+    return function cleanup() {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    }
   }, []);
 
   const pathArray = pathInfoArray.map((pathInfo) => {
@@ -133,7 +166,7 @@ function App() {
         onChange={(evt: any) => {
           console.log({ evt })
           // setSelectedOptions(evt);
-          invokeVSCode(evt.value);
+          invokeVSCode(evt.value, optionPress.current);
         }}
         components={{ DropdownIndicator: null }}
         formatOptionLabel={formatOptionLabel}
