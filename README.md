@@ -9,7 +9,7 @@ Use this to quickly open and switch projects.
 ## Dev and package Note
 
 - extension
-  - `npm install` (since `vsce package` requires `npm`)
+  - `yarn install`
   - either 
     - `F5 debug` for debugging or 
     - built it and install it. Firstly 
