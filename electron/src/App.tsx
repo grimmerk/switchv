@@ -55,6 +55,7 @@ let loadTimes = 0;
 function App() {
   console.log("App");
 
+  const [selectedOptions, setSelectedOptions] = useState([]);
   const [pathInfoArray, setPathInfoArray] = useState([]);
 
   useEffect(() => {
@@ -98,10 +99,12 @@ function App() {
     <div>
       {/* <SelectSearch search={true} options={SelectSearchOptions} placeholder="Choose your language" /> */}
       <Select autoFocus={true}
+        value={selectedOptions}
         openMenuOnFocus={true}
-        onChange={(evt) => {
+        onChange={(evt: any) => {
           console.log({ evt })
-          invokeVSCode(evt.value)
+          // setSelectedOptions(evt);
+          invokeVSCode(evt.value);
         }}
         components={{ DropdownIndicator: null }}
         options={pathArray} />
