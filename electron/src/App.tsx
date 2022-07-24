@@ -20,6 +20,10 @@ function invokeVSCode(path: string, optionPress = false) {
   (window as any).electronAPI.invokeVSCode(`${cmd}`);
 }
 
+function hideApp() {
+  (window as any).electronAPI.hideApp();
+}
+
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -93,6 +97,7 @@ function App() {
 
   const optionPress = useRef(false);
 
+  const [inputValue, setInputValue] = useState("");
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [pathInfoArray, setPathInfoArray] = useState([]);
 
@@ -104,7 +109,7 @@ function App() {
 
     // cmd: 93
     function handleKeyDown(e: any) {
-      console.log(`down"${e.keyCode}`);
+      console.log(`down"${e.keyCode};`);
       // 93: cmd. 18:option
       if (e.keyCode === OPTION_KEY) {
         optionPress.current = true;
@@ -161,8 +166,31 @@ function App() {
   return (
     <div>
       <Select autoFocus={true}
+        inputValue={inputValue}
         value={selectedOptions}
         openMenuOnFocus={true}
+        onKeyDown={(evt) => {
+          // here first, then handleKeyDown
+          console.log("evt3:", evt.key);
+          if (evt.key == "Escape") {
+            // this will prevent "handleKeyDown"
+            evt.stopPropagation();
+            // it will prevent esc to empty input but still pass to handleKeyDown
+            evt.preventDefault();
+
+            if (inputValue) {
+              console.log("empty")
+              setInputValue("")
+            } else {
+              // hide this app
+              hideApp();
+            }
+          }
+        }}
+        onInputChange={(evt) => {
+          // console.log("evt:", evt);
+          setInputValue(evt);
+        }}
         onChange={(evt: any) => {
           console.log({ evt })
           // setSelectedOptions(evt);

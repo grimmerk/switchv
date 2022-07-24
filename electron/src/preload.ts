@@ -5,6 +5,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
   invokeVSCode: (path:string) => ipcRenderer.send('invoke-vscode', path),
+  hideApp: () => ipcRenderer.send('hide-app'),
   onFocusWindow: (callback:any) => ipcRenderer.on('window-focus', callback)
 })
 

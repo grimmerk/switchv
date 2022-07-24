@@ -155,6 +155,11 @@ ipcMain.on('invoke-vscode', (event, path) => {
   hideWindow();
 });  
 
+ipcMain.on('hide-app', (event) => {
+  hideWindow();
+});  
+
+
 
 const trayToggleEvtHandler = () => {
   console.log("tray toggle callback");
