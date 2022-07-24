@@ -33,7 +33,7 @@ const retryFetchData = async (): Promise<any[]> => {
   return json;
 }
 
-/** Caution it will be invoked twice !! */
+/** Caution it will be invoked twice due to <React.StrictMode> !! */
 let loadTimes = 0;
 function App() {
   console.log("App");

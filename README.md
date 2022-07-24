@@ -47,7 +47,7 @@ Use this to quickly open and switch projects.
 
 6. Insecure Content-Security-Policy warning 
 
-7. React App is called twice initially
+7. ~~React App is called twice initially~~ (this is due to <React.StrictMode>). ref: https://github.com/facebook/react/issues/12856#issuecomment-390206425
 
 ### debugger issue 
 

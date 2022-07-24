@@ -14,9 +14,12 @@ function render() {
     document.getElementById('root')
   );
   root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
+    // this is only for helping to find not good react code when developing, after make sure the code is OK
+    // we should remove it. 
+    // its side effect is it will trigger <App/> twice
+    // <React.StrictMode>
+    <App />
+    // </React.StrictMode>
   );
 }
 
