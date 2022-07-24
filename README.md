@@ -39,13 +39,16 @@ ref: https://pnpm.io/pnpm-cli
 
 2. [fixed] after using ctrl+w to close XWin, the window object will be destroyed and can not be used anymore (will throw exception)
 
-3. Sometimes tray menu will not show. It seems to be because too many menu apps?
+3. [fixed] (packaged app) Frontend usually fails to fetch data from server since the server is starting firstly. Need refresh. Add some waiting time. 
 
-4. Frontend usually fails to fetch data from server since the server is starting firstly. Need refresh. Add some waiting time. 
+4. handle minimizing electron app case (how?)
 
-5. Insecure Content-Security-Policy warning 
+5. Sometimes tray menu will not show. It seems to be because too many menu apps?
 
-6. React App is called twice initially
+6. Insecure Content-Security-Policy warning 
+
+7. React App is called twice initially
+
 
 ## notes about packaging a macOS app
 

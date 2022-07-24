@@ -6,6 +6,33 @@ function invokeVSCode(path: string) {
   (window as any).electronAPI.invokeVSCode(`${path}`);
 }
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+const retryFetchData = async (): Promise<any[]> => {
+  console.log("fetchData")
+  const url = "http://localhost:55688/xwins";
+
+  let retryTimes = 20;
+  let succeed = false;
+  let json = [];
+  while (!succeed && retryTimes > 0) {
+    try {
+      // at least 6/5*50 milliseconds needed for serve start time
+      // most of the times are 7 or 6 times 
+      console.log("retry fetchData");
+      const resp = await fetch(url);
+      json = await resp.json();
+      succeed = true;
+    } catch (err) {
+      retryTimes -= 1;
+      await sleep(50);
+    }
+  }
+  return json;
+}
+
 /** Caution it will be invoked twice !! */
 let loadTimes = 0;
 function App() {
@@ -19,21 +46,15 @@ function App() {
     };
     loadTimes += 1;
     const fetchData = async () => {
-      console.log("fetchData")
-      const url = "http://localhost:55688/xwins";
-
-      try {
-        const resp = await fetch(url);
-        const json = await resp.json();
-        console.log({ json })
-        if (json.length === 0) {
-          const fake = "/Users/grimmer/git/vite-react-app";
-          setPathInfoArray([{ path: fake }])
-        } else {
-          setPathInfoArray(json)
-        }
-      } catch (err) {
-        console.log({ err })
+      const json = await retryFetchData();
+      // const resp = await fetch(url);
+      // const json = await resp.json();
+      console.log({ json })
+      if (json.length === 0) {
+        const fake = "/Users/grimmer/git/vite-react-app";
+        setPathInfoArray([{ path: fake }])
+      } else {
+        setPathInfoArray(json)
       }
     };
 
