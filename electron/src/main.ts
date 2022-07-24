@@ -80,9 +80,9 @@ const createWindow = (): BrowserWindow => {
   // const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
   // console.log({isDebug})
 
-  if (true){ //isDebug){//!app.isPackaged) {
-    window.webContents.openDevTools();
-  }
+  // if (true){ //isDebug){//!app.isPackaged) {
+  //   window.webContents.openDevTools();
+  // }
   
   if (tray) {
     // TODO: change to use some Tray method & not set tray here
