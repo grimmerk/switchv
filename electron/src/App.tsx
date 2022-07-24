@@ -163,9 +163,18 @@ function App() {
     }
   });
 
+  // const styles = {
+  //   container: (base: any) => ({
+  //     ...base,
+  //     height: '100%',
+  //   })
+  // };
+
   return (
     <div>
       <Select autoFocus={true}
+        maxMenuHeight={450}
+        // styles={styles}
         inputValue={inputValue}
         value={selectedOptions}
         openMenuOnFocus={true}
