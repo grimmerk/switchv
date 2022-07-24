@@ -59,6 +59,7 @@ const onFocus = (event:any)=>{
 const createWindow = (): BrowserWindow => {
   // Create the browser window.
   const window = new BrowserWindow({
+    // minimizable: false, // ux not good
     height: 600,
     width: 800,
     webPreferences: {

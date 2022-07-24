@@ -41,7 +41,7 @@ Use this to quickly open and switch projects.
 
 3. [fixed] (packaged app) Frontend usually fails to fetch data from server since the server is starting firstly. Need refresh. Add some waiting time. 
 
-4. handle minimizing electron app case (how?)
+4. [system limitation, wll not fix] handle minimizing electron app case and make it hidden. ref:  https://github.com/electron/electron/issues/29860#issuecomment-870697754
 
 5. ~~Sometimes tray menu will not show. It seems to be because too many menu apps? Yes. It is all about macbook notch. We can not solve it~~
 
