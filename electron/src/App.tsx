@@ -67,12 +67,12 @@ function App() {
       // const resp = await fetch(url);
       // const json = await resp.json();
       console.log({ json })
-      if (json.length === 0) {
-        const fake = "/Users/grimmer/git/vite-react-app";
-        setPathInfoArray([{ path: fake }])
-      } else {
-        setPathInfoArray(json)
-      }
+      // if (json.length === 0) {
+      //   const fake = "~/git/vite-react-app";
+      //   setPathInfoArray([{ path: fake }])
+      // } else {
+      setPathInfoArray(json)
+      //}
     };
 
     console.log("register onFocus");
