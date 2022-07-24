@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
+/** candidates */
+// import SelectSearch from 'react-select-search';
+// import GridTable from '@nadavshaar/react-grid-table';
+import Select from 'react-select';
+
 function invokeVSCode(path: string) {
   console.log({ path });
   console.log({ window });
@@ -32,6 +37,18 @@ const retryFetchData = async (): Promise<any[]> => {
   }
   return json;
 }
+
+const options = [
+  { value: 'blues', label: 'Blues' },
+  { value: 'rock', label: 'Rock' },
+  { value: 'jazz', label: 'Jazz' },
+  { value: 'orchestra', label: 'Orchestra' }
+];
+
+// const SelectSearchOptions = [
+//   { name: 'Swedish', value: 'sv' },
+//   { name: 'English', value: 'en' },
+// ];
 
 /** Caution it will be invoked twice due to <React.StrictMode> !! */
 let loadTimes = 0;
@@ -69,23 +86,25 @@ function App() {
 
   }, []);
 
-  // update UI 
-  const buttonList = pathInfoArray.map((pathInfo) => {
+  const pathArray = pathInfoArray.map((pathInfo) => {
     const { path } = pathInfo;
-    return (
-      <div key={path} >
-        <button onClick={(e) => {
-          invokeVSCode(path)
-        }} >
-          {path}
-        </button>
-      </div>);
-  })
+    return {
+      value: path,
+      label: path
+    }
+  });
 
   return (
     <div>
-      <h1>Hello, XWin!</h1>
-      {buttonList}
+      {/* <SelectSearch search={true} options={SelectSearchOptions} placeholder="Choose your language" /> */}
+      <Select autoFocus={true}
+        openMenuOnFocus={true}
+        onChange={(evt) => {
+          console.log({ evt })
+          invokeVSCode(evt.value)
+        }}
+        components={{ DropdownIndicator: null }}
+        options={pathArray} />
     </div>
   );
 }
