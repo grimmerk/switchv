@@ -43,7 +43,7 @@ Use this to quickly open and switch projects.
 
 4. handle minimizing electron app case (how?)
 
-5. Sometimes tray menu will not show. It seems to be because too many menu apps?
+5. ~~Sometimes tray menu will not show. It seems to be because too many menu apps? Yes. It is all about macbook notch. We can not solve it~~
 
 6. Insecure Content-Security-Policy warning 
 
