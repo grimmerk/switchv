@@ -49,6 +49,57 @@ ref: https://pnpm.io/pnpm-cli
 
 7. React App is called twice initially
 
+### debugger issue 
+
+**To debug main process **
+
+Below is a workaround way to debug main process: Its reference is 
+https://github.com/electron-userland/electron-forge/issues/1369#issuecomment-1172913835
+  
+
+```json
+{
+  "type": "node",
+  "request": "launch",
+  "name": "Electron Main",
+  "runtimeExecutable": "npm",
+  "runtimeArgs": [
+      "run",
+      "start",
+  ],
+  "cwd": "${workspaceFolder}"
+}
+```
+
+electron-forge official site only mention how to debug main process but it has a bug 
+https://github.com/electron-userland/electron-forge/issues/1369
+
+```json
+{
+  "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-forge-vscode-nix",
+}
+```
+
+Error: Cannot find module '/Users/liamdawson/w/@electron-forge/cli/dist/electron-forge-start'
+
+
+**To debug render process (workaround way)**
+
+[electron site](https://www.electronjs.org/docs/latest/tutorial/debugging-vscode) and [ms github site](https://github.com/Microsoft/vscode-recipes/tree/master/Electron) both mention below setting to debug main proces 
+
+
+```json 
+{
+  "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+}
+```
+
+and ms github site has a extra setting for debugging render process. But the above setting to trigger main process has a bug that it does not trigger the webpack server customized by electron forge. To workaround this for mainly debugging render process, the steps are  
+
+1. `yarn start` (to start webpack server part) 
+2. launch compound "Electron: All" launch setting (from ms github site) to debug main & **render processes**. 
+
+The drawback is you will see two copy of XWin. And attaching render process takes a little time (e.g. only stop at some breakpoints after a while/refresh).
 
 ## notes about packaging a macOS app
 
