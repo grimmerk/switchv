@@ -23,7 +23,10 @@
         "extraResource": [
           "../server/xwin-server-macos",
           "../server/prisma"
-        ]
+        ],
+        "extendInfo": {
+          "LSUIElement": true
+        }
       },
       "makers": [
         {
