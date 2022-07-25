@@ -64,10 +64,10 @@ const createWindow = (): BrowserWindow => {
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-    }
+    },
 
     // hide window by default
-    // show: false,
+    show: false,
     // frame: false,
     // fullscreenable: false,
     // resizable: false,
