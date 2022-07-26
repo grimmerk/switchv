@@ -10,8 +10,8 @@ import { components, OptionProps } from 'react-select';
 // const { Control }: { Control: any } = components;
 
 function invokeVSCode(path: string, optionPress = false) {
-  console.log({ path });
-  console.log({ window });
+  // console.log({ path });
+  // console.log({ window });
   // press option for VSCode -r --reuse-window
   // Force to open a file or folder in an already opened window.
   const option = `${optionPress ? "-r " : ""}`;
@@ -27,9 +27,28 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const SERVER_URL = "http://localhost:55688/xwins";
+
+const deleteXWin = async (path: string) => {
+  console.log("deleteXwin,", path)
+  const url = `${SERVER_URL}`
+  console.log({ path })
+
+  let headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  };
+
+  await fetch(url, {
+    body: JSON.stringify({ path }), method: 'DELETE', headers
+  })
+
+  console.log("done");
+}
+
 const retryFetchData = async (): Promise<any[]> => {
   console.log("fetchData")
-  const url = "http://localhost:55688/xwins";
+  const url = `${SERVER_URL}`
 
   let retryTimes = 20;
   let succeed = false;
@@ -172,7 +191,7 @@ function App() {
       const json = await retryFetchData();
       // const resp = await fetch(url);
       // const json = await resp.json();
-      console.log({ json })
+      // console.log({ json })
       // if (json.length === 0) {
       //   const fake = "~/git/vite-react-app";
       //   setPathInfoArray([{ path: fake }])
@@ -212,8 +231,15 @@ function App() {
   //   })
   // };
 
-  const onDeleteClick = useCallback((data: any) => {
+  const onDeleteClick = useCallback(async (data: any) => {
     console.log("ondelete:", data)
+
+    const { value } = data;
+    await deleteXWin(value);
+
+    const json = await retryFetchData();
+    setPathInfoArray(json)
+
   }, []);
 
   return (

@@ -4,6 +4,10 @@
 // //     deactivate = False
 // // @Controller('xwins')
 
+export class DeleteXwinDto {
+  path: string;
+}
+
 export class CreateXwinDto {
   paths: string[];
   workspace_path: string;

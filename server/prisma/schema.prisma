@@ -22,7 +22,7 @@ model VSWindow {
   embeddedWindows VSWindow[] @relation("SpaceEmbeddedWindows")
 
   spaceParentId Int?
-  spaceParent   VSWindow? @relation("SpaceEmbeddedWindows", fields: [spaceParentId], references: [id])
+  spaceParent   VSWindow? @relation("SpaceEmbeddedWindows", fields: [spaceParentId], references: [id], onDelete: Cascade)
   inSpace       Boolean   @default(false)
 
   name String?
