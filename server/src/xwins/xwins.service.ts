@@ -32,8 +32,13 @@ export class XWinService {
     return xwins;
   }
 
-  /** below are not really used */
+  async deleteXWin(where: Prisma.VSWindowWhereUniqueInput): Promise<VSWindow> {
+    return this.prisma.vSWindow.delete({
+      where,
+    });
+  }
 
+  /** below are not really used */
   async xwin(
     vswinWhereUniqueInput: Prisma.VSWindowWhereUniqueInput,
   ): Promise<VSWindow | null> {
@@ -55,12 +60,6 @@ export class XWinService {
     const { where, data } = params;
     return this.prisma.vSWindow.update({
       data,
-      where,
-    });
-  }
-
-  async deleteXWin(where: Prisma.VSWindowWhereUniqueInput): Promise<VSWindow> {
-    return this.prisma.vSWindow.delete({
       where,
     });
   }

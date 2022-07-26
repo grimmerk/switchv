@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, FC, useCallback } from 'react';
 
 import Highlighter from 'react-highlight-words';
 
@@ -6,13 +6,12 @@ import Highlighter from 'react-highlight-words';
 // import SelectSearch from 'react-select-search';
 // import GridTable from '@nadavshaar/react-grid-table';
 import Select from 'react-select';
-// import { components } from 'react-select';
+import { components, OptionProps } from 'react-select';
 // const { Control }: { Control: any } = components;
 
-
 function invokeVSCode(path: string, optionPress = false) {
-  console.log({ path });
-  console.log({ window });
+  // console.log({ path });
+  // console.log({ window });
   // press option for VSCode -r --reuse-window
   // Force to open a file or folder in an already opened window.
   const option = `${optionPress ? "-r " : ""}`;
@@ -28,9 +27,28 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const SERVER_URL = "http://localhost:55688/xwins";
+
+const deleteXWin = async (path: string) => {
+  console.log("deleteXwin,", path)
+  const url = `${SERVER_URL}`
+  console.log({ path })
+
+  let headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  };
+
+  await fetch(url, {
+    body: JSON.stringify({ path }), method: 'DELETE', headers
+  })
+
+  console.log("done");
+}
+
 const retryFetchData = async (): Promise<any[]> => {
   console.log("fetchData")
-  const url = "http://localhost:55688/xwins";
+  const url = `${SERVER_URL}`
 
   let retryTimes = 20;
   let succeed = false;
@@ -90,6 +108,49 @@ const formatOptionLabel = ({ value, label, customAbbreviation }: { value: any, l
   );
 };
 
+export interface SelectInputOptionInterface {
+  readonly value: string;
+  readonly label: string;
+  isDisabled: boolean;
+  isSelected: boolean;
+}
+
+// ref
+// 1. https://github.com/JedWatson/react-select/issues/4126#issuecomment-658955445
+// 2. https://codesandbox.io/s/restless-brook-oe3qz3?file=/src/App.tsx:745-751
+const Option: FC<OptionProps<SelectInputOptionInterface>> = (props, onDeleteClick) => {
+  const { selectOption, selectProps, data } = props;
+  // console.log({ onDeleteClick })
+  return (
+    <div
+      style={{
+        // padding: "2px",
+        display: "flex",
+        // border: "1px solid",
+        // justifyContent: "space-between"
+      }}
+    >
+      {/* <input type="checkbox" checked={props.isSelected} onChange={() => null} /> */}
+      {/* <div> */}
+      <components.Option {...props} />
+      <div>
+        <button onClick={() => {
+          // const { value, label } = data;
+          // console.log("delete:", data);
+          if (onDeleteClick) {
+            onDeleteClick(data);
+          }
+        }}>
+          X
+        </button>
+      </div>
+
+      {/* </div> */}
+
+    </div>
+  );
+};
+
 /** Caution it will be invoked twice due to <React.StrictMode> !! */
 let loadTimes = 0;
 function App() {
@@ -130,7 +191,7 @@ function App() {
       const json = await retryFetchData();
       // const resp = await fetch(url);
       // const json = await resp.json();
-      console.log({ json })
+      // console.log({ json })
       // if (json.length === 0) {
       //   const fake = "~/git/vite-react-app";
       //   setPathInfoArray([{ path: fake }])
@@ -170,6 +231,17 @@ function App() {
   //   })
   // };
 
+  const onDeleteClick = useCallback(async (data: any) => {
+    console.log("ondelete:", data)
+
+    const { value } = data;
+    await deleteXWin(value);
+
+    const json = await retryFetchData();
+    setPathInfoArray(json)
+
+  }, []);
+
   return (
     <div>
       <Select autoFocus={true}
@@ -205,7 +277,8 @@ function App() {
           // setSelectedOptions(evt);
           invokeVSCode(evt.value, optionPress.current);
         }}
-        components={{ DropdownIndicator: null }}
+        // use selectProps instead of directly pass? https://stackoverflow.com/a/60375724/7354486?
+        components={{ DropdownIndicator: null, Option: ((props) => Option(props, onDeleteClick)) }}
         formatOptionLabel={formatOptionLabel}
         options={pathArray} />
     </div>

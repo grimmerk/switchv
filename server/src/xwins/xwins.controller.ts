@@ -1,11 +1,21 @@
-import { Controller, Get, Post, Res, HttpStatus, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Res,
+  HttpStatus,
+  HttpCode,
+  Body,
+  Delete,
+  Param,
+} from '@nestjs/common';
 import { Response } from 'express';
 
 import { VSWindow as VSWindowModel } from '@prisma/client';
 
 import { XWinService } from './xwins.service';
 
-import { CreateXwinDto } from './xwin.dto';
+import { CreateXwinDto, DeleteXwinDto } from './xwin.dto';
 
 // const tmpWinList: CreateXwinDto[] = [];
 /** x TODO: use prisma DB client + sqlite/MongoDB instead */
@@ -23,7 +33,6 @@ import { CreateXwinDto } from './xwin.dto';
 //       },
 //     ];
 //   }
-
 //   return tmpWinList;
 // };
 /** DB part */
@@ -31,6 +40,18 @@ import { CreateXwinDto } from './xwin.dto';
 @Controller('xwins')
 export class XWinsController {
   constructor(private readonly xwinService: XWinService) {}
+
+  @Delete()
+  @HttpCode(204)
+  async remove(@Body() deleteCatDto: DeleteXwinDto) {
+    const { path } = deleteCatDto;
+
+    await this.xwinService.deleteXWin({
+      path_inSpace: { path, inSpace: false },
+    });
+
+    console.log('delete done');
+  }
 
   /**
    *
