@@ -205,7 +205,13 @@ function App() {
     (window as any).electronAPI.onFocusWindow((_event: any) => {
       console.log("on focus !!!!!!")
       fetchData();
+    });
+
+    (window as any).electronAPI.onXWinNotFound((_event: any) => {
+      console.log("onXWinNotFound !!!!!!")
+      /** currently the popup message is done by electron native UI */
     })
+
 
     fetchData();
 

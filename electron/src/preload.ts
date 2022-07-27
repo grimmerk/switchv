@@ -6,7 +6,8 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('electronAPI', {
   invokeVSCode: (path:string, option:string) => ipcRenderer.send('invoke-vscode', path, option),
   hideApp: () => ipcRenderer.send('hide-app'),
-  onFocusWindow: (callback:any) => ipcRenderer.on('window-focus', callback)
+  onFocusWindow: (callback:any) => ipcRenderer.on('window-focus', callback),
+  onXWinNotFound: (callback:any) => ipcRenderer.on('xwin-not-found', callback)
 })
 
 // All of the Node.js APIs are available in the preload process.
