@@ -1,6 +1,8 @@
 import {  nativeImage, BrowserWindow, Tray, Menu } from "electron";
 import { app} from "electron";
+import { DBManager, sqlitePathInProd} from "./DBManager";
 
+const prismaPath = require.resolve('prisma')
 
 // ref: 
 // https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
@@ -61,8 +63,18 @@ export class TrayGenerator {
     // tray.setTitle('This is my XWin title')
     // note: your contextMenu, Tooltip and Title code will go here!
 
+    const appPath = app.getAppPath();
+
+    const error = DBManager.migrateError;
+    let info= `db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${ DBManager.serverFolderPath};prismaPath:${prismaPath};appPath:${appPath};info.${error}`;
+
+    // DBManager.databaseURL: string = "";
+    // DBManager.schemaPath = ""
+    // DBManager.serverPath = ""
+
+
     this.tray = new Tray(icon);
-    this.tray.setToolTip(`XWin app, path:${__dirname}`)
+    this.tray.setToolTip(`XWin app.i:${info}`)
     this.tray.setTitle(title)
 
     // this.tray = new Tray(path.join(__dirname, './assets/IconTemplate.png'));
