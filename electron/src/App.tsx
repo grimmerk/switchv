@@ -9,6 +9,8 @@ import Select from 'react-select';
 import { components, OptionProps } from 'react-select';
 // const { Control }: { Control: any } = components;
 
+import { HoverButton } from './HoverButton';
+
 function invokeVSCode(path: string, optionPress = false) {
   // console.log({ path });
   // console.log({ window });
@@ -121,8 +123,11 @@ export interface SelectInputOptionInterface {
 const Option: FC<OptionProps<SelectInputOptionInterface>> = (props, onDeleteClick) => {
   const { selectOption, selectProps, data } = props;
   // console.log({ onDeleteClick })
+  const { value, label } = data;
+
   return (
     <div
+      key={value}
       style={{
         // padding: "2px",
         display: "flex",
@@ -134,20 +139,19 @@ const Option: FC<OptionProps<SelectInputOptionInterface>> = (props, onDeleteClic
       {/* <div> */}
       <components.Option {...props} />
       <div>
-        <button onClick={() => {
-          // const { value, label } = data;
+        <HoverButton onClick={() => {
           // console.log("delete:", data);
           if (onDeleteClick) {
             onDeleteClick(data);
           }
         }}>
           X
-        </button>
+        </HoverButton>
       </div>
 
       {/* </div> */}
 
-    </div>
+    </div >
   );
 };
 

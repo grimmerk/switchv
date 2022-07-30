@@ -1,0 +1,15 @@
+/* https://stackoverflow.com/a/22672444/7354486 */
+.notdisplayed {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    border: none;
+    cursor: pointer;
+    overflow: hidden;
+    outline: none;
+}
+  
+.displayed {
+    display: flex;
+    margin: auto;
+}
+  
