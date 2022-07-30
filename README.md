@@ -45,9 +45,7 @@ Use this to quickly open and switch projects.
 
 5. ~~Sometimes tray menu will not show. It seems to be because too many menu apps? Yes. It is all about macbook notch. We can not solve it~~
 
-6. Insecure Content-Security-Policy warning 
-
-7. ~~React App is called twice initially~~ (this is due to <React.StrictMode>). ref: https://github.com/facebook/react/issues/12856#issuecomment-390206425
+6. ~~React App is called twice initially~~ (this is due to <React.StrictMode>). ref: https://github.com/facebook/react/issues/12856#issuecomment-390206425
 
 ### debugger issue 
 
@@ -113,7 +111,7 @@ steps:
 2. in electron, `yarn make` to generate out folder 
 
 two issues 
-1. TODO: how to use vercel/pkg bundle deb.db in nestjs, instead of manual copy????
+1. x TODO: how to use vercel/pkg bundle deb.db in nestjs, instead of manual copy???? (use macOS application folder to store db file)
 2. x TODO: close the packaged app via cmd+q seems not close xwin-server-macos process? check by command: lsof -i:55688. Use ctrl+c to stop development (running via yarn start) is OK. (add close button on tray to help? I guess it is not helping). Solved by electron send kill server process in the before-quick event handler. Another person suggests to add one more step to handle SIGINT signal on server side, ref https://stackoverflow.com/questions/71523442/child-process-doesnt-exit.
 
 ### server notes
