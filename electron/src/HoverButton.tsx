@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import "./button.css";
 
 interface Props {
+    height?: number;
+    width?: number;
     children?: React.ReactNode;
     onClick: () => void;
 }
 
-export const HoverButton: React.FC<Props> = ({
-    children,
-    onClick,
-}) => {
+export const HoverButton: React.FC<Props> = (props) => {
+    const { children, onClick, ...style } = props;
     const [display, setDisplay] = useState("notdisplayed");
     return (
         <div
@@ -24,6 +24,7 @@ export const HoverButton: React.FC<Props> = ({
                 setDisplay("notdisplayed");
             }}>
             <button
+                style={style}
                 className={display}
                 onClick={onClick}
             >

@@ -91,7 +91,10 @@ const OPTION_KEY = 18
 const formatOptionLabel = ({ value, label, customAbbreviation }: { value: any, label: any, customAbbreviation?: any }, { inputValue }: { inputValue: any }) => {
   // https://stackoverflow.com/a/34899885/7354486
   const path = label.slice(0, label.lastIndexOf('/'));
-  const name = label.slice(label.lastIndexOf('/') + 1);
+  let name = label.slice(label.lastIndexOf('/') + 1);
+  name = name.replace(/\.code-workspace/, ' (Workspace)');
+
+  // api-ff.code-workspace -> api-ff (Workspace)
   return (
     <div style={{ display: "flex" }}>
       <div>
@@ -120,7 +123,7 @@ export interface SelectInputOptionInterface {
 // ref
 // 1. https://github.com/JedWatson/react-select/issues/4126#issuecomment-658955445
 // 2. https://codesandbox.io/s/restless-brook-oe3qz3?file=/src/App.tsx:745-751
-const Option: FC<OptionProps<SelectInputOptionInterface>> = (props, onDeleteClick) => {
+const OptionUI: FC<OptionProps<SelectInputOptionInterface>> = (props, onDeleteClick) => {
   const { selectOption, selectProps, data } = props;
   // console.log({ onDeleteClick })
   const { value, label } = data;
@@ -139,7 +142,7 @@ const Option: FC<OptionProps<SelectInputOptionInterface>> = (props, onDeleteClic
       {/* <div> */}
       <components.Option {...props} />
       <div>
-        <HoverButton onClick={() => {
+        <HoverButton width={25} onClick={() => {
           // console.log("delete:", data);
           if (onDeleteClick) {
             onDeleteClick(data);
@@ -148,6 +151,7 @@ const Option: FC<OptionProps<SelectInputOptionInterface>> = (props, onDeleteClic
           X
         </HoverButton>
       </div>
+
 
       {/* </div> */}
 
@@ -288,7 +292,7 @@ function App() {
           invokeVSCode(evt.value, optionPress.current);
         }}
         // use selectProps instead of directly pass? https://stackoverflow.com/a/60375724/7354486?
-        components={{ DropdownIndicator: null, Option: ((props) => Option(props, onDeleteClick)) }}
+        components={{ DropdownIndicator: null, Option: ((props) => OptionUI(props, onDeleteClick)) }}
         formatOptionLabel={formatOptionLabel}
         options={pathArray} />
     </div>
