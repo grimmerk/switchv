@@ -1,7 +1,7 @@
 {
   "name": "XWin",
   "productName": "XWin",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
@@ -99,7 +99,6 @@
     "eslint-plugin-import": "^2.25.0",
     "fork-ts-checker-webpack-plugin": "^7.2.1",
     "node-loader": "^2.0.0",
-    "prisma": "^4.1.0",
     "style-loader": "^3.0.0",
     "ts-loader": "^9.2.2",
     "typescript": "~4.5.4"
@@ -107,7 +106,7 @@
   "dependencies": {
     "@prisma/client": "^4.1.1",
     "electron-squirrel-startup": "^1.0.0",
-    "execa": "^6.1.0",
+    "prisma": "^4.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-highlight-words": "^0.18.0",
