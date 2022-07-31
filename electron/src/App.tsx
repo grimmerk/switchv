@@ -262,7 +262,10 @@ function App() {
 
   return (
     <div>
-      <Select autoFocus={true}
+      <Select
+        noOptionsMessage={() => 'not found'}
+        menuIsOpen={true}
+        autoFocus={true}
         maxMenuHeight={450}
         // styles={styles}
         inputValue={inputValue}
