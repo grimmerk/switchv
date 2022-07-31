@@ -231,6 +231,7 @@ const trayToggleEvtHandler = () => {
 
   if (process.env.EMBEDSERVER || !isDebug) {
     process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
+    console.log("start server");
     serverProcess = exec(`${DBManager.serverFolderPath}/xwin-server-macos`,  
       {env: {'DATABASE_URL': `file:${DBManager.databaseFilePath}`}}, 
       (error, stdout, stderr) => { 

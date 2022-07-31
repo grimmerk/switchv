@@ -59,7 +59,9 @@ async function prisma(...args:any[]) {
   // 2. 或是用vercel/pkg 打包 prisma cli (但要解決 pkg bundle/index.js 缺　package.json 問題)
   // p.s. fork behavior (use node by default): node "/usr/local/bin/code /Users/grimmer/git", 
   // so pass a node.js script path is correct way 
+  console.log("fork1");
   const child = fork(command, args, { env}); // cwd: TOOLS_DIR, 
+  console.log("fork2");
 }
 
 /** NOTE: only use for packaged app */

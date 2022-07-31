@@ -204,7 +204,9 @@ function App() {
       //   const fake = "~/git/vite-react-app";
       //   setPathInfoArray([{ path: fake }])
       // } else {
-      setPathInfoArray(json)
+      if (json && Array.isArray(json)) {
+        setPathInfoArray(json)
+      }
       //}
     };
 
@@ -252,8 +254,10 @@ function App() {
     await deleteXWin(value);
 
     const json = await retryFetchData();
-    setPathInfoArray(json)
 
+    if (json && Array.isArray(json)) {
+      setPathInfoArray(json)
+    }
   }, []);
 
   return (
