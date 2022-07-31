@@ -87,8 +87,8 @@ export class DBManager {
       // it is a file path in dev mode, but after webpack bundles in production, it is just some string, e.g. 4569
       DBManager.prismaPath = require.resolve('prisma')
 
-      DBManager.serverFolderPath = `../server/`;
-      DBManager.schemaPath = `${DBManager.serverFolderPath}prisma/schema.prisma`;
+      DBManager.serverFolderPath = path.resolve(`../server/`);
+      DBManager.schemaPath = `${DBManager.serverFolderPath}/prisma/schema.prisma`;
 
       db_url = path.resolve(`${process.cwd()}/../server/prisma/dev.db`);
 
@@ -127,7 +127,7 @@ export class DBManager {
     }
 
     try {
-      await prisma('migrate', "dev", `--schema=${DBManager.schemaPath}`)
+      await prisma('migrate', "dev", "--name", "init", `--schema=${DBManager.schemaPath}`, "--skip-generate")
     } catch (err) {
       DBManager.migrateError = DBManager.migrateError+err;
       console.log({err})
