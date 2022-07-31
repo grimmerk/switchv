@@ -166,6 +166,11 @@ function App() {
 
   const optionPress = useRef(false);
 
+  const ref = useRef(null);
+  const forceFocusOnInput = () => {
+    ref.current.focus();
+  };
+
   const [inputValue, setInputValue] = useState("");
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [pathInfoArray, setPathInfoArray] = useState([]);
@@ -193,7 +198,11 @@ function App() {
 
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
-
+    document.addEventListener('click', (e) => {
+      // console.log("click");
+      // e.preventDefault();
+      forceFocusOnInput();
+    });
 
     const fetchData = async () => {
       const json = await retryFetchData();
@@ -214,6 +223,7 @@ function App() {
 
     (window as any).electronAPI.onFocusWindow((_event: any) => {
       console.log("on focus !!!!!!")
+      // forceFocusOnInput();
       fetchData();
     });
 
@@ -261,13 +271,14 @@ function App() {
   }, []);
 
   return (
-    <div>
+    <div
+    >
       <Select
+        ref={ref}
         noOptionsMessage={() => 'not found'}
         menuIsOpen={true}
         autoFocus={true}
         maxMenuHeight={450}
-        // styles={styles}
         inputValue={inputValue}
         value={selectedOptions}
         openMenuOnFocus={true}
