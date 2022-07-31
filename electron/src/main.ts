@@ -259,7 +259,7 @@ const trayToggleEvtHandler = () => {
 
   // https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#global-shortcuts
   // globalShortcut.register('Alt+CommandOrControl+N', () => {
-  globalShortcut.register('Command+Control+J', () => {
+  globalShortcut.register('Command+Control+R', () => {
 
     if (BrowserWindow.getAllWindows().length === 0) {
       console.log("no window, create one")
