@@ -223,7 +223,6 @@ function App() {
 
     (window as any).electronAPI.onFocusWindow((_event: any) => {
       console.log("on focus !!!!!!")
-      // forceFocusOnInput();
       fetchData();
     });
 
@@ -275,7 +274,14 @@ function App() {
     >
       <Select
         ref={ref}
-        noOptionsMessage={() => 'not found'}
+        noOptionsMessage={() => {
+          if (pathArray.length > 0) {
+            console.log("not found");
+            return 'not found';
+          }
+          console.log("no data");
+          return 'no data';
+        }}
         menuIsOpen={true}
         autoFocus={true}
         maxMenuHeight={450}
