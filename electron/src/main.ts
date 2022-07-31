@@ -295,7 +295,7 @@ const trayToggleEvtHandler = () => {
   if (!isDebug) {    
     title = `${title}P.`;
   } else {
-    title = `${title}(cmd+option+n)`;
+    title = `${title}(cmd+ctrl+r)`;
   }
 
   if (DBManager.needUpdate) {
