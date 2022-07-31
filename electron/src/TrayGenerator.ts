@@ -21,15 +21,6 @@ export class TrayGenerator {
     this.createTray(title);
   }
 
-  // not used now
-  getWindowPosition = () => {
-    const windowBounds = this.mainWindow.getBounds();
-    const trayBounds = this.tray.getBounds();
-    const x = Math.round(trayBounds.x + (trayBounds.width / 2) - (windowBounds.width / 2));
-    const y = Math.round(trayBounds.y + trayBounds.height);
-    return { x, y };
-  };
-
   onTrayClick = () => {
     if (this.onTrayClickCallback) {
       this.onTrayClickCallback();

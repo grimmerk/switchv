@@ -1,4 +1,4 @@
-import { dialog, app, BrowserWindow, ipcMain, globalShortcut } from "electron";
+import { dialog, app, BrowserWindow, ipcMain, globalShortcut, screen} from "electron";
 import { exec } from 'child_process';
 import { existsSync } from 'fs';
 
@@ -36,11 +36,29 @@ let tray:TrayGenerator = null;
 let mainWindow:BrowserWindow = null;
 let serverProcess:any; 
 
+const WIN_WIDTH = 800;
+const WIN_HEIGHT = 600;
+
+const getWindowPosition = () => {
+  const primaryDisplay = screen.getPrimaryDisplay()
+  const { width, height } = primaryDisplay.workAreaSize
+
+  const x = Math.round((width / 2)-(WIN_WIDTH/2));
+  const y = Math.round((height / 2)-(WIN_HEIGHT/2));
+
+  console.log({x,y})
+
+  return { x, y };
+};
+
 // ref: https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/ 
 // NOTE: setVisibleOnAllWorkspaces is needed ?
 const showWindow = () => {
-  // const position = this.getWindowPosition();
-  // mainWindow.setPosition(position.x, position.y, false);
+
+  console.log("showwindow")
+
+  const position = getWindowPosition();
+  mainWindow.setPosition(position.x, position.y, false);
   mainWindow.show();
   // mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.focus();
@@ -59,6 +77,8 @@ const onFocus = (event:any)=>{
   console.log("onFocus:");
   mainWindow.webContents.send('window-focus');
 }
+
+
 
 const createWindow = (): BrowserWindow => {
   // Create the browser window.
@@ -101,6 +121,33 @@ const createWindow = (): BrowserWindow => {
   //   // // }  
   //   // return false;
   // });
+
+  window.on("move", () => {
+      const bounds = mainWindow.getBounds();
+      const currentDisplay = screen.getDisplayNearestPoint({x: bounds.x, y: bounds.y});
+
+      // Perform your actions here..
+      // currentDisplay: {
+      //   id: 3,
+      //   bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      //   workArea: { x: 0, y: 25, width: 1920, height: 1002 },
+      //   accelerometerSupport: 'unknown',
+      //   monochrome: false,
+      //   colorDepth: 24,
+      //   colorSpace: '{primaries_d50_referred: [[0.6632, 0.3329],  [0.3195, 0.6290],  [0.1546, 0.0438]], transfer:0.0777*x + 0.0000 if x < 0.0450 else (0.9495*x + 0.0495)**2.3955 + 0.0003, matrix:RGB, range:FULL}',
+      //   depthPerComponent: 8,
+      //   size: { width: 1920, height: 1080 },
+      //   displayFrequency: 59,
+      //   workAreaSize: { width: 1920, height: 1002 },
+      //   scaleFactor: 2,
+      //   rotation: 0,
+      //   internal: false,
+      //   touchSupport: 'unknown'
+      // }
+      // console.log({currentDisplay});
+
+      showWindow();
+  });  
 
   return window;
 };
