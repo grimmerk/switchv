@@ -2,7 +2,7 @@ import {  nativeImage, BrowserWindow, Tray, Menu } from "electron";
 import { app} from "electron";
 import { DBManager, sqlitePathInProd} from "./DBManager";
 
-const prismaPath = require.resolve('prisma')
+// const prismaPath = require.resolve('prisma')
 
 // ref: 
 // https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
@@ -57,7 +57,7 @@ export class TrayGenerator {
     const appPath = app.getAppPath();
 
     const error = DBManager.migrateError;
-    let info= `db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${ DBManager.serverFolderPath};prismaPath:${prismaPath};appPath:${appPath};info.${error}`;
+    let info= `db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${ DBManager.serverFolderPath};prismaPath:${DBManager.prismaPath};appPath:${appPath};info.${error}`;
 
     // DBManager.databaseURL: string = "";
     // DBManager.schemaPath = ""
