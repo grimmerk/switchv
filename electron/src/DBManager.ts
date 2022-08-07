@@ -10,6 +10,7 @@ const path = require('path');
 
 const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 const dbFileName = "dev.db";
+// app.getPath() ~/git/xwin/electron in dev mode. production: resources/app/ xx some wepack fodler   
 const appDataPath = app.getPath("userData"); // e.g. '/Users/grimmer/Library/Application Support/Xwin'
 const dbUsedVersionTxtPath = `${appDataPath}/dbUsedVersion.txt`
 export const sqlitePathInProd = `${appDataPath}/${dbFileName}`
@@ -46,22 +47,19 @@ async function prisma(...args:any[]) {
   // electron 的 exec 之前試是認不得 code path, 所以要用 /usr/local/bin/code (之前試是打包版會，沒打包版呢? 沒試) 
   // 但現在打包版 code path 又正常了 ????
 
-  // TODO: 找看看有無方法避免產生
-  /** prisma migrate 也會自動產生　typescript file in @prisma/client, 所以 prisma/client 也要安裝 */
   const env = { ...process.env, PATH: `${process.env.PATH}:/usr/local/bin` };
 
   // NOTE: 
   // 原本的 server process 可以跑 (exec/spawn 時會沒有預設 node path時)? 是因為它已經是 vercel 了
 
-  // https://stackoverflow.com/a/58291475/7354486
+  // https://stackoverflow.com/a/58291475/7354486 electron 執行 node.js script 缺 node.js 問題
   // solution candidates
   // 1. 看是要用 fork (上面 link 提到的可延用 node, 因為 spwan 會沒有預設 node process/path), <- 現在用這方法
-  // 2. 或是用vercel/pkg 打包 prisma cli (但要解決 pkg bundle/index.js 缺　package.json 問題)
+  // 2. 或是用 vercel/pkg 打包 prisma cli 
+  // (但要解決 pkg bundle/index.js 缺 package.json 問題 <- 跟下面需要 node_modules/@prisma/engines/package.json 
+  // 是類似問題，皆需 package.json，下面問題靠 prebuild.sh 解決)
   // p.s. fork behavior (use node by default): node "/usr/local/bin/code /Users/grimmer/git", 
-  // so pass a node.js script path is correct way 
-  console.log("fork1");
   const child = fork(command, args, { env}); // cwd: TOOLS_DIR, 
-  console.log("fork2");
 }
 
 /** NOTE: only use for packaged app */
@@ -73,6 +71,10 @@ export class DBManager {
   static migrateError = ""
   static prismaPath = ""
   static migrateExePath = ""
+
+  static fmtExePath = ""
+  static queryExePath = ""
+  static introspectionExePath =""
 
   static initPath() {
 
@@ -95,7 +97,6 @@ export class DBManager {
       db_url = path.resolve(`${process.cwd()}/../server/prisma/dev.db`);
 
       // db_url = `${__dirname}/../server/prisma/dev.db`; // works but not good. dirname is some webpack main file location 
-      // app.getPath() ~/git/xwin/electron in dev mode 
 
       // for testing 
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin-arm64`;
@@ -106,11 +107,24 @@ export class DBManager {
       // after resolve, no final /
       DBManager.serverFolderPath = path.resolve(`${app.getAppPath()}/../`) //`${__dirname}/../../../`;
       // DBManager.serverFolderPath = "/Users/grimmer/git/xwin/electron/out/XWin-darwin-arm64/XWin.app/Contents/Resources"
-      DBManager.schemaPath = `${DBManager.serverFolderPath}/prisma/schema.prisma`;
+      DBManager.schemaPath = `${DBManager.serverFolderPath}/schema.prisma`;
       db_url = sqlitePathInProd;
-      DBManager.prismaPath = `${DBManager.serverFolderPath}/build/index.js`
 
+      /** mainly it requires two files
+       * 1. node_modules/prisma/build/index.js 
+       * 2. node_modules/prisma/package.json
+       * with these structure ./index.js & ../package.json
+       * */
+      DBManager.prismaPath = `${DBManager.serverFolderPath}/prisma/build/index.js`
+
+      // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/engines/dist/index.js`;
+      // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/@prisma/engines/migration-engine-darwin-arm64`;
       DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin-arm64`;
+
+      /** not copy and not really use them */
+      DBManager.introspectionExePath =`${DBManager.serverFolderPath}/@prisma/engines/introspection-engine-darwin-arm64`;
+      DBManager.fmtExePath = `${DBManager.serverFolderPath}/@prisma/engines/prisma-fmt-darwin-arm64`;
+      DBManager.queryExePath = `${DBManager.serverFolderPath}/@prisma/engines/libquery_engine-darwin-arm64.dylib.node`;
 
     }
     DBManager.databaseFilePath = db_url
@@ -125,7 +139,19 @@ export class DBManager {
     // const PRISMA_MIGRATION_ENGINE_BINARY = `${common}migration-engine-darwin-arm64`;
 
     if (DBManager.migrateExePath) {
+      /** For migration, it also requires  
+       * 1. node_modules/@prisma/engines/dist !!!!!
+       * 2. node_modules/@prisma/engines/package.json 
+       * node_modules (<- folder structure required) should not be in some folder deeper than resources/ 
+       * but if it is outside /resources, not suitable for packaging
+       */
+
       process.env.PRISMA_MIGRATION_ENGINE_BINARY = DBManager.migrateExePath;
+      process.env.PRISMA_INTROSPECTION_ENGINE_BINARY = "" // DBManager.introspectionExePath;
+      process.env.PRISMA_FMT_BINARY = "" // DBManager.fmtExePath;
+      process.env.PRISMA_QUERY_ENGINE_BINARY = "" // DBManager.queryExePath;
+      process.env.PRISMA_QUERY_ENGINE_LIBRARY = "" // DBManager.queryExePath;
+      // process.env.PRISMA_CLIENT_ENGINE_TYPE = "binary"
     }
 
     try {

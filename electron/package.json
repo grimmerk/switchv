@@ -9,7 +9,9 @@
     "start": "electron-forge start",
     "dev": "EMBEDSERVER=1 electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make",
+    "prebuild": "sh prebuild.sh",
+    "afterbuild": "sh clean.sh",
+    "make": "npm run prebuild && electron-forge make && npm run afterbuild",
     "make-x86": "electron-forge make --arch=x64 --platform=darwin",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
@@ -25,10 +27,10 @@
       "packagerConfig": {
         "extraResource": [
           "../server/xwin-server-macos",
-          "../server/prisma",
-          "../server/node_modules/prisma/build",
-          "../server/node_modules/prisma/package.json",
-          "../server/node_modules/@prisma/engines/migration-engine-darwin-arm64"
+          "../server/prisma/schema.prisma",
+          "node_modules/prisma",
+          "node_modules/@prisma/engines/migration-engine-darwin-arm64",
+          "../node_modules"
         ],
         "extendInfo": {
           "LSUIElement": true
