@@ -107,7 +107,7 @@ steps:
   2. (first time) `yarn global add pkg`
   3. ~~add `"version": "0.0.1"` field in `generated server/node_modules/.prisma/client/package.json`~~
   4. ~~in server, `pkg --debug -t node16-macos-arm64 -o xwin-server-macos .`~~
-  5. `sh build.sh`
+  5. `yarn make`
   6. [optional] `DEBUG_PKG=1 ./xwin-server-macos` for debugging
 2. in electron, `yarn make` to generate out folder 
 
