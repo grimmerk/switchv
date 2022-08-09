@@ -78,7 +78,10 @@
   },
   "pkg": {
     "assets": [
-      "node_modules/.prisma/client/*"
+      "node_modules/.prisma/client/*.node",
+      "node_modules/.prisma/client/*.js",
+      "node_modules/.prisma/client/*.package",
+      "node_modules/.prisma/client/schema.prisma"
     ]
   }
 }
