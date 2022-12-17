@@ -2,7 +2,8 @@
 	"name": "xwin",
 	"displayName": "xwin",
 	"description": "",
-	"version": "0.0.2",
+	"version": "0.0.3",
+	"icon": "icon256.png",
 	"engines": {
 		"vscode": "^1.68.0"
 	},
