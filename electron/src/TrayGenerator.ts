@@ -38,7 +38,7 @@ export class TrayGenerator {
   }
 
   createTray = (title:string) => {
-    const icon = nativeImage.createFromPath('path/to/asset.png');
+    const icon = nativeImage.createFromPath("images/16.png");
 
     // ref: https://www.electronjs.org/docs/latest/tutorial/tray
     // const icon = nativeImage.createFromPath('path/to/asset.png');
@@ -64,7 +64,9 @@ export class TrayGenerator {
     // DBManager.serverPath = ""
 
 
-    this.tray = new Tray(icon);
+    this.tray = new Tray("images/16.png");//icon);
+    // this.tray = new Tray(icon);
+
     this.tray.setToolTip(`XWin app.i:${info}`)
     this.tray.setTitle(title)
 
