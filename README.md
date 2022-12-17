@@ -19,8 +19,9 @@ Use this to quickly open and switch projects.
 - server 
   - `yarn install` 
   - For the first time or every time db scheme changes, execute `yarn db:migrate` to generate SQLite DB file (`./prisma/dev.db`) and generate TypeScript interface. `yarn db:view` can be used to view DB data.
-    - ~~To generate TypeScript DB interface via `yarn db:type`~~ (db:migrate will also automatically do this part, yarn install will also include generated types in node_modules/.prisma/index.d.ts)
+    - ~~To generate TypeScript DB interface via `yarn db:type`~~ (db:migrate will also automatically do this part, `yarn install` will also include generated types in node_modules/.prisma/index.d.ts)
   - F5 debug or `yarn start:debug`
+  - build: `yarn make`.
 - desktop/electron 
   - `yarn install`
   - `yarn start` (not set VSCode debugging yet)

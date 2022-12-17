@@ -25,6 +25,7 @@
   "config": {
     "forge": {
       "packagerConfig": {
+        "icon": "images/icon",
         "extraResource": [
           "../server/xwin-server-macos",
           "../server/prisma/schema.prisma",
