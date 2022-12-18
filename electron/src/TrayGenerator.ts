@@ -64,8 +64,8 @@ export class TrayGenerator {
     // DBManager.serverPath = ""
 
 
-    this.tray = new Tray("images/16.png");//icon);
-    // this.tray = new Tray(icon);
+    // this.tray = new Tray("images/16.png");//icon);
+    this.tray = new Tray(icon);
 
     this.tray.setToolTip(`XWin app.i:${info}`)
     this.tray.setTitle(title)

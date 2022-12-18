@@ -31,7 +31,9 @@
           "../server/prisma/schema.prisma",
           "node_modules/prisma",
           "node_modules/@prisma/engines/migration-engine-darwin-arm64",
-          "../node_modules"
+          "../node_modules",
+          "images/16.png",
+          "images/16@2x.png"
         ],
         "extendInfo": {
           "LSUIElement": true
