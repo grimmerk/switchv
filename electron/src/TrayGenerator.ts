@@ -1,6 +1,9 @@
 import {  nativeImage, BrowserWindow, Tray, Menu } from "electron";
 import { app} from "electron";
 import { DBManager, sqlitePathInProd} from "./DBManager";
+const path = require('path'); 
+
+const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 // const prismaPath = require.resolve('prisma')
 
@@ -38,7 +41,13 @@ export class TrayGenerator {
   }
 
   createTray = (title:string) => {
-    const icon = nativeImage.createFromPath("images/16.png");
+    let icon: Electron.NativeImage;
+    if (isDebug) {
+      icon = nativeImage.createFromPath("images/16.png");
+    } else {
+      const resoucePath = path.resolve(`${app.getAppPath()}/../`)
+      icon = nativeImage.createFromPath(`${resoucePath}/16.png`);
+    }
 
     // ref: https://www.electronjs.org/docs/latest/tutorial/tray
     // const icon = nativeImage.createFromPath('path/to/asset.png');
