@@ -1,5 +1,5 @@
 import { app } from "electron";
-import { existsSync } from 'fs';
+import { existsSync , readFileSync, writeFileSync } from 'fs';
 const path = require('path'); 
 
 // ref:
@@ -17,7 +17,6 @@ export const sqlitePathInProd = `${appDataPath}/${dbFileName}`
 
 // TODO: use async version later 
 import { readFile, writeFile } from 'fs/promises';
-import { readFileSync, writeFileSync } from 'fs';
 import { fork } from 'child_process';
 
 // ref: 
@@ -64,7 +63,7 @@ async function prisma(...args:any[]) {
 
 /** NOTE: only use for packaged app */
 export class DBManager {
-  static databaseFilePath: string = "";
+  static databaseFilePath = "";
   static schemaPath = ""
   static serverFolderPath = ""
   static needUpdate = false;
@@ -119,7 +118,7 @@ export class DBManager {
 
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/engines/dist/index.js`;
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/@prisma/engines/migration-engine-darwin-arm64`;
-      DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin-arm64`;
+      DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin`;
 
       /** not copy and not really use them */
       DBManager.introspectionExePath =`${DBManager.serverFolderPath}/@prisma/engines/introspection-engine-darwin-arm64`;
@@ -194,7 +193,7 @@ export class DBManager {
 
     this.initPath();
     const dbVersion = DBManager.getUsedVersion();
-    let schemaPackageVersion = app.getVersion();
+    const schemaPackageVersion = app.getVersion();
 
     console.log("db databaseFilePath:", DBManager.databaseFilePath)
     if (existsSync(DBManager.databaseFilePath)) {
