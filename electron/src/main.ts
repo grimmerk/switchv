@@ -1,9 +1,16 @@
-import { dialog, app, BrowserWindow, ipcMain, globalShortcut, screen} from "electron";
+import {
+  dialog,
+  app,
+  BrowserWindow,
+  ipcMain,
+  globalShortcut,
+  screen,
+} from 'electron';
 import { exec } from 'child_process';
 import { existsSync } from 'fs';
 
 import { TrayGenerator } from './TrayGenerator';
-import { DBManager } from "./DBManager";
+import { DBManager } from './DBManager';
 
 /** TODO: use Node.js path.join() instead of manual concat */
 
@@ -13,17 +20,18 @@ import { DBManager } from "./DBManager";
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
-console.log({NODE_ENV: process.env.NODE_ENV});     // defined in dev/packaged 
-// console.log({DEBUG_PROD: process.env.DEBUG_PROD}); // not defined in dev/packaged 
+console.log({ NODE_ENV: process.env.NODE_ENV }); // defined in dev/packaged
+// console.log({DEBUG_PROD: process.env.DEBUG_PROD}); // not defined in dev/packaged
 
 // BUG: https://stackoverflow.com/a/71994055/7354486
-// somehow isPackaged does not work after using webpack to build react in Electron (via electron forge)  
+// somehow isPackaged does not work after using webpack to build react in Electron (via electron forge)
 // if (app.isPackaged) {
-const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
+const isDebug =
+  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 // default: http://localhost:3000/main_window
-// console.log("MAIN_WINDOW_WEBPACK_ENTRY:", MAIN_WINDOW_WEBPACK_ENTRY) 
-// default: undefind. Its value is from package.json entryPoints/preload/js value 
+// console.log("MAIN_WINDOW_WEBPACK_ENTRY:", MAIN_WINDOW_WEBPACK_ENTRY)
+// default: undefind. Its value is from package.json entryPoints/preload/js value
 // console.log("MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY:", MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY)
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -32,53 +40,50 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-let tray:TrayGenerator = null;
-let mainWindow:BrowserWindow = null;
-let serverProcess:any; 
+let tray: TrayGenerator = null;
+let mainWindow: BrowserWindow = null;
+let serverProcess: any;
 
 const WIN_WIDTH = 800;
 const WIN_HEIGHT = 600;
 
 const getWindowPosition = () => {
-  const primaryDisplay = screen.getPrimaryDisplay()
-  const { width, height } = primaryDisplay.workAreaSize
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
 
-  const x = Math.round((width / 2)-(WIN_WIDTH/2));
-  const y = Math.round((height / 2)-(WIN_HEIGHT/2));
+  const x = Math.round(width / 2 - WIN_WIDTH / 2);
+  const y = Math.round(height / 2 - WIN_HEIGHT / 2);
 
-  console.log({x,y})
+  console.log({ x, y });
 
   return { x, y };
 };
 
-// ref: https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/ 
+// ref: https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
 // NOTE: setVisibleOnAllWorkspaces is needed ?
 const showWindow = () => {
-
-  console.log("showwindow")
+  console.log('showwindow');
 
   const position = getWindowPosition();
   mainWindow.setPosition(position.x, position.y, false);
   mainWindow.show();
   // mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.focus();
-  // mainWindow.setVisibleOnAllWorkspaces(false);    
+  // mainWindow.setVisibleOnAllWorkspaces(false);
 };
 
-const hideWindow = () =>{
+const hideWindow = () => {
   mainWindow.hide();
-}
+};
 
-const onBlur = (event:any)=>{
+const onBlur = (event: any) => {
   hideWindow();
-}
+};
 
-const onFocus = (event:any)=>{
-  console.log("onFocus:");
+const onFocus = (event: any) => {
+  console.log('onFocus:');
   mainWindow.webContents.send('window-focus');
-}
-
-
+};
 
 const createWindow = (): BrowserWindow => {
   // Create the browser window.
@@ -103,7 +108,7 @@ const createWindow = (): BrowserWindow => {
   // if (true){ //isDebug){//!app.isPackaged) {
   //   window.webContents.openDevTools();
   // }
-  
+
   if (tray) {
     // TODO: change to use some Tray method & not set tray here
     tray.mainWindow = window;
@@ -113,41 +118,44 @@ const createWindow = (): BrowserWindow => {
   window.on('focus', onFocus);
 
   // mainWindow.on('close', function (event) {
-  //   console.log("mainWindow close");  
-  //   // if below is setup, app.window-all-closed will not be fired 
+  //   console.log("mainWindow close");
+  //   // if below is setup, app.window-all-closed will not be fired
   //   // if(!application.isQuiting){
   //   // event.preventDefault();
   //   // mainWindow.hide();
-  //   // // }  
+  //   // // }
   //   // return false;
   // });
 
-  window.on("move", () => {
-      const bounds = mainWindow.getBounds();
-      const currentDisplay = screen.getDisplayNearestPoint({x: bounds.x, y: bounds.y});
+  window.on('move', () => {
+    const bounds = mainWindow.getBounds();
+    const currentDisplay = screen.getDisplayNearestPoint({
+      x: bounds.x,
+      y: bounds.y,
+    });
 
-      // Perform your actions here..
-      // currentDisplay: {
-      //   id: 3,
-      //   bounds: { x: 0, y: 0, width: 1920, height: 1080 },
-      //   workArea: { x: 0, y: 25, width: 1920, height: 1002 },
-      //   accelerometerSupport: 'unknown',
-      //   monochrome: false,
-      //   colorDepth: 24,
-      //   colorSpace: '{primaries_d50_referred: [[0.6632, 0.3329],  [0.3195, 0.6290],  [0.1546, 0.0438]], transfer:0.0777*x + 0.0000 if x < 0.0450 else (0.9495*x + 0.0495)**2.3955 + 0.0003, matrix:RGB, range:FULL}',
-      //   depthPerComponent: 8,
-      //   size: { width: 1920, height: 1080 },
-      //   displayFrequency: 59,
-      //   workAreaSize: { width: 1920, height: 1002 },
-      //   scaleFactor: 2,
-      //   rotation: 0,
-      //   internal: false,
-      //   touchSupport: 'unknown'
-      // }
-      // console.log({currentDisplay});
+    // Perform your actions here..
+    // currentDisplay: {
+    //   id: 3,
+    //   bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+    //   workArea: { x: 0, y: 25, width: 1920, height: 1002 },
+    //   accelerometerSupport: 'unknown',
+    //   monochrome: false,
+    //   colorDepth: 24,
+    //   colorSpace: '{primaries_d50_referred: [[0.6632, 0.3329],  [0.3195, 0.6290],  [0.1546, 0.0438]], transfer:0.0777*x + 0.0000 if x < 0.0450 else (0.9495*x + 0.0495)**2.3955 + 0.0003, matrix:RGB, range:FULL}',
+    //   depthPerComponent: 8,
+    //   size: { width: 1920, height: 1080 },
+    //   displayFrequency: 59,
+    //   workAreaSize: { width: 1920, height: 1002 },
+    //   scaleFactor: 2,
+    //   rotation: 0,
+    //   internal: false,
+    //   touchSupport: 'unknown'
+    // }
+    // console.log({currentDisplay});
 
-      showWindow();
-  });  
+    showWindow();
+  });
 
   return window;
 };
@@ -155,8 +163,8 @@ const createWindow = (): BrowserWindow => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', ()=>{
-  console.log("on ready");
+app.on('ready', () => {
+  console.log('on ready');
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -171,7 +179,7 @@ app.on('window-all-closed', () => {
 
 /** not triggered yet */
 app.on('activate', () => {
-  console.log('activate')
+  console.log('activate');
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -184,26 +192,26 @@ app.on('activate', () => {
 
 /** https://www.electronjs.org/docs/latest/tutorial/ipc */
 ipcMain.on('invoke-vscode', (event, path, option) => {
-  console.log("invoke", {event, path});
+  console.log('invoke', { event, path });
 
-  tray.tray.setTitle(`XWin(${path?path[path.length-1]:"n"})`);
+  tray.tray.setTitle(`XWin(${path ? path[path.length - 1] : 'n'})`);
 
-  if (!existsSync(path)){
-    console.log("file not exist")
-    // send message to Electron, not really use now, just in case 
+  if (!existsSync(path)) {
+    console.log('file not exist');
+    // send message to Electron, not really use now, just in case
     mainWindow.webContents.send('xwin-not-found');
     // dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] }))
 
-    dialog.showMessageBox(mainWindow,{
-      message: "Path is not a folder, neither worksapce",
-      buttons: ["OK"],
+    dialog.showMessageBox(mainWindow, {
+      message: 'Path is not a folder, neither worksapce',
+      buttons: ['OK'],
       defaultId: 0, // bound to buttons array
-      cancelId: 1 // bound to buttons array
+      cancelId: 1, // bound to buttons array
     });
 
-    return; 
+    return;
   } else {
-    console.log("file exist")
+    console.log('file exist');
   }
 
   // FIXME: win/linux has difference path
@@ -216,55 +224,54 @@ ipcMain.on('invoke-vscode', (event, path, option) => {
   // https://github.com/microsoft/vscode/issues/102975#issuecomment-661647219
   //const fullCmd = `open -b com.microsoft.VSCode --args -r ${path}`
 
-  let fullCmd="";
+  let fullCmd = '';
   if (option) {
-    // reuse 
+    // reuse
     // https://stackoverflow.com/a/47473271/7354486
     // https://code.visualstudio.com/docs/editor/command-line#_opening-vs-code-with-urls
     fullCmd = `open vscode://file/${path}`;
   } else {
-    // NOTE: VSCode insider needs to use "com.microsoft.VSCodeInsiders" instead 
+    // NOTE: VSCode insider needs to use "com.microsoft.VSCodeInsiders" instead
     fullCmd = `open -b com.microsoft.VSCode ${path}`;
   }
 
-  console.log({fullCmd})
-  exec(fullCmd, (error, stdout, stderr) => { 
+  console.log({ fullCmd });
+  exec(fullCmd, (error, stdout, stderr) => {
     console.log(stdout);
   });
-  
+
   hideWindow();
-});  
+});
 
 ipcMain.on('hide-app', (event) => {
   hideWindow();
-});  
-
+});
 
 const trayToggleEvtHandler = () => {
-  console.log("tray toggle callback");
+  console.log('tray toggle callback');
   if (BrowserWindow.getAllWindows().length === 0) {
-    console.log("no window, create one")
+    console.log('no window, create one');
     mainWindow = createWindow();
     showWindow();
   } else if (mainWindow.isVisible()) {
-    console.log("is visible, to hide")
+    console.log('is visible, to hide');
     hideWindow();
   } else {
-    console.log("is not visible, to show")
+    console.log('is not visible, to show');
     showWindow();
-  }  
+  }
 };
 
-/** 
+/**
  * what is the difference between whenReady & .on('ready)???
  */
 // app.whenReady().then(() => {
 // })
-(async ()=>{
+(async () => {
   await app.whenReady();
   mainWindow = createWindow();
-  console.log("when ready");
-  console.log("check db");
+  console.log('when ready');
+  console.log('check db');
   DBManager.initPath();
   const needVer = await DBManager.checkNeedMigration();
   if (needVer) {
@@ -272,34 +279,36 @@ const trayToggleEvtHandler = () => {
       await DBManager.doMigrationToVersion(needVer);
     }
   }
-  console.log("check db done");
+  console.log('check db done');
 
-  console.log("USE DBPATH:", DBManager.databaseFilePath)
+  console.log('USE DBPATH:', DBManager.databaseFilePath);
 
   if (process.env.EMBEDSERVER || !isDebug) {
     process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
-    console.log("start server");
-    serverProcess = exec(`${DBManager.serverFolderPath}/xwin-server-macos`,  
-      {env: {'DATABASE_URL': `file:${DBManager.databaseFilePath}`}}, 
-      (error, stdout, stderr) => { 
-      // TODO: figure out it why it does not print out
-      // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error, 
-      // then it will show some logs
-      console.log("print server log but seems it is never callbacked")
-      console.log(error, stderr)      
-      console.log(stdout);
-    });
+    console.log('start server');
+    serverProcess = exec(
+      `${DBManager.serverFolderPath}/xwin-server-macos`,
+      { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
+      (error, stdout, stderr) => {
+        // TODO: figure out it why it does not print out
+        // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
+        // then it will show some logs
+        console.log('print server log but seems it is never callbacked');
+        console.log(error, stderr);
+        console.log(stdout);
+      },
+    );
   }
 
-  let title = "XWin"
-  if (!isDebug) {    
+  let title = 'XWin';
+  if (!isDebug) {
     title = `${title}P.`;
   } else {
     title = `${title}(cmd+ctrl+r)`;
   }
 
   if (DBManager.needUpdate) {
-    title = `${title}${"u."}`;
+    title = `${title}${'u.'}`;
   }
 
   tray = new TrayGenerator(mainWindow, title, trayToggleEvtHandler);
@@ -307,15 +316,14 @@ const trayToggleEvtHandler = () => {
   // https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#global-shortcuts
   // globalShortcut.register('Alt+CommandOrControl+N', () => {
   globalShortcut.register('Command+Control+R', () => {
-
     if (BrowserWindow.getAllWindows().length === 0) {
-      console.log("no window, create one")
+      console.log('no window, create one');
       mainWindow = createWindow();
       showWindow();
     } else {
       tray.onTrayClick();
     }
-  })
+  });
 })();
 
 // use lsof -i:55688 to check server process
@@ -323,10 +331,10 @@ const trayToggleEvtHandler = () => {
 // 1. https://stackoverflow.com/questions/36031465/electron-kill-child-process-exec
 // 2. https://stackoverflow.com/questions/42141191/electron-and-node-on-windows-kill-a-spawned-process
 // Workaround to close all processes / sub-processes after closing the app
-// app.once('window-all-closed', app.quit); ? seems not important 
+// app.once('window-all-closed', app.quit); ? seems not important
 // mainWindow.removeAllListeners('close'); ? seems not important
 app.once('before-quit', () => {
-  console.log("before quit, kill server process")
+  console.log('before quit, kill server process');
   if (serverProcess) {
     serverProcess.kill();
   }
