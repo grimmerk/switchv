@@ -1,5 +1,6 @@
 import { app } from "electron";
 import { existsSync , readFileSync, writeFileSync } from 'fs';
+import { isIntel } from "./helper"
 const path = require('path'); 
 
 // ref:
@@ -118,7 +119,12 @@ export class DBManager {
 
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/engines/dist/index.js`;
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/@prisma/engines/migration-engine-darwin-arm64`;
-      DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin`;
+
+      if (isIntel()){
+        DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin`;
+      } else {
+        DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin-arm64`;
+      }
 
       /** not copy and not really use them */
       DBManager.introspectionExePath =`${DBManager.serverFolderPath}/@prisma/engines/introspection-engine-darwin-arm64`;

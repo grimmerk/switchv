@@ -30,6 +30,7 @@
           "../server/xwin-server-macos",
           "../server/prisma/schema.prisma",
           "node_modules/prisma",
+          "node_modules/@prisma/engines/migration-engine-darwin-arm64",
           "node_modules/@prisma/engines/migration-engine-darwin",
           "../node_modules",
           "images/16.png",

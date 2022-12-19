@@ -1,5 +1,4 @@
-import {  nativeImage, BrowserWindow, Tray, Menu } from "electron";
-import { app} from "electron";
+import {  nativeImage, BrowserWindow, Tray, Menu , app} from "electron";
 import { DBManager, sqlitePathInProd} from "./DBManager";
 const path = require('path'); 
 
@@ -66,7 +65,7 @@ export class TrayGenerator {
     const appPath = app.getAppPath();
 
     const error = DBManager.migrateError;
-    let info= `db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${ DBManager.serverFolderPath};prismaPath:${DBManager.prismaPath};appPath:${appPath};info.${error}`;
+    const info= `db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${ DBManager.serverFolderPath};prismaPath:${DBManager.prismaPath};appPath:${appPath};info.${error}`;
 
     // DBManager.databaseURL: string = "";
     // DBManager.schemaPath = ""
