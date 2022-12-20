@@ -32,8 +32,8 @@
           "node_modules/prisma",
           "node_modules/@prisma/engines/migration-engine-darwin",
           "../node_modules",
-          "images/16.png",
-          "images/16@2x.png"
+          "images/MenuBar.png",
+          "images/MenuBar@2x.png"
         ],
         "extendInfo": {
           "LSUIElement": true

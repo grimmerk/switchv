@@ -1,4 +1,4 @@
-import { nativeImage, BrowserWindow, Tray, Menu , app } from 'electron';
+import { nativeImage, BrowserWindow, Tray, Menu, app } from 'electron';
 import { DBManager, sqlitePathInProd } from './DBManager';
 const path = require('path');
 
@@ -46,10 +46,10 @@ export class TrayGenerator {
   createTray = (title: string) => {
     let icon: Electron.NativeImage;
     if (isDebug) {
-      icon = nativeImage.createFromPath('images/16.png');
+      icon = nativeImage.createFromPath('images/MenuBar.png');
     } else {
       const resoucePath = path.resolve(`${app.getAppPath()}/../`);
-      icon = nativeImage.createFromPath(`${resoucePath}/16.png`);
+      icon = nativeImage.createFromPath(`${resoucePath}/MenuBar.png`);
     }
 
     // ref: https://www.electronjs.org/docs/latest/tutorial/tray
