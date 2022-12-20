@@ -1,22 +1,25 @@
-import {  nativeImage, BrowserWindow, Tray, Menu } from "electron";
-import { app} from "electron";
-import { DBManager, sqlitePathInProd} from "./DBManager";
-const path = require('path'); 
+import { nativeImage, BrowserWindow, Tray, Menu , app } from 'electron';
+import { DBManager, sqlitePathInProd } from './DBManager';
+const path = require('path');
 
-const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
+const isDebug =
+  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 // const prismaPath = require.resolve('prisma')
 
-// ref: 
+// ref:
 // https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
 export class TrayGenerator {
-  tray:Tray;
-  mainWindow:BrowserWindow
-  onTrayClickCallback:any;
+  tray: Tray;
+  mainWindow: BrowserWindow;
+  onTrayClickCallback: any;
   title: string;
 
-  constructor(mainWindow:BrowserWindow, title: string, onTrayClickCallback:any) {
-
+  constructor(
+    mainWindow: BrowserWindow,
+    title: string,
+    onTrayClickCallback: any,
+  ) {
     this.tray = null;
     this.mainWindow = mainWindow;
     this.onTrayClickCallback = onTrayClickCallback;
@@ -31,21 +34,21 @@ export class TrayGenerator {
   };
 
   rightClickMenu = () => {
-    const menu:any = [
-        {
-          role: 'quit',
-          accelerator: 'Command+Q'
-        }
-      ];
-      this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
-  }
+    const menu: any = [
+      {
+        role: 'quit',
+        accelerator: 'Command+Q',
+      },
+    ];
+    this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
+  };
 
-  createTray = (title:string) => {
+  createTray = (title: string) => {
     let icon: Electron.NativeImage;
     if (isDebug) {
-      icon = nativeImage.createFromPath("images/16.png");
+      icon = nativeImage.createFromPath('images/16.png');
     } else {
-      const resoucePath = path.resolve(`${app.getAppPath()}/../`)
+      const resoucePath = path.resolve(`${app.getAppPath()}/../`);
       icon = nativeImage.createFromPath(`${resoucePath}/16.png`);
     }
 
@@ -66,22 +69,21 @@ export class TrayGenerator {
     const appPath = app.getAppPath();
 
     const error = DBManager.migrateError;
-    let info= `db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${ DBManager.serverFolderPath};prismaPath:${DBManager.prismaPath};appPath:${appPath};info.${error}`;
+    const info = `db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${DBManager.serverFolderPath};prismaPath:${DBManager.prismaPath};appPath:${appPath};info.${error}`;
 
     // DBManager.databaseURL: string = "";
     // DBManager.schemaPath = ""
     // DBManager.serverPath = ""
 
-
     // this.tray = new Tray("images/16.png");//icon);
     this.tray = new Tray(icon);
 
-    this.tray.setToolTip(`XWin app.i:${info}`)
-    this.tray.setTitle(title)
+    this.tray.setToolTip(`XWin app.i:${info}`);
+    this.tray.setTitle(title);
 
     // this.tray = new Tray(path.join(__dirname, './assets/IconTemplate.png'));
     // this.tray.setIgnoreDoubleClickEvents(true);
-  
+
     this.tray.on('click', this.onTrayClick);
     this.tray.on('right-click', this.rightClickMenu);
   };
