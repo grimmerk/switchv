@@ -116,7 +116,7 @@ export class DBManager {
 
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/engines/dist/index.js`;
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/@prisma/engines/migration-engine-darwin-arm64`;
-      DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin-arm64`;
+      DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin`;
 
       /** not copy and not really use them */
       DBManager.introspectionExePath = `${DBManager.serverFolderPath}/@prisma/engines/introspection-engine-darwin-arm64`;
