@@ -10,8 +10,9 @@
     "dev": "EMBEDSERVER=1 electron-forge start",
     "package": "electron-forge package",
     "prebuild": "sh prebuild.sh",
-    "afterbuild": "sh clean.sh",
-    "make": "npm run prebuild && electron-forge make && npm run afterbuild",
+    "postbuild": "sh postbuild.sh",
+    "make": "npm run prebuild && BUILD_TYPE=prod electron-forge make && npm run postbuild",
+    "make:staging": "npm run prebuild && BUILD_TYPE=staging electron-forge make && npm run postbuild",
     "make-x86": "electron-forge make --arch=x64 --platform=darwin",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
@@ -23,67 +24,7 @@
   },
   "license": "MIT",
   "config": {
-    "forge": {
-      "packagerConfig": {
-        "icon": "images/icon",
-        "extraResource": [
-          "../server/xwin-server-macos",
-          "../server/prisma/schema.prisma",
-          "node_modules/prisma",
-          "node_modules/@prisma/engines/migration-engine-darwin",
-          "../node_modules",
-          "images/MenuBar.png",
-          "images/MenuBar@2x.png"
-        ],
-        "extendInfo": {
-          "LSUIElement": true
-        }
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "name": "electron"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ]
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {}
-        },
-        {
-          "name": "@electron-forge/maker-rpm",
-          "config": {}
-        }
-      ],
-      "plugins": [
-        [
-          "@electron-forge/plugin-webpack",
-          {
-            "devContentSecurityPolicy": "default-src * self blob: data: gap:; style-src * self 'unsafe-inline' blob: data: gap:; script-src * 'self' 'unsafe-eval' 'unsafe-inline' blob: data: gap:; object-src * 'self' blob: data: gap:; img-src * self 'unsafe-inline' blob: data: gap:; connect-src self * 'unsafe-inline' blob: data: gap:; frame-src * self blob: data: gap:;",
-            "mainConfig": "./webpack.main.config.js",
-            "renderer": {
-              "config": "./webpack.renderer.config.js",
-              "entryPoints": [
-                {
-                  "html": "./src/index.html",
-                  "js": "./src/renderer.ts",
-                  "name": "main_window",
-                  "preload": {
-                    "js": "./src/preload.ts"
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      ]
-    }
+    "forge": "./config.forge.js"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0-beta.64",

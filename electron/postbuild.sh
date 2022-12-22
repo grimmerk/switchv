@@ -8,3 +8,5 @@ else
 
     echo "migration arm64 no exist, is cpu mac"
 fi
+
+rm -rf src/build.json
