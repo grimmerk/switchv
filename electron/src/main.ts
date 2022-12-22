@@ -226,14 +226,15 @@ ipcMain.on('invoke-vscode', (event, path, option) => {
   //const fullCmd = `open -b com.microsoft.VSCode --args -r ${path}`
 
   let fullCmd = '';
+  const newPath = path.replace(/ /g, '\\ ');
   if (option) {
     // reuse
     // https://stackoverflow.com/a/47473271/7354486
     // https://code.visualstudio.com/docs/editor/command-line#_opening-vs-code-with-urls
-    fullCmd = `open vscode://file/${path}`;
+    fullCmd = `open vscode://file/${newPath}`;
   } else {
     // NOTE: VSCode insider needs to use "com.microsoft.VSCodeInsiders" instead
-    fullCmd = `open -b com.microsoft.VSCode ${path}`;
+    fullCmd = `open -b com.microsoft.VSCode ${newPath}`;
   }
 
   console.log({ fullCmd });
