@@ -1,6 +1,6 @@
 {
-  "name": "XWin",
-  "productName": "XWin",
+  "name": "SwitchV",
+  "productName": "SwitchV",
   "version": "1.0.15",
   "description": "My Electron application description",
   "main": ".webpack/main",
