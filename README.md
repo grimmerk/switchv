@@ -15,7 +15,7 @@ Use this to quickly open and switch projects.
     - built it and install it. Firstly 
       - install [vsce](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
       - `yarn make` ~~`vsce package`~~, 
-      - `yarn load` ~~then `code --install-extension SwitchV-0.0.1.vsix`~~ to install. 
+      - `yarn load` (first time) & `yarn reload` ~~then `code --install-extension SwitchV-0.0.1.vsix`~~ to install. 
 - server 
   - `yarn install` 
   - For the first time or every time db scheme changes, execute `yarn db:migrate` to generate SQLite DB file (`./prisma/dev.db`) and generate TypeScript interface. `yarn db:view` can be used to view DB data.

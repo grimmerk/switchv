@@ -27,7 +27,8 @@
 	"scripts": {
 		"make": "vsce package",
 		"unload": "code --uninstall-extension grimmer.SwitchV",
-		"load": "npm run unload && code --install-extension SwitchV-0.0.1.vsix",
+		"load": "code --install-extension SwitchV-0.0.1.vsix",
+		"reload": "npm run unload && npm run load",
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
