@@ -15,12 +15,12 @@ export const HoverButton: React.FC<Props> = (props) => {
         <div
             onMouseEnter={(e) => {
                 e.preventDefault();
-                console.log("enter")
+                // console.log("enter")
                 setDisplay("displayed");
             }}
             onMouseLeave={(e) => {
                 e.preventDefault();
-                console.log("leave");
+                // console.log("leave");
                 setDisplay("notdisplayed");
             }}>
             <button

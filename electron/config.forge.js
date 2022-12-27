@@ -6,7 +6,7 @@ module.exports = {
       fs.writeFileSync(
         './src/build.json',
         JSON.stringify({
-          buildType: process.env.BUILD_TYPE,
+          BUILD_TYPE: process.env.BUILD_TYPE,
         }),
       );
     },

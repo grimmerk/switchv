@@ -8,8 +8,21 @@ const path = require('path');
 // https://github.com/prisma/prisma/issues/9613 electron
 // https://github.com/prisma/prisma/issues/4703#issuecomment-1162417399 programmatic access to CLI
 
-const isDebug =
-  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
+import { isDebug } from './utility';
+
+// console.log({ NODE_ENV: process.env.NODE_ENV }); // defined in dev/packaged
+// console.log({DEBUG_PROD: process.env.DEBUG_PROD}); // not defined in dev/packaged
+
+// BUG: https://stackoverflow.com/a/71994055/7354486
+// somehow isPackaged does not work after using webpack to build react in Electron (via electron forge)
+// if (app.isPackaged) {
+// const isUnPackaged =
+//   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
+/** TODO: somehow App.tsx will throw exception even we use process?.*/
+export const isUnPackaged =
+  process?.env?.NODE_ENV === 'development' ||
+  process?.env?.DEBUG_PROD === 'true';
+
 const dbFileName = 'dev.db';
 // app.getPath() ~/git/xwin/electron in dev mode. production: resources/app/ xx some wepack fodler
 const appDataPath = app.getPath('userData'); // e.g. '/Users/grimmer/Library/Application Support/Xwin'
@@ -17,17 +30,19 @@ const dbUsedVersionTxtPath = `${appDataPath}/dbUsedVersion.txt`;
 export const sqlitePathInProd = `${appDataPath}/${dbFileName}`;
 
 // TODO: use async version later
-import { readFile, writeFile } from 'fs/promises';
+// import { readFile, writeFile } from 'fs/promises';
 import { fork } from 'child_process';
 
 // ref:
 async function prisma(...args: any[]) {
-  console.log(`Running \`prisma ${args.join(' ')}\``);
-
   // const command = "/usr/local/bin/code /Users/grimmer/git"
   const command = `${DBManager.prismaPath}`;
   DBManager.migrateError += `;cmd:${command};`;
-  console.log({ cmd: command });
+
+  if (isDebug) {
+    console.log(`Running \`prisma ${args.join(' ')}\``);
+    console.log({ cmd: command });
+  }
 
   // try1:
   // Uncaught Error: spawn node ENOENT,
@@ -85,7 +100,7 @@ export class DBManager {
     let db_url = '';
 
     // TODO:
-    if (isDebug) {
+    if (isUnPackaged) {
       // it is a file path in dev mode, but after webpack bundles in production, it is just some string, e.g. 4569
       DBManager.prismaPath = require.resolve('prisma');
 
@@ -160,7 +175,10 @@ export class DBManager {
       );
     } catch (err) {
       DBManager.migrateError = DBManager.migrateError + err;
-      console.log({ err });
+
+      if (isDebug) {
+        console.log({ err });
+      }
     }
   }
 
@@ -195,13 +213,18 @@ export class DBManager {
     const dbVersion = DBManager.getUsedVersion();
     const schemaPackageVersion = app.getVersion();
 
-    console.log('db databaseFilePath:', DBManager.databaseFilePath);
+    if (isDebug) {
+      console.log('db databaseFilePath:', DBManager.databaseFilePath);
+    }
+
     if (existsSync(DBManager.databaseFilePath)) {
       if (dbVersion !== schemaPackageVersion) {
         DBManager.needUpdate = true;
         return schemaPackageVersion;
       } else {
-        console.log('db file exist and version is same');
+        if (isDebug) {
+          console.log('db file exist and version is same');
+        }
       }
     } else {
       DBManager.needUpdate = true;

@@ -11,6 +11,12 @@ import { components, OptionProps } from 'react-select';
 
 import { HoverButton } from './HoverButton';
 
+// const { BUILD_TYPE } = require('./build.json');
+// console.log({ BUILD_TYPE })
+
+import { isDebug } from './utility';
+// console.log({ isDebug })
+
 function invokeVSCode(path: string, optionPress = false) {
   // console.log({ path });
   // console.log({ window });
@@ -32,9 +38,8 @@ function sleep(ms: number) {
 const SERVER_URL = "http://localhost:55688/xwins";
 
 const deleteXWin = async (path: string) => {
-  console.log("deleteXwin,", path)
+  // console.log("deleteXwin,", path)
   const url = `${SERVER_URL}`
-  console.log({ path })
 
   let headers = {
     "Content-Type": "application/json",
@@ -44,12 +49,12 @@ const deleteXWin = async (path: string) => {
   await fetch(url, {
     body: JSON.stringify({ path }), method: 'DELETE', headers
   })
-
-  console.log("done");
 }
 
 const retryFetchData = async (): Promise<any[]> => {
-  console.log("fetchData")
+  if (isDebug) {
+    console.log("retryFetchData")
+  }
   const url = `${SERVER_URL}`
 
   let retryTimes = 20;
@@ -59,7 +64,10 @@ const retryFetchData = async (): Promise<any[]> => {
     try {
       // at least 6/5*50 milliseconds needed for serve start time
       // most of the times are 7 or 6 times 
-      console.log("retry fetchData");
+      /** TODO: use ping URL first */
+      if (isDebug) {
+        console.log("retry fetchData");
+      }
       const resp = await fetch(url);
       json = await resp.json();
       succeed = true;
@@ -162,7 +170,6 @@ const OptionUI: FC<OptionProps<SelectInputOptionInterface>> = (props, onDeleteCl
 /** Caution it will be invoked twice due to <React.StrictMode> !! */
 let loadTimes = 0;
 function App() {
-  console.log("App");
 
   const optionPress = useRef(false);
 
@@ -183,14 +190,14 @@ function App() {
 
     // cmd: 93
     function handleKeyDown(e: any) {
-      console.log(`down"${e.keyCode};`);
+      // console.log(`down"${e.keyCode};`);
       // 93: cmd. 18:option
       if (e.keyCode === OPTION_KEY) {
         optionPress.current = true;
       }
     }
     function handleKeyUp(e: any) {
-      console.log(`up"${e.keyCode}`);
+      // console.log(`up"${e.keyCode}`);
       if (e.keyCode === OPTION_KEY) {
         optionPress.current = false;
       }
@@ -219,15 +226,15 @@ function App() {
       //}
     };
 
-    console.log("register onFocus");
+    // console.log("register onFocus");
 
     (window as any).electronAPI.onFocusWindow((_event: any) => {
-      console.log("on focus !!!!!!")
+      // console.log("on focus !!!!!!")
       fetchData();
     });
 
     (window as any).electronAPI.onXWinNotFound((_event: any) => {
-      console.log("onXWinNotFound !!!!!!")
+      // console.log("onXWinNotFound !!!!!!")
       /** currently the popup message is done by electron native UI */
     })
 
@@ -257,7 +264,7 @@ function App() {
   // };
 
   const onDeleteClick = useCallback(async (data: any) => {
-    console.log("ondelete:", data)
+    // console.log("ondelete:", data)
 
     const { value } = data;
     await deleteXWin(value);
@@ -276,10 +283,10 @@ function App() {
         ref={ref}
         noOptionsMessage={() => {
           if (pathArray.length > 0) {
-            console.log("not found");
+            // console.log("not found");
             return 'not found';
           }
-          console.log("no data");
+          // console.log("no data");
           return 'no data';
         }}
         menuIsOpen={true}
@@ -290,7 +297,7 @@ function App() {
         openMenuOnFocus={true}
         onKeyDown={(evt) => {
           // here first, then handleKeyDown
-          console.log("evt3:", evt.key);
+          // console.log("evt3:", evt.key);
           if (evt.key == "Escape") {
             // this will prevent "handleKeyDown"
             evt.stopPropagation();
@@ -298,7 +305,7 @@ function App() {
             evt.preventDefault();
 
             if (inputValue) {
-              console.log("empty")
+              // console.log("empty")
               setInputValue("")
             } else {
               // hide this app
@@ -311,7 +318,7 @@ function App() {
           setInputValue(evt);
         }}
         onChange={(evt: any) => {
-          console.log({ evt })
+          // console.log({ evt })
           // setSelectedOptions(evt);
           invokeVSCode(evt.value, optionPress.current);
         }}

@@ -50,7 +50,7 @@ export class XWinsController {
       path_inSpace: { path, inSpace: false },
     });
 
-    console.log('delete done');
+    // console.log('delete done');
   }
 
   /**
@@ -69,11 +69,11 @@ export class XWinsController {
   async create(@Body() createCatDto: CreateXwinDto): Promise<VSWindowModel> {
     // addXWinToInMemoryDB(createCatDto);
 
-    console.log('post VSCode win', createCatDto);
+    // console.log('post VSCode win', createCatDto);
 
     const { paths, workspace_path } = createCatDto;
     if (!paths?.length) {
-      console.log('no paths, return directly');
+      // console.log('no paths, return directly');
       return;
     }
 
@@ -137,7 +137,7 @@ export class XWinsController {
 
   @Get()
   async findAll(): Promise<VSWindowModel[]> {
-    console.log('get VSCode win');
+    // console.log('get VSCode win');
 
     //return getXWinFromInMemoryDB();
 

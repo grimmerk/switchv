@@ -6,7 +6,7 @@ import axios from 'axios';
 function getCurrentWinInfo() {
   const paths = vscode.workspace.workspaceFolders?.map((folder) => {
     const path = folder.uri.path;
-    console.log({ path });
+    // console.log({ path });
     return path;
   });
   const { workspaceFile } = vscode.workspace;
@@ -28,7 +28,7 @@ function postData(deactivate = false) {
       deactivate,
     })
     .then(function (response) {
-      console.log(response);
+      // console.log(response);
     });
 }
 
@@ -37,7 +37,7 @@ function postData(deactivate = false) {
 export function activate(context: vscode.ExtensionContext) {
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "xwin" is now active!');
+  // console.log('Congratulations, your extension "xwin" is now active!');
 
   postData();
 
@@ -60,17 +60,17 @@ export function activate(context: vscode.ExtensionContext) {
     // console.log("state2,",paths, workspace_path, e  )
 
     if (e.focused) {
-      console.log('focusd');
+      // console.log('focusd');
       postData();
     } else {
-      console.log('not focusd');
+      // console.log('not focusd');
     }
 
     // e: {focused: false}}
   });
 
   vscode.workspace.onDidChangeWorkspaceFolders((e) => {
-    console.log(`vscode.workspace.onDidChangeWorkspaceFolders`);
+    // console.log(`vscode.workspace.onDidChangeWorkspaceFolders`);
     // console.log({ e })
     postData();
 
@@ -93,6 +93,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-  console.log('deactivate but seems not triggered yet ');
+  // console.log('deactivate but seems not triggered yet ');
   postData(true);
 }
