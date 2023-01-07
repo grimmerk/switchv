@@ -22,6 +22,7 @@ const config: ForgeConfig = {
     },
   },
   packagerConfig: {
+    appBundleId: 'com.lifeoverflow.switchv',
     icon: 'images/icon',
     extraResource: [
       '../server/xwin-server-macos',
