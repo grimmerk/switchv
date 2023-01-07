@@ -1,9 +1,6 @@
 import { nativeImage, BrowserWindow, Tray, Menu, app } from 'electron';
-import { DBManager, sqlitePathInProd } from './DBManager';
+import { DBManager, isUnPackaged } from './DBManager';
 const path = require('path');
-
-const isDebug =
-  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 // const prismaPath = require.resolve('prisma')
 
@@ -45,7 +42,7 @@ export class TrayGenerator {
 
   createTray = (title: string) => {
     let icon: Electron.NativeImage;
-    if (isDebug) {
+    if (isUnPackaged) {
       icon = nativeImage.createFromPath('images/MenuBar.png');
     } else {
       const resoucePath = path.resolve(`${app.getAppPath()}/../`);
