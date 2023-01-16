@@ -6,8 +6,23 @@ import {
   globalShortcut,
   screen,
 } from 'electron';
+
 import { exec } from 'child_process';
 import { existsSync } from 'fs';
+
+const { Menu, MenuItem } = require('electron');
+const menu = new Menu();
+
+menu.append(
+  new MenuItem({
+    label: 'Quit',
+    accelerator: 'CmdOrCtrl+Q',
+    click: () => {
+      console.log('Cmd + Q is pressed');
+    },
+  }),
+);
+Menu.setApplicationMenu(menu);
 
 import { TrayGenerator } from './TrayGenerator';
 import { DBManager, isUnPackaged } from './DBManager';
@@ -284,9 +299,16 @@ const trayToggleEvtHandler = () => {
     console.log('when ready');
   }
   DBManager.initPath();
+  // console.log({
+  //   embed: process.env.EMBEDSERVER,
+  //   node: process?.env?.NODE_ENV,
+  //   DEBUG_PROD: process.env.DEBUG_PROD,
+  //   isUnPackaged: isUnPackaged,
+  // });
   const needVer = await DBManager.checkNeedMigration();
   if (needVer) {
     if (process.env.EMBEDSERVER || !isUnPackaged) {
+      // console.log('either embedded server or package, do doMigrationToVersion');
       await DBManager.doMigrationToVersion(needVer);
     }
   }
@@ -297,7 +319,9 @@ const trayToggleEvtHandler = () => {
   if (process.env.EMBEDSERVER || !isUnPackaged) {
     process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
     if (isDebug) {
-      console.log('start server');
+      console.log(
+        'start server:' + `${DBManager.serverFolderPath}/xwin-server-macos`,
+      );
     }
     serverProcess = exec(
       `${DBManager.serverFolderPath}/xwin-server-macos`,
