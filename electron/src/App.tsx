@@ -6,6 +6,7 @@ import Highlighter from 'react-highlight-words';
 // import SelectSearch from 'react-select-search';
 // import GridTable from '@nadavshaar/react-grid-table';
 import Select from 'react-select';
+
 import { components, OptionProps } from 'react-select';
 // const { Control }: { Control: any } = components;
 
@@ -98,22 +99,25 @@ const OPTION_KEY = 18
 /** https://stackoverflow.com/questions/52819756/react-select-replacing-components-for-custom-option-content */
 const formatOptionLabel = ({ value, label, customAbbreviation }: { value: any, label: any, customAbbreviation?: any }, { inputValue }: { inputValue: any }) => {
   // https://stackoverflow.com/a/34899885/7354486
+  const searchWords = (inputValue ?? "").split(" ").filter((sub: string) => sub)
+
   const path = label.slice(0, label.lastIndexOf('/'));
   let name = label.slice(label.lastIndexOf('/') + 1);
   name = name.replace(/\.code-workspace/, ' (Workspace)');
 
   // api-ff.code-workspace -> api-ff (Workspace)
+
   return (
     <div style={{ display: "flex" }}>
       <div>
         <Highlighter
-          searchWords={[inputValue]}
+          searchWords={searchWords}
           textToHighlight={name}
         />
       </div>
       <div style={{ marginLeft: "10px", color: "#ccc" }}>
         <Highlighter
-          searchWords={[inputValue]}
+          searchWords={searchWords}
           textToHighlight={path}
         />
       </div>
@@ -133,7 +137,7 @@ export interface SelectInputOptionInterface {
 // 2. https://codesandbox.io/s/restless-brook-oe3qz3?file=/src/App.tsx:745-751
 const OptionUI: FC<OptionProps<SelectInputOptionInterface>> = (props, onDeleteClick) => {
   const { selectOption, selectProps, data } = props;
-  // console.log({ onDeleteClick })
+  // console.log({ OptionUI })
   const { value, label } = data;
 
   return (
@@ -276,10 +280,38 @@ function App() {
     }
   }, []);
 
+
+
+  const filterOptions = (
+    candidate: { label: string; value: string; data: any },
+    input: string
+  ) => {
+    let allFound = true;
+
+    if (input) {
+      const inputArray = input.split(" ");
+      for (const subInput of inputArray) {
+        if (subInput) {
+          if (!candidate.value.includes(subInput)) {
+            allFound = false;
+            break;
+          }
+        }
+      }
+    } else {
+      return true;
+    }
+
+    // false means all filtered (not match)
+    return allFound;
+  };
+
+
   return (
     <div
     >
       <Select
+        filterOption={filterOptions}
         ref={ref}
         noOptionsMessage={() => {
           if (pathArray.length > 0) {
@@ -314,11 +346,9 @@ function App() {
           }
         }}
         onInputChange={(evt) => {
-          // console.log("evt:", evt);
           setInputValue(evt);
         }}
         onChange={(evt: any) => {
-          // console.log({ evt })
           // setSelectedOptions(evt);
           invokeVSCode(evt.value, optionPress.current);
         }}
