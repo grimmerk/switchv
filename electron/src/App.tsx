@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, FC, useCallback } from 'react';
 
+import PopupDefaultExample from "./popup"
+
 import Highlighter from 'react-highlight-words';
 
 /** candidates */
@@ -310,6 +312,17 @@ function App() {
   return (
     <div
     >
+      <div style={{
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: 'flex-end'
+      }}>
+        {/* <div> */}
+        {/* <DropdownMenuDefaultExample></DropdownMenuDefaultExample> */}
+        <PopupDefaultExample />
+        {/* </div> */}
+      </div>
+
       <Select
         filterOption={filterOptions}
         ref={ref}
@@ -356,6 +369,7 @@ function App() {
         components={{ DropdownIndicator: null, Option: ((props) => OptionUI(props, onDeleteClick)) }}
         formatOptionLabel={formatOptionLabel}
         options={pathArray} />
+
     </div>
   );
 }
