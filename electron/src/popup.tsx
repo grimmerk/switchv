@@ -24,7 +24,7 @@ const contentStyles = css({
 
 // {sum, logMessage, doSomething}: ButtonProps
 
-const PopupDefaultExample = ({ folderPath }: { folderPath?: string }) => {
+const PopupDefaultExample = ({ workingFolderPath, saveCallback, openCallback }: { workingFolderPath?: string, saveCallback?: any, openCallback?: any }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -38,7 +38,9 @@ const PopupDefaultExample = ({ folderPath }: { folderPath?: string }) => {
                         <div style={{ alignItems: "center", display: "flex" }}>
                             <div>
                                 {"working folder:"}
-                                {folderPath}
+                            </div>
+                            <div style={{ color: "grey", padding: 5 }}>
+                                {`${workingFolderPath}`}
                             </div>
                         </div>
 
@@ -48,16 +50,21 @@ const PopupDefaultExample = ({ folderPath }: { folderPath?: string }) => {
                             <Button
                                 onClick={() => {
                                     openFolderSelector()
-                                    props.update();
                                     // setIsOpen(!isOpen)
                                 }}>
                                 Select
                             </Button>
                         </div>
                         <div >
-                            <Button appearance="primary">
+                            {/* <Button
+                                onClick={() => {
+                                    if (saveCallback) {
+                                        saveCallback(folderPath);
+                                    }
+                                }}
+                                appearance="primary">
                                 Save
-                            </Button>
+                            </Button> */}
                         </div>
 
                     </div>
@@ -67,7 +74,12 @@ const PopupDefaultExample = ({ folderPath }: { folderPath?: string }) => {
                     {...triggerProps}
                     // appearance="primary"
                     isSelected={isOpen}
-                    onClick={() => setIsOpen(!isOpen)}
+                    onClick={() => {
+                        if (openCallback) {
+                            openCallback();
+                        }
+                        setIsOpen(!isOpen)
+                    }}
                 >
                     {isOpen ? '...' : '...'}
                 </Button>

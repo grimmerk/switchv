@@ -261,21 +261,28 @@ ipcMain.on('invoke-vscode', (event, path, option) => {
   hideWindow();
 });
 
+ipcMain.on('pop-alert', (event, alert) => {
+  // console.log({ event, path, option });
+  dialog.showMessageBox(mainWindow, {
+    message: alert,
+    buttons: ['OK'],
+    defaultId: 0, // bound to buttons array
+    cancelId: 1, // bound to buttons array
+  });
+});
+
 ipcMain.on('hide-app', (event) => {
   hideWindow();
 });
 
 ipcMain.on('open-folder-selector', async (event) => {
-  console.log('open-folder-selector');
-  console.log('result1');
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],
     // properties: ['openFile', 'multiSelections'],
   });
   const { filePaths } = result;
   const folderPath = filePaths[0];
-  // result2: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
-  console.log('result2:', folderPath);
+  // result: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
 
   mainWindow.webContents.send('folder-selected', folderPath);
 });

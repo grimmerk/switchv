@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('invoke-vscode', path, option),
   hideApp: () => ipcRenderer.send('hide-app'),
   openFolderSelector: () => ipcRenderer.send('open-folder-selector'),
+  popupAlert: (alert: string) => ipcRenderer.send('pop-alert', alert),
 
   onFolderSelected: (callback: any) =>
     ipcRenderer.on('folder-selected', callback),
