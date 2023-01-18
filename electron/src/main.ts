@@ -10,22 +10,10 @@ import {
 import { exec } from 'child_process';
 import { existsSync } from 'fs';
 
-const { Menu, MenuItem } = require('electron');
-const menu = new Menu();
-
-menu.append(
-  new MenuItem({
-    label: 'Quit',
-    accelerator: 'CmdOrCtrl+Q',
-    click: () => {
-      console.log('Cmd + Q is pressed');
-    },
-  }),
-);
-Menu.setApplicationMenu(menu);
-
 import { TrayGenerator } from './TrayGenerator';
 import { DBManager, isUnPackaged } from './DBManager';
+
+import { isDebug } from './utility';
 
 /** TODO: use Node.js path.join() instead of manual concat */
 
@@ -35,7 +23,22 @@ import { DBManager, isUnPackaged } from './DBManager';
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
-import { isDebug } from './utility';
+if (!isDebug) {
+  const { Menu, MenuItem } = require('electron');
+  const menu = new Menu();
+
+  menu.append(
+    new MenuItem({
+      label: 'Quit',
+      accelerator: 'CmdOrCtrl+Q',
+      click: () => {
+        console.log('Cmd + Q is pressed');
+      },
+    }),
+  );
+  /** this will make devtool not working */
+  Menu.setApplicationMenu(menu);
+}
 
 // default: http://localhost:3000/main_window
 // console.log("MAIN_WINDOW_WEBPACK_ENTRY:", MAIN_WINDOW_WEBPACK_ENTRY)
@@ -110,7 +113,7 @@ const createWindow = (): BrowserWindow => {
   window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // if (true){ //isDebug){//!app.isPackaged) {
-  //   window.webContents.openDevTools();
+  // window.webContents.openDevTools();
   // }
 
   if (tray) {
@@ -213,7 +216,6 @@ ipcMain.on('invoke-vscode', (event, path, option) => {
     }
     // send message to Electron, not really use now, just in case
     mainWindow.webContents.send('xwin-not-found');
-    // dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] }))
 
     dialog.showMessageBox(mainWindow, {
       message: 'Path is not a folder, neither workspace',
@@ -261,6 +263,21 @@ ipcMain.on('invoke-vscode', (event, path, option) => {
 
 ipcMain.on('hide-app', (event) => {
   hideWindow();
+});
+
+ipcMain.on('open-folder-selector', async (event) => {
+  console.log('open-folder-selector');
+  console.log('result1');
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+    // properties: ['openFile', 'multiSelections'],
+  });
+  const { filePaths } = result;
+  const folderPath = filePaths[0];
+  // result2: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
+  console.log('result2:', folderPath);
+
+  mainWindow.webContents.send('folder-selected', folderPath);
 });
 
 const trayToggleEvtHandler = () => {

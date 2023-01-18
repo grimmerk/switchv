@@ -34,6 +34,10 @@ function hideApp() {
   (window as any).electronAPI.hideApp();
 }
 
+export function openFolderSelector() {
+  (window as any).electronAPI.openFolderSelector();
+}
+
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -187,6 +191,7 @@ function App() {
   const [inputValue, setInputValue] = useState("");
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [pathInfoArray, setPathInfoArray] = useState([]);
+  const [folderPath, setFolderPath] = useState("")
 
   useEffect(() => {
     if (loadTimes > 0) {
@@ -242,7 +247,13 @@ function App() {
     (window as any).electronAPI.onXWinNotFound((_event: any) => {
       // console.log("onXWinNotFound !!!!!!")
       /** currently the popup message is done by electron native UI */
-    })
+    });
+
+    (window as any).electronAPI.onFolderSelected((_event: any, folderPath: string) => {
+      console.log("onFolderSelected!!!", _event, folderPath)
+      setFolderPath(folderPath)
+      // fetchData();
+    });
 
 
     fetchData();
@@ -319,7 +330,7 @@ function App() {
       }}>
         {/* <div> */}
         {/* <DropdownMenuDefaultExample></DropdownMenuDefaultExample> */}
-        <PopupDefaultExample />
+        <PopupDefaultExample folderPath={folderPath} />
         {/* </div> */}
       </div>
 
