@@ -32,3 +32,8 @@ model VSWindow {
   @@unique([path, inSpace])
   @@index([updatedAt, path, closed, isSpace, spaceParentId, inSpace])
 }
+
+model User {
+  id            Int     @id @default(autoincrement())
+  workingFolder String?
+}

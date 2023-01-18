@@ -42,11 +42,33 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const SERVER_URL = "http://localhost:55688/xwins";
+const SERVER_URL = "http://localhost:55688";
+
+const fetchWorkingFolder = async (): Promise<{ id: number, workingFolder?: string }> => {
+  console.log("fetchWorkingFolder")
+  const url = `${SERVER_URL}/user`
+  const resp = await fetch(url);
+  console.log({ resp })
+  const json = await resp.json();
+  // console.log({ json })
+  return json;
+}
+
+const saveWorkingFolder = async (workingFolder: string) => {
+  const url = `${SERVER_URL}/user`
+  let headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  };
+
+  await fetch(url, {
+    body: JSON.stringify({ workingFolder }), method: 'POST', headers
+  })
+}
 
 const deleteXWin = async (path: string) => {
   // console.log("deleteXwin,", path)
-  const url = `${SERVER_URL}`
+  const url = `${SERVER_URL}/xwins`
 
   let headers = {
     "Content-Type": "application/json",
@@ -58,11 +80,11 @@ const deleteXWin = async (path: string) => {
   })
 }
 
-const retryFetchData = async (): Promise<any[]> => {
+const retryFetchXwinData = async (): Promise<any[]> => {
   if (isDebug) {
     console.log("retryFetchData")
   }
-  const url = `${SERVER_URL}`
+  const url = `${SERVER_URL}/xwins`
 
   let retryTimes = 20;
   let succeed = false;
@@ -193,6 +215,26 @@ function App() {
   const [pathInfoArray, setPathInfoArray] = useState([]);
   const [folderPath, setFolderPath] = useState("")
 
+  const fetchXWinData = async () => {
+    const json = await retryFetchXwinData();
+    // const resp = await fetch(url);
+    // const json = await resp.json();
+    // console.log({ json })
+    // if (json.length === 0) {
+    //   const fake = "~/git/vite-react-app";
+    //   setPathInfoArray([{ path: fake }])
+    // } else {
+    if (json && Array.isArray(json)) {
+      setPathInfoArray(json)
+    }
+    //}
+  };
+
+  const fetchWorkingFolderAndUpdate = async () => {
+    const user = await fetchWorkingFolder();
+    setFolderPath(user.workingFolder)
+  }
+
   useEffect(() => {
     if (loadTimes > 0) {
       return;
@@ -222,26 +264,14 @@ function App() {
       forceFocusOnInput();
     });
 
-    const fetchData = async () => {
-      const json = await retryFetchData();
-      // const resp = await fetch(url);
-      // const json = await resp.json();
-      // console.log({ json })
-      // if (json.length === 0) {
-      //   const fake = "~/git/vite-react-app";
-      //   setPathInfoArray([{ path: fake }])
-      // } else {
-      if (json && Array.isArray(json)) {
-        setPathInfoArray(json)
-      }
-      //}
-    };
+    fetchWorkingFolderAndUpdate();
+
 
     // console.log("register onFocus");
 
     (window as any).electronAPI.onFocusWindow((_event: any) => {
       // console.log("on focus !!!!!!")
-      fetchData();
+      fetchXWinData();
     });
 
     (window as any).electronAPI.onXWinNotFound((_event: any) => {
@@ -249,14 +279,15 @@ function App() {
       /** currently the popup message is done by electron native UI */
     });
 
-    (window as any).electronAPI.onFolderSelected((_event: any, folderPath: string) => {
+    (window as any).electronAPI.onFolderSelected(async (_event: any, folderPath: string) => {
       console.log("onFolderSelected!!!", _event, folderPath)
+
       setFolderPath(folderPath)
-      // fetchData();
     });
 
 
-    fetchData();
+    fetchXWinData();
+
 
     // Don't forget to clean up
     return function cleanup() {
@@ -286,7 +317,7 @@ function App() {
     const { value } = data;
     await deleteXWin(value);
 
-    const json = await retryFetchData();
+    const json = await retryFetchXwinData();
 
     if (json && Array.isArray(json)) {
       setPathInfoArray(json)
@@ -330,7 +361,18 @@ function App() {
       }}>
         {/* <div> */}
         {/* <DropdownMenuDefaultExample></DropdownMenuDefaultExample> */}
-        <PopupDefaultExample folderPath={folderPath} />
+        <PopupDefaultExample
+          folderPath={folderPath}
+          openCallback={async () => {
+            fetchWorkingFolderAndUpdate();
+          }}
+          saveCallback={async (workingFolder: string) => {
+            console.log("saveCallback:", workingFolder)
+            await saveWorkingFolder(workingFolder);
+            // const data = await fetchWorkingFolder();
+            // console.log({ data })
+          }}
+        />
         {/* </div> */}
       </div>
 

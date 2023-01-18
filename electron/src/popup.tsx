@@ -24,7 +24,7 @@ const contentStyles = css({
 
 // {sum, logMessage, doSomething}: ButtonProps
 
-const PopupDefaultExample = ({ folderPath }: { folderPath?: string }) => {
+const PopupDefaultExample = ({ folderPath, saveCallback, openCallback }: { folderPath?: string, saveCallback?: any, openCallback?: any }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -37,7 +37,7 @@ const PopupDefaultExample = ({ folderPath }: { folderPath?: string }) => {
                     <div style={{ display: "flex" }}>
                         <div style={{ alignItems: "center", display: "flex" }}>
                             <div>
-                                {"working folder:"}
+                                {"working folder: "}
                                 {folderPath}
                             </div>
                         </div>
@@ -48,14 +48,19 @@ const PopupDefaultExample = ({ folderPath }: { folderPath?: string }) => {
                             <Button
                                 onClick={() => {
                                     openFolderSelector()
-                                    props.update();
                                     // setIsOpen(!isOpen)
                                 }}>
                                 Select
                             </Button>
                         </div>
                         <div >
-                            <Button appearance="primary">
+                            <Button
+                                onClick={() => {
+                                    if (saveCallback) {
+                                        saveCallback(folderPath);
+                                    }
+                                }}
+                                appearance="primary">
                                 Save
                             </Button>
                         </div>
@@ -67,7 +72,12 @@ const PopupDefaultExample = ({ folderPath }: { folderPath?: string }) => {
                     {...triggerProps}
                     // appearance="primary"
                     isSelected={isOpen}
-                    onClick={() => setIsOpen(!isOpen)}
+                    onClick={() => {
+                        if (openCallback) {
+                            openCallback();
+                        }
+                        setIsOpen(!isOpen)
+                    }}
                 >
                     {isOpen ? '...' : '...'}
                 </Button>
