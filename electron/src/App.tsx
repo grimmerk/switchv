@@ -34,9 +34,15 @@ function hideApp() {
   (window as any).electronAPI.hideApp();
 }
 
+function searchWorkingFolder(path: string) {
+  (window as any).electronAPI.searchWorkingFolder(path);
+}
+
 export function openFolderSelector() {
   (window as any).electronAPI.openFolderSelector();
 }
+
+
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -217,6 +223,12 @@ function App() {
   const [pathInfoArray, setPathInfoArray] = useState([]);
   const [workingFolderPath, setWorkingFolderPath] = useState("")
 
+  const updateWorkingPathUIAndList = async (path: string) => {
+    setWorkingFolderPath(path);
+
+    searchWorkingFolder(path)
+  }
+
   const fetchXWinData = async () => {
     const json = await retryFetchXwinData();
     // const resp = await fetch(url);
@@ -234,8 +246,7 @@ function App() {
 
   const fetchWorkingFolderAndUpdate = async () => {
     const user = await fetchWorkingFolder();
-    console.log({ fetchWorkingFolderAndUpdate: user.workingFolder })
-    setWorkingFolderPath(user.workingFolder)
+    updateWorkingPathUIAndList(user.workingFolder)
   }
 
   useEffect(() => {
@@ -284,29 +295,20 @@ function App() {
 
     (window as any).electronAPI.onFolderSelected(async (_event: any, folderPath: string) => {
 
-      console.log("tmp:", workingFolderPath)
-
-      console.log("onFolderSelected!!!", _event, folderPath)
       if (!folderPath) {
         return;
       }
-      // const tmpFolderPath = workingFolderPath;
 
       const resp = await saveWorkingFolder(folderPath);
       if (resp?.status === "ok") {
-        console.log("ok");
-        setWorkingFolderPath(folderPath)
+        updateWorkingPathUIAndList(folderPath)
       } else {
-
-        // setWorkingFolderPath(tmpFolderPath);
 
         /** 
         * roll back to old path 
         * NOTE: show some alert 
         */
         (window as any).electronAPI.popupAlert("failed to save");
-
-        // fetchWorkingFolderAndUpdate();
       }
     });
 
@@ -342,11 +344,13 @@ function App() {
     const { value } = data;
     await deleteXWin(value);
 
-    const json = await retryFetchXwinData();
 
-    if (json && Array.isArray(json)) {
-      setPathInfoArray(json)
-    }
+    fetchXWinData();
+    // const json = await retryFetchXwinData();
+
+    // if (json && Array.isArray(json)) {
+    //   setPathInfoArray(json)
+    // }
   }, []);
 
 

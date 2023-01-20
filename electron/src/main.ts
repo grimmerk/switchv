@@ -261,7 +261,7 @@ ipcMain.on('invoke-vscode', (event, path, option) => {
   hideWindow();
 });
 
-ipcMain.on('pop-alert', (event, alert) => {
+ipcMain.on('pop-alert', (event, alert: string) => {
   // console.log({ event, path, option });
   dialog.showMessageBox(mainWindow, {
     message: alert,
@@ -269,6 +269,11 @@ ipcMain.on('pop-alert', (event, alert) => {
     defaultId: 0, // bound to buttons array
     cancelId: 1, // bound to buttons array
   });
+});
+
+ipcMain.on('search-working-folder', (event, path: string) => {
+  console.log({ search: path });
+  /** TODO: searach this folder */
 });
 
 ipcMain.on('hide-app', (event) => {
