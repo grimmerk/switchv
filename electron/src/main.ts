@@ -8,7 +8,8 @@ import {
 } from 'electron';
 
 import { exec } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
+// const fs = require('fs');
 
 import { TrayGenerator } from './TrayGenerator';
 import { DBManager, isUnPackaged } from './DBManager';
@@ -272,8 +273,85 @@ ipcMain.on('pop-alert', (event, alert: string) => {
 });
 
 ipcMain.on('search-working-folder', (event, path: string) => {
-  console.log({ search: path });
+  // console.log({ search: path });
   /** TODO: searach this folder */
+
+  console.time('readdir');
+
+  // 100 item ~0.2ms
+  // 0.27ms ~ 2item
+  // 0.4ms for git folder, ~200
+  const directoriesInDIrectory = readdirSync(path, {
+    withFileTypes: true,
+  });
+  // console.log('folder count:', directoriesInDIrectory.length);
+
+  /** readdir-all subfolder: 96.554ms */
+  const returnPathlist = [];
+  // const subListCount = 0; // 3785
+  for (const item of directoriesInDIrectory) {
+    if (item.name.startsWith('.')) {
+      continue;
+    }
+
+    const itemPath = path + '/' + item.name;
+    if (!item.isDirectory()) {
+      if (item.name.endsWith('.code-workspace')) {
+        // console.log('bing0:', itemPath);
+        returnPathlist.push(itemPath);
+      }
+      continue;
+    }
+    returnPathlist.push(itemPath);
+
+    // fs.readdir(dirpath, function(err, files) {
+    //   const txtFiles = files.filter(el => path.extname(el) === '.txt')
+    //   // do something with your files, by the way they are just filenames...
+    // })
+
+    // const subDir = path + '/' + item.name;
+    // const directoriesInSubDIrectory = readdirSync(subDir, {
+    //   withFileTypes: true,
+    // });
+
+    // TODO: this is macOs path style. use Node.js path.join()
+    const targetSpacePath = itemPath + '/' + item.name + '.code-workspace';
+    if (existsSync(targetSpacePath)) {
+      // console.log('bingo,', targetSpacePath);
+
+      returnPathlist.push(targetSpacePath);
+      // if (targetSpacePath.endsWith('.code-workspace')) {
+      //   console.log('bingo2,', targetSpacePath);
+      // }
+    }
+    // subListCount += directoriesInSubDIrectory.length;
+    // console.log({ subDir, directoriesInSubDIrectory });
+    // break;
+  }
+  // 1. 全找 subfolder , 每次 ui show 時, 或換 folder
+  // 2. 只找 folderName 使用一樣的 name
+
+  //.filter((item) => item.isFile());
+
+  // Dirent { name: 'k8s-staging', [Symbol(type)]: 2 },
+  // .map((item) => item.name);
+
+  //  Dirent { name: '.DS_Store', [Symbol(type)]: 1 },
+
+  // .filter((item) => item.isDirectory())
+  // .map((item) => item.name);
+
+  console.timeEnd('readdir');
+
+  console.log({ returnPathlist: returnPathlist.length });
+
+  mainWindow.webContents.send('working-folder-iterated', returnPathlist);
+
+  // 1. 讀整個 folder, up to xxx 100個
+  //     1. 包含裡面的 workspace up 100個
+  // 2. 然後 append 在用過的下面, 濾掉重複的
+  //   1. 沒 filter case
+  //   2. 有 filter 就是
 });
 
 ipcMain.on('hide-app', (event) => {

@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   onFolderSelected: (callback: any) =>
     ipcRenderer.on('folder-selected', callback),
+
+  onWorkingFolderIterated: (callback: any) =>
+    ipcRenderer.on('working-folder-iterated', callback),
   onFocusWindow: (callback: any) => ipcRenderer.on('window-focus', callback),
   onXWinNotFound: (callback: any) => ipcRenderer.on('xwin-not-found', callback),
 });

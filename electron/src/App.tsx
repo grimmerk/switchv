@@ -102,8 +102,8 @@ const retryFetchXwinData = async (): Promise<any[]> => {
       // at least 6/5*50 milliseconds needed for serve start time
       // most of the times are 7 or 6 times 
       /** TODO: use ping URL first */
-      if (isDebug) {
-        console.log("retry fetchData");
+      if (isDebug && retryTimes != 20) {
+        console.log("retrying fetchData");
       }
       const resp = await fetch(url);
       json = await resp.json();
@@ -278,7 +278,10 @@ function App() {
       forceFocusOnInput();
     });
 
-    fetchWorkingFolderAndUpdate();
+    /** pros: query one time in early stage
+     * cons: it may need to retry when start is starting 
+     */
+    // fetchWorkingFolderAndUpdate();
 
 
     // console.log("register onFocus");
@@ -286,6 +289,17 @@ function App() {
     (window as any).electronAPI.onFocusWindow((_event: any) => {
       // console.log("on focus !!!!!!")
       fetchXWinData();
+
+      /** pros: use the latest list 
+       * cons: query workingFolder multiple times
+       */
+      fetchWorkingFolderAndUpdate();
+    });
+
+    (window as any).electronAPI.onWorkingFolderIterated(async (_event: any, paths: string[]) => {
+      // console.log("onWorkingFolderIterated:", paths)
+
+      /** TODO: update UI */
     });
 
     (window as any).electronAPI.onXWinNotFound((_event: any) => {
@@ -313,7 +327,8 @@ function App() {
     });
 
 
-    fetchXWinData();
+    /** onFocusWindow will trigger it */
+    // fetchXWinData();
 
 
     // Don't forget to clean up
