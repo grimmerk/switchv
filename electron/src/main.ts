@@ -281,6 +281,7 @@ ipcMain.on('search-working-folder', (event, path: string) => {
   // 100 item ~0.2ms
   // 0.27ms ~ 2item
   // 0.4ms for git folder, ~200
+  /** TODO: use async way to improve performance */
   const directoriesInDIrectory = readdirSync(path, {
     withFileTypes: true,
   });
@@ -328,8 +329,6 @@ ipcMain.on('search-working-folder', (event, path: string) => {
     // console.log({ subDir, directoriesInSubDIrectory });
     // break;
   }
-  // 1. 全找 subfolder , 每次 ui show 時, 或換 folder
-  // 2. 只找 folderName 使用一樣的 name
 
   //.filter((item) => item.isFile());
 
@@ -346,12 +345,6 @@ ipcMain.on('search-working-folder', (event, path: string) => {
   console.log({ returnPathlist: returnPathlist.length });
 
   mainWindow.webContents.send('working-folder-iterated', returnPathlist);
-
-  // 1. 讀整個 folder, up to xxx 100個
-  //     1. 包含裡面的 workspace up 100個
-  // 2. 然後 append 在用過的下面, 濾掉重複的
-  //   1. 沒 filter case
-  //   2. 有 filter 就是
 });
 
 ipcMain.on('hide-app', (event) => {
