@@ -273,6 +273,9 @@ ipcMain.on('pop-alert', (event, alert: string) => {
 });
 
 ipcMain.on('search-working-folder', (event, path: string) => {
+  if (!path) {
+    return;
+  }
   // console.log({ search: path });
   /** TODO: searach this folder */
 

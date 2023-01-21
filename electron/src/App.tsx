@@ -237,7 +237,9 @@ function App() {
   const updateWorkingPathUIAndList = async (path: string) => {
     setWorkingFolderPath(path);
 
-    searchWorkingFolder(path)
+    if (path) {
+      searchWorkingFolder(path)
+    }
   }
 
   const fetchXWinData = async () => {
