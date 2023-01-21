@@ -24,22 +24,22 @@ import { isDebug } from './utility';
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
-if (!isDebug) {
-  const { Menu, MenuItem } = require('electron');
-  const menu = new Menu();
+// if (!isDebug) {
+//   const { Menu, MenuItem } = require('electron');
+//   const menu = new Menu();
 
-  menu.append(
-    new MenuItem({
-      label: 'Quit',
-      accelerator: 'CmdOrCtrl+Q',
-      click: () => {
-        console.log('Cmd + Q is pressed');
-      },
-    }),
-  );
-  /** this will make devtool not working */
-  Menu.setApplicationMenu(menu);
-}
+//   menu.append(
+//     new MenuItem({
+//       label: 'Quit',
+//       accelerator: 'CmdOrCtrl+Q',
+//       click: () => {
+//         console.log('Cmd + Q is pressed');
+//       },
+//     }),
+//   );
+//   /** this will make devtool not working */
+//   Menu.setApplicationMenu(menu);
+// }
 
 // default: http://localhost:3000/main_window
 // console.log("MAIN_WINDOW_WEBPACK_ENTRY:", MAIN_WINDOW_WEBPACK_ENTRY)

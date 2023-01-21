@@ -293,10 +293,7 @@ function App() {
       forceFocusOnInput();
     });
 
-    /** pros: query one time in early stage
-     * cons: it may need to retry when start is starting 
-     */
-    // fetchWorkingFolderAndUpdate();
+
 
 
     // console.log("register onFocus");
@@ -342,9 +339,17 @@ function App() {
       }
     });
 
+    /** pros: query one time in early stage
+     * cons: it may need to retry when start is starting 
+     * also onFocusWindow will be triggered when the 1st time cmd +ctrol +r is used 
+     * redundant 
+     */
 
-    /** onFocusWindow will trigger it */
-    // fetchXWinData();
+    /** onFocusWindow will trigger it, buf if we use cmd + w to close it, 
+     * then we must call it here, onFocusWindow will not be triggered in that case 
+     */
+    fetchXWinData();
+    fetchWorkingFolderAndUpdate();
 
 
     // Don't forget to clean up
