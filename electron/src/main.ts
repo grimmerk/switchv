@@ -423,11 +423,11 @@ const trayToggleEvtHandler = () => {
     process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
     if (isDebug) {
       console.log(
-        'start server:' + `${DBManager.serverFolderPath}/xwin-server-macos`,
+        'start server:' + `${DBManager.serverFolderPath}/SwitchV-server-macos`,
       );
     }
     serverProcess = exec(
-      `${DBManager.serverFolderPath}/xwin-server-macos`,
+      `${DBManager.serverFolderPath}/SwitchV-server-macos`,
       { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
       (error, stdout, stderr) => {
         // TODO: figure out it why it does not print out

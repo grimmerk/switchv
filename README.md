@@ -107,14 +107,14 @@ steps:
   1. in server, execute `yarn build` to generate dist folder
   2. (first time) `yarn global add pkg`
   3. ~~add `"version": "0.0.1"` field in `generated server/node_modules/.prisma/client/package.json`~~
-  4. ~~in server, `pkg --debug -t node16-macos-arm64 -o xwin-server-macos .`~~
+  4. ~~in server, `pkg --debug -t node16-macos-arm64 -o SwitchV-server-macos .`~~
   5. `yarn make`
-  6. [optional] `DEBUG_PKG=1 ./xwin-server-macos` for debugging
+  6. [optional] `DEBUG_PKG=1 ./SwitchV-server-macos` for debugging
 2. in electron, `yarn make` to generate out folder 
 
 two issues 
 1. x TODO: how to use vercel/pkg bundle deb.db in nestjs, instead of manual copy???? (use macOS application folder to store db file)
-2. x TODO: close the packaged app via cmd+q seems not close xwin-server-macos process? check by command: lsof -i:55688. Use ctrl+c to stop development (running via yarn start) is OK. (add close button on tray to help? I guess it is not helping). Solved by electron send kill server process in the before-quick event handler. Another person suggests to add one more step to handle SIGINT signal on server side, ref https://stackoverflow.com/questions/71523442/child-process-doesnt-exit.
+2. x TODO: close the packaged app via cmd+q seems not close SwitchV-server-macos process? check by command: lsof -i:55688. Use ctrl+c to stop development (running via yarn start) is OK. (add close button on tray to help? I guess it is not helping). Solved by electron send kill server process in the before-quick event handler. Another person suggests to add one more step to handle SIGINT signal on server side, ref https://stackoverflow.com/questions/71523442/child-process-doesnt-exit.
 
 ### server notes
 ref: 
