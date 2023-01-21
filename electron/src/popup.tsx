@@ -36,10 +36,10 @@ const PopupDefaultExample = ({ workingFolderPath, saveCallback, openCallback }: 
                 <div css={contentStyles}>
                     <div style={{ display: "flex" }}>
                         <div style={{ alignItems: "center", display: "flex" }}>
-                            <div>
+                            <div style={{ color: "#6A9955" }}>
                                 {"working folder:"}
                             </div>
-                            <div style={{ color: "grey", padding: 5 }}>
+                            <div style={{ color: "#ccc", padding: 5 }}>
                                 {`${workingFolderPath}`}
                             </div>
                         </div>

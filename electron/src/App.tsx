@@ -133,7 +133,8 @@ const retryFetchXwinData = async (): Promise<any[]> => {
 const OPTION_KEY = 18
 
 /** https://stackoverflow.com/questions/52819756/react-select-replacing-components-for-custom-option-content */
-const formatOptionLabel = ({ value, label, customAbbreviation }: { value: any, label: any, customAbbreviation?: any }, { inputValue }: { inputValue: any }) => {
+const formatOptionLabel = ({ value, label, everOpened }: { value: string, label: string, everOpened: boolean }, { inputValue }: { inputValue: string }) => {
+
   // https://stackoverflow.com/a/34899885/7354486
   const searchWords = (inputValue ?? "").split(" ").filter((sub: string) => sub)
 
@@ -143,15 +144,23 @@ const formatOptionLabel = ({ value, label, customAbbreviation }: { value: any, l
 
   // api-ff.code-workspace -> api-ff (Workspace)
 
+
+  const nameStyle: any = {};
+  const pathStyle: any = {};
+  if (!everOpened) {
+    nameStyle["color"] = "#6A9955";
+    pathStyle["color"] = "#ccc";
+  }
+
   return (
-    <div style={{ display: "flex" }}>
+    <div style={{ display: "flex", ...nameStyle }}>
       <div>
         <Highlighter
           searchWords={searchWords}
           textToHighlight={name}
         />
       </div>
-      <div style={{ marginLeft: "10px", color: "#ccc" }}>
+      <div style={{ marginLeft: "10px", color: "grey", ...pathStyle }}>
         <Highlighter
           searchWords={searchWords}
           textToHighlight={path}
@@ -222,6 +231,8 @@ function App() {
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [pathInfoArray, setPathInfoArray] = useState([]);
   const [workingFolderPath, setWorkingFolderPath] = useState("")
+  const [workingPathInfoArray, setWorkingPathInfoArray] = useState([]);
+
 
   const updateWorkingPathUIAndList = async (path: string) => {
     setWorkingFolderPath(path);
@@ -239,6 +250,8 @@ function App() {
     //   setPathInfoArray([{ path: fake }])
     // } else {
     if (json && Array.isArray(json)) {
+      // console.log({ json })
+
       setPathInfoArray(json)
     }
     //}
@@ -300,6 +313,7 @@ function App() {
       // console.log("onWorkingFolderIterated:", paths)
 
       /** TODO: update UI */
+      setWorkingPathInfoArray(paths);
     });
 
     (window as any).electronAPI.onXWinNotFound((_event: any) => {
@@ -338,13 +352,33 @@ function App() {
     }
   }, []);
 
-  const pathArray = pathInfoArray.map((pathInfo) => {
+  const openPathSet = new Set();
+  let openPathArray = pathInfoArray.map((pathInfo) => {
     const { path } = pathInfo;
+    openPathSet.add(path);
     return {
       value: path,
-      label: path
+      label: path,
+      everOpened: true
     }
   });
+
+  let workingInfoArray: Array<{ value: string, label: string, everOpened: boolean }> = [];
+  workingPathInfoArray.forEach((path: string) => {
+    if (!openPathSet.has(path)) {
+      workingInfoArray.push({
+        value: path,
+        label: path,
+        everOpened: false,
+      })
+    }
+  });
+  const pathArray = openPathArray.concat(workingInfoArray);
+  console.log({
+    openPathArray: openPathArray.length,
+    workingPathInfoArray: workingPathInfoArray.length,
+    pathArray: pathArray.length,
+  })
 
   // const styles = {
   //   container: (base: any) => ({
@@ -375,12 +409,14 @@ function App() {
     input: string
   ) => {
     let allFound = true;
+    const target = candidate.value.toLowerCase();
+
 
     if (input) {
-      const inputArray = input.split(" ");
+      const inputArray = input.toLowerCase().split(" ");
       for (const subInput of inputArray) {
         if (subInput) {
-          if (!candidate.value.includes(subInput)) {
+          if (!target.includes(subInput)) {
             allFound = false;
             break;
           }
