@@ -1,6 +1,6 @@
 # XWin 
 
-Use this to quickly open and switch projects. 
+Use this to quickly open and switch VSCode projects. 
 
 ## Features
 
