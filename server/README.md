@@ -10,24 +10,24 @@ $ pnpm install
 
 ```bash
 # development
-$ pnpm start
+$ yarn start
 
 # watch mode
-$ ppnpm start:dev
+$ yarn start:dev
 
 # production mode
-$ pnpm start:prod
+$ yarn start:prod
 ```
 
 ## Test
 
 ```bash
 # unit tests
-$ pnpm test
+$ yarn test
 
 # e2e tests
-$ pnpm test:e2e
+$ yarn test:e2e
 
 # test coverage
-$ pnpm test:cov
+$ yarn test:cov
 ```
