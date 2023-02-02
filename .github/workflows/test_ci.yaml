@@ -1,0 +1,19 @@
+name: hello-world
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+      - staging
+      - main
+    paths:
+      - README.md
+
+
+jobs:
+  my-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: my-step
+        run: echo "Hello World!"
