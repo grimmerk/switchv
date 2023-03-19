@@ -36,6 +36,7 @@ const config: ForgeConfig = {
     extendInfo: {
       LSUIElement: true,
     },
+    osxSign: {},
   },
   rebuildConfig: {},
   makers: [
