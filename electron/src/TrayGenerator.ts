@@ -4,6 +4,12 @@ const path = require('path');
 
 // const prismaPath = require.resolve('prisma')
 
+function isMAS() {
+  return process.mas || false;
+}
+
+const isMasStr = isMAS() ? 'mas' : 'nonMas';
+
 // ref:
 // https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
 export class TrayGenerator {
@@ -66,7 +72,7 @@ export class TrayGenerator {
     const appPath = app.getAppPath();
 
     const error = DBManager.migrateError;
-    const info = `db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${DBManager.serverFolderPath};prismaPath:${DBManager.prismaPath};appPath:${appPath};info.${error}`;
+    const info = `${isMasStr};db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${DBManager.serverFolderPath};prismaPath:${DBManager.prismaPath};appPath:${appPath};info.${error}`;
 
     // DBManager.databaseURL: string = "";
     // DBManager.schemaPath = ""
