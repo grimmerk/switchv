@@ -2,10 +2,13 @@
 	"name": "SwitchV",
 	"displayName": "SwitchV",
 	"description": "SwitchV VSCode extension",
-	"version": "0.0.1",
-	"repository": "dummy",
+	"version": "0.0.9",
+	"repository": {
+		"url": "https://github.com/grimmer0125/switchv"
+	},
 	"icon": "VScode.png",
 	"publisher": "grimmer",
+	"license": "MIT",
 	"engines": {
 		"vscode": "^1.68.0"
 	},
