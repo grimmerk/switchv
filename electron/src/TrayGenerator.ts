@@ -72,7 +72,13 @@ export class TrayGenerator {
     const appPath = app.getAppPath();
 
     const error = DBManager.migrateError;
-    const info = `${isMasStr};db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${DBManager.serverFolderPath};prismaPath:${DBManager.prismaPath};appPath:${appPath};info.${error}`;
+    let info = '';
+    if (!isMasStr) {
+      info = `${isMasStr};db:${DBManager.databaseFilePath};schema:${DBManager.schemaPath};server:${DBManager.serverFolderPath};prismaPath:${DBManager.prismaPath};appPath:${appPath};info.${error}`;
+      info = `XWin app.i:${info}`;
+    } else {
+      info = 'SwitchV';
+    }
 
     // DBManager.databaseURL: string = "";
     // DBManager.schemaPath = ""
@@ -81,7 +87,7 @@ export class TrayGenerator {
     // this.tray = new Tray("images/16.png");//icon);
     this.tray = new Tray(icon);
 
-    this.tray.setToolTip(`XWin app.i:${info}`);
+    this.tray.setToolTip(`${info}`);
     this.tray.setTitle(title);
 
     // this.tray = new Tray(path.join(__dirname, './assets/IconTemplate.png'));
