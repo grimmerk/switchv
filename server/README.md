@@ -1,4 +1,4 @@
-# XWin Server
+# SwitchV Server
 
 ## Installation
 

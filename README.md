@@ -1,4 +1,4 @@
-# XWin 
+# SwitchV 
 
 Use this to quickly open and switch VSCode projects. 
 
@@ -38,7 +38,7 @@ Use this to quickly open and switch VSCode projects.
 
 1. [fixed] after click one window item, show VSCode, first time "cmd+ctrl+j" trigger does not effect and always need the second time. 
 
-2. [fixed] after using ctrl+w to close XWin, the window object will be destroyed and can not be used anymore (will throw exception)
+2. [fixed] after using ctrl+w to close SwitchV, the window object will be destroyed and can not be used anymore (will throw exception)
 
 3. [fixed] (packaged app) Frontend usually fails to fetch data from server since the server is starting firstly. Need refresh. Add some waiting time. 
 
@@ -98,7 +98,7 @@ and ms github site has a extra setting for debugging render process. But the abo
 1. `yarn start` (to start webpack server part) 
 2. launch compound "Electron: All" launch setting (from ms github site) to debug main & **render processes**. 
 
-The drawback is you will see two copy of XWin. And attaching render process takes a little time (e.g. only stop at some breakpoints after a while/refresh).
+The drawback is you will see two copy of SwitchV. And attaching render process takes a little time (e.g. only stop at some breakpoints after a while/refresh).
 
 ## notes about packaging a macOS app
 
