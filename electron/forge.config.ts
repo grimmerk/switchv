@@ -35,6 +35,7 @@ const config: ForgeConfig = {
     ],
     extendInfo: {
       LSUIElement: true,
+      LSMinimumSystemVersion: '12.0',
     },
     osxSign: {},
   },
