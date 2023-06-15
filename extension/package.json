@@ -21,10 +21,7 @@
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
-			{
-				"command": "xwin.helloWorld",
-				"title": "Hello World"
-			}
+			{}
 		]
 	},
 	"scripts": {
