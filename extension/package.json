@@ -2,7 +2,7 @@
 	"name": "SwitchV",
 	"displayName": "SwitchV",
 	"description": "SwitchV VSCode extension",
-	"version": "0.0.9",
+	"version": "0.0.10",
 	"repository": {
 		"url": "https://github.com/grimmer0125/switchv"
 	},
