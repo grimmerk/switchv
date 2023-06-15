@@ -26,6 +26,8 @@ Use this to quickly open and switch VSCode projects.
   - `yarn install`
   - `yarn start` (not set VSCode debugging yet)
   - package as mac app: `yarn make`. It (Electron part) is about 196MB. Server vercel/pkg build is 119MB. Total it is 316MB. Try Tauri to reduce electron part? 
+  - build mas build: `yarn make_mas`. Then execute `sh ./sign.sh`.
+
 
 ~~pnpm tips:~~
 
