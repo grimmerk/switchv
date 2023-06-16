@@ -2,6 +2,8 @@
 #!/bin/bash
 
 echo "try to sign app"
+cp embedded.provisionprofile ./out/SwitchV-mas-arm64/SwitchV.app/Contents/embedded.provisionprofile
+
 
 ## step1: add ElectronTeamID in INfo.plist 
 # https://www.electronjs.org/docs/latest/tutorial/mac-app-store-submission-guide#extra-steps-without-electron-osx-sign
