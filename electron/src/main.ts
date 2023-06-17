@@ -455,6 +455,8 @@ const trayToggleEvtHandler = () => {
 
   tray = new TrayGenerator(mainWindow, title, trayToggleEvtHandler);
 
+  console.log('setup shortcut');
+
   // https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#global-shortcuts
   // globalShortcut.register('Alt+CommandOrControl+N', () => {
   globalShortcut.register('Command+Control+R', () => {
