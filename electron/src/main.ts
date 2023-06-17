@@ -100,7 +100,7 @@ const createWindow = (): BrowserWindow => {
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: isDebug,
+      devTools: true, //isDebug,
     },
 
     // hide window by default
@@ -114,7 +114,7 @@ const createWindow = (): BrowserWindow => {
   window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // if (true){ //isDebug){//!app.isPackaged) {
-  // window.webContents.openDevTools();
+  window.webContents.openDevTools();
   // }
 
   if (tray) {
@@ -355,6 +355,7 @@ ipcMain.on('hide-app', (event) => {
 });
 
 ipcMain.on('open-folder-selector', async (event) => {
+  console.log('get open folder request');
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],
     // properties: ['openFile', 'multiSelections'],
@@ -401,55 +402,55 @@ const trayToggleEvtHandler = () => {
   if (isDebug) {
     console.log('when ready');
   }
-  DBManager.initPath();
-  // console.log({
-  //   embed: process.env.EMBEDSERVER,
-  //   node: process?.env?.NODE_ENV,
-  //   DEBUG_PROD: process.env.DEBUG_PROD,
-  //   isUnPackaged: isUnPackaged,
-  // });
-  const needVer = await DBManager.checkNeedMigration();
-  if (needVer) {
-    if (process.env.EMBEDSERVER || !isUnPackaged) {
-      // console.log('either embedded server or package, do doMigrationToVersion');
-      await DBManager.doMigrationToVersion(needVer);
-    }
-  }
-  if (isDebug) {
-    console.log('check db done. USE DBPATH:', DBManager.databaseFilePath);
-  }
+  // DBManager.initPath();
+  // // console.log({
+  // //   embed: process.env.EMBEDSERVER,
+  // //   node: process?.env?.NODE_ENV,
+  // //   DEBUG_PROD: process.env.DEBUG_PROD,
+  // //   isUnPackaged: isUnPackaged,
+  // // });
+  // const needVer = await DBManager.checkNeedMigration();
+  // if (needVer) {
+  //   if (process.env.EMBEDSERVER || !isUnPackaged) {
+  //     // console.log('either embedded server or package, do doMigrationToVersion');
+  //     await DBManager.doMigrationToVersion(needVer);
+  //   }
+  // }
+  // if (isDebug) {
+  //   console.log('check db done. USE DBPATH:', DBManager.databaseFilePath);
+  // }
 
-  if (process.env.EMBEDSERVER || !isUnPackaged) {
-    process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
-    if (isDebug) {
-      console.log(
-        'start server:' + `${DBManager.serverFolderPath}/SwitchV-server-macos`,
-      );
-    }
-    serverProcess = exec(
-      `${DBManager.serverFolderPath}/SwitchV-server-macos`,
-      { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
-      (error, stdout, stderr) => {
-        // TODO: figure out it why it does not print out
-        // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
-        // then it will show some logs
-        if (isDebug) {
-          console.log('print server log but seems it is never callbacked');
-          console.log(error, stderr);
-          console.log(stdout);
-        }
-      },
-    );
-  }
+  // if (process.env.EMBEDSERVER || !isUnPackaged) {
+  //   process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
+  //   if (isDebug) {
+  //     console.log(
+  //       'start server:' + `${DBManager.serverFolderPath}/SwitchV-server-macos`,
+  //     );
+  //   }
+  //   serverProcess = exec(
+  //     `${DBManager.serverFolderPath}/SwitchV-server-macos`,
+  //     { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
+  //     (error, stdout, stderr) => {
+  //       // TODO: figure out it why it does not print out
+  //       // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
+  //       // then it will show some logs
+  //       if (isDebug) {
+  //         console.log('print server log but seems it is never callbacked');
+  //         console.log(error, stderr);
+  //         console.log(stdout);
+  //       }
+  //     },
+  //   );
+  // }
 
   let title = '';
   if (!isDebug) {
     title = ``;
   } else {
     title = `SwitchV(cmd+ctrl+r)`;
-    if (DBManager.needUpdate) {
-      title = `${title}${'u.'}`;
-    }
+    // if (DBManager.needUpdate) {
+    //   title = `${title}${'u.'}`;
+    // }
   }
 
   tray = new TrayGenerator(mainWindow, title, trayToggleEvtHandler);
