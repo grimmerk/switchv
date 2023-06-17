@@ -356,15 +356,22 @@ ipcMain.on('hide-app', (event) => {
 
 ipcMain.on('open-folder-selector', async (event) => {
   console.log('get open folder request');
-  const result = await dialog.showOpenDialog({
-    properties: ['openDirectory'],
-    // properties: ['openFile', 'multiSelections'],
-  });
-  const { filePaths } = result;
-  const folderPath = filePaths[0];
-  // result: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
+  try {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+      // properties: ['openFile', 'multiSelections'],
+    });
+    console.log('result:', result);
+    const { filePaths } = result;
+    const folderPath = filePaths[0];
+    // result: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
 
-  mainWindow.webContents.send('folder-selected', folderPath);
+    mainWindow.webContents.send('folder-selected', folderPath);
+  } catch (err) {
+    console.log('fail to open directory explorer');
+    console.log(err);
+    console.log(JSON.stringify(err));
+  }
 });
 
 const trayToggleEvtHandler = () => {
