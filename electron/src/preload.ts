@@ -6,6 +6,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   invokeVSCode: (path: string, option: string) =>
     ipcRenderer.send('invoke-vscode', path, option),
+
   hideApp: () => ipcRenderer.send('hide-app'),
   openFolderSelector: () => ipcRenderer.send('open-folder-selector'),
   popupAlert: (alert: string) => ipcRenderer.send('pop-alert', alert),
