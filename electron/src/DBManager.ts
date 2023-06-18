@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
 const path = require('path');
 
 // ref:
@@ -28,6 +28,7 @@ const dbFileName = 'dev.db';
 const appDataPath = app.getPath('userData'); // e.g. '/Users/grimmer/Library/Application Support/Xwin'
 const dbUsedVersionTxtPath = `${appDataPath}/dbUsedVersion.txt`;
 export const sqlitePathInProd = `${appDataPath}/${dbFileName}`;
+export const schemeCopyPathInProd = `${appDataPath}/schema.prisma`;
 
 // TODO: use async version later
 // import { readFile, writeFile } from 'fs/promises';
@@ -97,8 +98,6 @@ export class DBManager {
       return;
     }
 
-    let db_url = '';
-
     // TODO:
     if (isUnPackaged) {
       // it is a file path in dev mode, but after webpack bundles in production, it is just some string, e.g. 4569
@@ -107,7 +106,9 @@ export class DBManager {
       DBManager.serverFolderPath = path.resolve(`../server/`);
       DBManager.schemaPath = `${DBManager.serverFolderPath}/prisma/schema.prisma`;
 
-      db_url = path.resolve(`${process.cwd()}/../server/prisma/dev.db`);
+      DBManager.databaseFilePath = path.resolve(
+        `${process.cwd()}/../server/prisma/dev.db`,
+      );
 
       // db_url = `${__dirname}/../server/prisma/dev.db`; // works but not good. dirname is some webpack main file location
 
@@ -120,7 +121,7 @@ export class DBManager {
       DBManager.serverFolderPath = path.resolve(`${app.getAppPath()}/../`); //`${__dirname}/../../../`;
       // DBManager.serverFolderPath = "/Users/grimmer/git/xwin/electron/out/XWin-darwin-arm64/XWin.app/Contents/Resources"
       DBManager.schemaPath = `${DBManager.serverFolderPath}/schema.prisma`;
-      db_url = sqlitePathInProd;
+      DBManager.databaseFilePath = sqlitePathInProd;
 
       /** mainly it requires two files
        * 1. node_modules/prisma/build/index.js
@@ -137,7 +138,7 @@ export class DBManager {
       DBManager.fmtExePath = `${DBManager.serverFolderPath}/prisma-fmt-darwin`;
       DBManager.queryExePath = `${DBManager.serverFolderPath}/libquery_engine-darwin.dylib.node`;
     }
-    DBManager.databaseFilePath = db_url;
+    // DBManager.databaseFilePath = db_url;
   }
 
   static async dbMigration() {
@@ -168,6 +169,12 @@ export class DBManager {
       process.env.PRISMA_QUERY_ENGINE_BINARY = DBManager.queryExePath;
       process.env.PRISMA_QUERY_ENGINE_LIBRARY = DBManager.queryExePath;
       // process.env.PRISMA_CLIENT_ENGINE_TYPE = "binary"
+
+      /** NOTE: copy schema file to app.getPath('userData')
+       * DBManager.schemaPath to schemeCopyPathInProd
+       */
+      copyFileSync(DBManager.schemaPath, schemeCopyPathInProd);
+      DBManager.schemaPath = schemeCopyPathInProd;
     }
 
     try {
