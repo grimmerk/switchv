@@ -133,10 +133,9 @@ export class DBManager {
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/@prisma/engines/migration-engine-darwin-arm64`;
       DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin`;
 
-      /** not copy and not really use them */
-      DBManager.introspectionExePath = `${DBManager.serverFolderPath}/@prisma/engines/introspection-engine-darwin-arm64`;
-      DBManager.fmtExePath = `${DBManager.serverFolderPath}/@prisma/engines/prisma-fmt-darwin-arm64`;
-      DBManager.queryExePath = `${DBManager.serverFolderPath}/@prisma/engines/libquery_engine-darwin-arm64.dylib.node`;
+      DBManager.introspectionExePath = `${DBManager.serverFolderPath}/introspection-engine-darwin`;
+      DBManager.fmtExePath = `${DBManager.serverFolderPath}/prisma-fmt-darwin`;
+      DBManager.queryExePath = `${DBManager.serverFolderPath}/libquery_engine-darwin.dylib.node`;
     }
     DBManager.databaseFilePath = db_url;
   }
@@ -148,6 +147,10 @@ export class DBManager {
     // const PRISMA_QUERY_ENGINE_LIBRARY = `${common}libquery_engine-darwin-arm64.dylib.node`;
     // const PRISMA_MIGRATION_ENGINE_BINARY = `${common}migration-engine-darwin-arm64`;
 
+    // const introPath = process.env.PRISMA_INTROSPECTION_ENGINE_BINARY;
+    // const fmtPath = process.env.PRISMA_FMT_BINARY;
+    // const queryBinaryPath = process.env.PRISMA_QUERY_ENGINE_BINARY;
+    // const queryLibaryPath = process.env.PRISMA_QUERY_ENGINE_LIBRARY;
     if (DBManager.migrateExePath) {
       /** For migration, it also requires
        * 1. node_modules/@prisma/engines/dist !!!!!
@@ -157,10 +160,13 @@ export class DBManager {
        */
 
       process.env.PRISMA_MIGRATION_ENGINE_BINARY = DBManager.migrateExePath;
-      process.env.PRISMA_INTROSPECTION_ENGINE_BINARY = ''; // DBManager.introspectionExePath;
-      process.env.PRISMA_FMT_BINARY = ''; // DBManager.fmtExePath;
-      process.env.PRISMA_QUERY_ENGINE_BINARY = ''; // DBManager.queryExePath;
-      process.env.PRISMA_QUERY_ENGINE_LIBRARY = ''; // DBManager.queryExePath;
+
+      /** 現在設定了這個後, run packaged app 時server 就不 work, 所以 server 要用原本的設定 (至少 local run, testflight 不確定) */
+      process.env.PRISMA_INTROSPECTION_ENGINE_BINARY =
+        DBManager.introspectionExePath;
+      process.env.PRISMA_FMT_BINARY = DBManager.fmtExePath;
+      process.env.PRISMA_QUERY_ENGINE_BINARY = DBManager.queryExePath;
+      process.env.PRISMA_QUERY_ENGINE_LIBRARY = DBManager.queryExePath;
       // process.env.PRISMA_CLIENT_ENGINE_TYPE = "binary"
     }
 
@@ -180,6 +186,10 @@ export class DBManager {
         console.log({ err });
       }
     }
+    process.env.PRISMA_INTROSPECTION_ENGINE_BINARY = ''; // introPath; // = process.env.PRISMA_INTROSPECTION_ENGINE_BINARY;
+    process.env.PRISMA_FMT_BINARY = ''; //fmtPath; // = process.env.PRISMA_FMT_BINARY;
+    process.env.PRISMA_QUERY_ENGINE_BINARY = ''; // queryBinaryPath; // = process.env.PRISMA_QUERY_ENGINE_BINARY;
+    process.env.PRISMA_QUERY_ENGINE_LIBRARY = ''; //queryLibaryPath; // = process.env.PRISMA_QUERY_ENGINE_LIBRARY;
   }
 
   static getUsedVersion(): string {
