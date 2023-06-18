@@ -416,13 +416,13 @@ const trayToggleEvtHandler = () => {
   //   DEBUG_PROD: process.env.DEBUG_PROD,
   //   isUnPackaged: isUnPackaged,
   // });
-  const needVer = await DBManager.checkNeedMigration();
-  if (needVer) {
-    if (process.env.EMBEDSERVER || !isUnPackaged) {
-      // console.log('either embedded server or package, do doMigrationToVersion');
-      await DBManager.doMigrationToVersion(needVer);
-    }
-  }
+  // const needVer = await DBManager.checkNeedMigration();
+  // if (needVer) {
+  //   if (process.env.EMBEDSERVER || !isUnPackaged) {
+  //     // console.log('either embedded server or package, do doMigrationToVersion');
+  //     await DBManager.doMigrationToVersion(needVer);
+  //   }
+  // }
   if (isDebug) {
     console.log('check db done. USE DBPATH:', DBManager.databaseFilePath);
   }
@@ -435,20 +435,20 @@ const trayToggleEvtHandler = () => {
         'start server:' + `${DBManager.serverFolderPath}/SwitchV-server-macos`,
       );
     }
-    // serverProcess = exec(
-    //   `${DBManager.serverFolderPath}/SwitchV-server-macos`,
-    //   { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
-    //   (error, stdout, stderr) => {
-    //     // TODO: figure out it why it does not print out
-    //     // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
-    //     // then it will show some logs
-    //     if (isDebug) {
-    //       console.log('print server log but seems it is never callbacked');
-    //       console.log(error, stderr);
-    //       console.log(stdout);
-    //     }
-    //   },
-    // );
+    serverProcess = exec(
+      `${DBManager.serverFolderPath}/SwitchV-server-macos`,
+      { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
+      (error, stdout, stderr) => {
+        // TODO: figure out it why it does not print out
+        // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
+        // then it will show some logs
+        if (isDebug) {
+          console.log('print server log but seems it is never callbacked');
+          console.log(error, stderr);
+          console.log(stdout);
+        }
+      },
+    );
   }
 
   let title = '';
