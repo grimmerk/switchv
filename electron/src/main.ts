@@ -100,7 +100,7 @@ const createWindow = (): BrowserWindow => {
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: isDebug,
+      devTools: true, //isDebug,
     },
 
     // hide window by default
@@ -114,7 +114,7 @@ const createWindow = (): BrowserWindow => {
   window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // if (true){ //isDebug){//!app.isPackaged) {
-  // window.webContents.openDevTools();
+  window.webContents.openDevTools();
   // }
 
   if (tray) {
@@ -355,15 +355,23 @@ ipcMain.on('hide-app', (event) => {
 });
 
 ipcMain.on('open-folder-selector', async (event) => {
-  const result = await dialog.showOpenDialog({
-    properties: ['openDirectory'],
-    // properties: ['openFile', 'multiSelections'],
-  });
-  const { filePaths } = result;
-  const folderPath = filePaths[0];
-  // result: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
+  console.log('get open folder request');
+  try {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+      // properties: ['openFile', 'multiSelections'],
+    });
+    console.log('result:', result);
+    const { filePaths } = result;
+    const folderPath = filePaths[0];
+    // result: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
 
-  mainWindow.webContents.send('folder-selected', folderPath);
+    mainWindow.webContents.send('folder-selected', folderPath);
+  } catch (err) {
+    console.log('fail to open directory explorer');
+    console.log(err);
+    console.log(JSON.stringify(err));
+  }
 });
 
 const trayToggleEvtHandler = () => {
@@ -420,26 +428,27 @@ const trayToggleEvtHandler = () => {
   }
 
   if (process.env.EMBEDSERVER || !isUnPackaged) {
+    console.log('start server');
     process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
     if (isDebug) {
       console.log(
         'start server:' + `${DBManager.serverFolderPath}/SwitchV-server-macos`,
       );
     }
-    serverProcess = exec(
-      `${DBManager.serverFolderPath}/SwitchV-server-macos`,
-      { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
-      (error, stdout, stderr) => {
-        // TODO: figure out it why it does not print out
-        // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
-        // then it will show some logs
-        if (isDebug) {
-          console.log('print server log but seems it is never callbacked');
-          console.log(error, stderr);
-          console.log(stdout);
-        }
-      },
-    );
+    // serverProcess = exec(
+    //   `${DBManager.serverFolderPath}/SwitchV-server-macos`,
+    //   { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
+    //   (error, stdout, stderr) => {
+    //     // TODO: figure out it why it does not print out
+    //     // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
+    //     // then it will show some logs
+    //     if (isDebug) {
+    //       console.log('print server log but seems it is never callbacked');
+    //       console.log(error, stderr);
+    //       console.log(stdout);
+    //     }
+    //   },
+    // );
   }
 
   let title = '';
@@ -453,6 +462,8 @@ const trayToggleEvtHandler = () => {
   }
 
   tray = new TrayGenerator(mainWindow, title, trayToggleEvtHandler);
+
+  console.log('setup shortcut');
 
   // https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#global-shortcuts
   // globalShortcut.register('Alt+CommandOrControl+N', () => {

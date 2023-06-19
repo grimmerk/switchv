@@ -39,6 +39,7 @@ function searchWorkingFolder(path: string) {
 }
 
 export function openFolderSelector() {
+  console.log("try to invoke folder selector");
   (window as any).electronAPI.openFolderSelector();
 }
 
