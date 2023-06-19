@@ -1,7 +1,7 @@
 {
   "name": "SwitchV",
   "productName": "SwitchV",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
