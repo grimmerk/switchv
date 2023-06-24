@@ -95,6 +95,7 @@ const onFocus = (event: any) => {
 };
 
 const createWindow = (): BrowserWindow => {
+  console.log("mas: enable devTools")
   // Create the browser window.
   const window = new BrowserWindow({
     // minimizable: false, // ux not good
@@ -116,7 +117,7 @@ const createWindow = (): BrowserWindow => {
   window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // if (true){ //isDebug){//!app.isPackaged) {
-  window.webContents.openDevTools();
+  // window.webContents.openDevTools();
   // }
 
   if (tray) {
@@ -357,35 +358,27 @@ ipcMain.on('hide-app', (event) => {
 });
 
 ipcMain.on('open-folder-selector', async (event) => {
-  console.log('get open folder request');
-  try {
-    const result = await dialog.showOpenDialog({
-      properties: ['openDirectory'],
-      securityScopedBookmarks: true,
-      // properties: ['openFile', 'multiSelections'],
-    });
-    console.log('result:', result);
-    /** https://gist.github.com/ngehlert/74d5a26990811eed59c635e49134d669 */
-    const { canceled, filePaths, bookmarks } = result;
-    if (canceled || filePaths.length === 0) {
-      return;
-    }
-    if (bookmarks && bookmarks.length) {
-      // store the bookmark key
-      if (isMAS()) {
-        await settings.set('security-scoped-bookmark', bookmarks[0]);
-      }
-    }
-
-    const folderPath = filePaths[0];
-    // result: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
-
-    mainWindow.webContents.send('folder-selected', folderPath);
-  } catch (err) {
-    console.log('fail to open directory explorer');
-    console.log(err);
-    console.log(JSON.stringify(err));
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+    securityScopedBookmarks: true,
+    // properties: ['openFile', 'multiSelections'],
+  });
+  /** https://gist.github.com/ngehlert/74d5a26990811eed59c635e49134d669 */
+  const { canceled, filePaths, bookmarks } = result;
+  if (canceled || filePaths.length === 0) {
+    return;
   }
+  if (bookmarks && bookmarks.length) {
+    // store the bookmark key
+    if (isMAS()) {
+      await settings.set('security-scoped-bookmark', bookmarks[0]);
+    }
+  }
+
+  const folderPath = filePaths[0];
+  // result: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
+
+  mainWindow.webContents.send('folder-selected', folderPath);
 });
 
 const trayToggleEvtHandler = () => {
@@ -458,20 +451,20 @@ const trayToggleEvtHandler = () => {
         'start server:' + `${DBManager.serverFolderPath}/SwitchV-server-macos`,
       );
     }
-    // serverProcess = exec(
-    //   `${DBManager.serverFolderPath}/SwitchV-server-macos`,
-    //   { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
-    //   (error, stdout, stderr) => {
-    //     // TODO: figure out it why it does not print out
-    //     // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
-    //     // then it will show some logs
-    //     if (isDebug) {
-    //       console.log('print server log but seems it is never callbacked');
-    //       console.log(error, stderr);
-    //       console.log(stdout);
-    //     }
-    //   },
-    // );
+    serverProcess = exec(
+      `${DBManager.serverFolderPath}/SwitchV-server-macos`,
+      { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
+      (error, stdout, stderr) => {
+        // TODO: figure out it why it does not print out
+        // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
+        // then it will show some logs
+        if (isDebug) {
+          console.log('print server log but seems it is never callbacked');
+          console.log(error, stderr);
+          console.log(stdout);
+        }
+      },
+    );
   }
 
   let title = '';
@@ -485,8 +478,6 @@ const trayToggleEvtHandler = () => {
   }
 
   tray = new TrayGenerator(mainWindow, title, trayToggleEvtHandler);
-
-  console.log('setup shortcut');
 
   // https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#global-shortcuts
   // globalShortcut.register('Alt+CommandOrControl+N', () => {

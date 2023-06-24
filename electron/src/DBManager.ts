@@ -162,7 +162,6 @@ export class DBManager {
 
       process.env.PRISMA_MIGRATION_ENGINE_BINARY = DBManager.migrateExePath;
 
-      /** 現在設定了這個後, run packaged app 時server 就不 work, 所以 server 要用原本的設定 (至少 local run, testflight 不確定) */
       process.env.PRISMA_INTROSPECTION_ENGINE_BINARY =
         DBManager.introspectionExePath;
       process.env.PRISMA_FMT_BINARY = DBManager.fmtExePath;
