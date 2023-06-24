@@ -7,11 +7,13 @@ import {
   screen,
 } from 'electron';
 
+import settings from 'electron-settings';
+
 import { exec } from 'child_process';
 import { existsSync, readdirSync } from 'fs';
 // const fs = require('fs');
 
-import { TrayGenerator } from './TrayGenerator';
+import { TrayGenerator, isMAS } from './TrayGenerator';
 import { DBManager, isUnPackaged } from './DBManager';
 
 import { isDebug } from './utility';
@@ -93,6 +95,7 @@ const onFocus = (event: any) => {
 };
 
 const createWindow = (): BrowserWindow => {
+  console.log("mas: enable devTools")
   // Create the browser window.
   const window = new BrowserWindow({
     // minimizable: false, // ux not good
@@ -100,7 +103,7 @@ const createWindow = (): BrowserWindow => {
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: isDebug,
+      devTools: true, //isDebug,
     },
 
     // hide window by default
@@ -357,9 +360,21 @@ ipcMain.on('hide-app', (event) => {
 ipcMain.on('open-folder-selector', async (event) => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],
+    securityScopedBookmarks: true,
     // properties: ['openFile', 'multiSelections'],
   });
-  const { filePaths } = result;
+  /** https://gist.github.com/ngehlert/74d5a26990811eed59c635e49134d669 */
+  const { canceled, filePaths, bookmarks } = result;
+  if (canceled || filePaths.length === 0) {
+    return;
+  }
+  if (bookmarks && bookmarks.length) {
+    // store the bookmark key
+    if (isMAS()) {
+      await settings.set('security-scoped-bookmark', bookmarks[0]);
+    }
+  }
+
   const folderPath = filePaths[0];
   // result: { canceled: false, filePaths: [ '/Users/grimmer/git' ] }
 
@@ -419,7 +434,17 @@ const trayToggleEvtHandler = () => {
     console.log('check db done. USE DBPATH:', DBManager.databaseFilePath);
   }
 
+  if (isMAS()) {
+    const securityBookmark = (await settings.get(
+      'security-scoped-bookmark',
+    )) as string;
+    if (securityBookmark) {
+      app.startAccessingSecurityScopedResource(securityBookmark);
+    }
+  }
+
   if (process.env.EMBEDSERVER || !isUnPackaged) {
+    console.log('start server');
     process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
     if (isDebug) {
       console.log(
