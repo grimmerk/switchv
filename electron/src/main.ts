@@ -95,7 +95,7 @@ const onFocus = (event: any) => {
 };
 
 const createWindow = (): BrowserWindow => {
-  console.log("mas: enable devTools")
+  console.log('mas: enable devTools');
   // Create the browser window.
   const window = new BrowserWindow({
     // minimizable: false, // ux not good
@@ -453,7 +453,12 @@ const trayToggleEvtHandler = () => {
     }
     serverProcess = exec(
       `${DBManager.serverFolderPath}/SwitchV-server-macos`,
-      { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
+      {
+        env: {
+          DATABASE_URL: `file:${DBManager.databaseFilePath}`,
+          PRISMA_QUERY_ENGINE_LIBRARY: DBManager.queryExePath,
+        },
+      },
       (error, stdout, stderr) => {
         // TODO: figure out it why it does not print out
         // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
