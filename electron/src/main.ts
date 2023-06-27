@@ -446,6 +446,7 @@ const trayToggleEvtHandler = () => {
   if (process.env.EMBEDSERVER || !isUnPackaged) {
     console.log('start server');
     process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
+    process.env.PRISMA_QUERY_ENGINE_LIBRARY = DBManager.queryExePath;
     if (isDebug) {
       console.log(
         'start server:' + `${DBManager.serverFolderPath}/SwitchV-server-macos`,
