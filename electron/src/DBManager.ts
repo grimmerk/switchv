@@ -103,12 +103,17 @@ export class DBManager {
       // it is a file path in dev mode, but after webpack bundles in production, it is just some string, e.g. 4569
       DBManager.prismaPath = require.resolve('prisma');
 
-      DBManager.serverFolderPath = path.resolve(`../server/`);
+      DBManager.serverFolderPath = path.resolve(`./`);
       DBManager.schemaPath = `${DBManager.serverFolderPath}/prisma/schema.prisma`;
 
       DBManager.databaseFilePath = path.resolve(
-        `${process.cwd()}/../server/prisma/dev.db`,
+        `${process.cwd()}/prisma/dev.db`,
       );
+
+      /** embed nestjs version: */
+      DBManager.introspectionExePath = `./node_modules/@prisma/engines/introspection-engine-darwin-arm64`;
+      DBManager.fmtExePath = `./node_modules/@prisma/engines/prisma-fmt-darwin-arm64`;
+      DBManager.queryExePath = `./node_modules/@prisma/engines/libquery_engine-darwin-arm64.dylib.node`;
 
       // db_url = `${__dirname}/../server/prisma/dev.db`; // works but not good. dirname is some webpack main file location
 
@@ -152,6 +157,8 @@ export class DBManager {
     // const fmtPath = process.env.PRISMA_FMT_BINARY;
     // const queryBinaryPath = process.env.PRISMA_QUERY_ENGINE_BINARY;
     // const queryLibaryPath = process.env.PRISMA_QUERY_ENGINE_LIBRARY;
+
+    /** !isUnPackaged */
     if (DBManager.migrateExePath) {
       /** For migration, it also requires
        * 1. node_modules/@prisma/engines/dist !!!!!
