@@ -1,6 +1,6 @@
 import { app } from 'electron';
 import { existsSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
-const path = require('path');
+import * as path from 'path';
 
 // ref:
 // https://www.prisma.io/docs/concepts/components/prisma-schema#prisma-schema-file-location schema file path:
@@ -98,19 +98,18 @@ export class DBManager {
       return;
     }
 
-    // TODO:
     if (isUnPackaged) {
       // it is a file path in dev mode, but after webpack bundles in production, it is just some string, e.g. 4569
       DBManager.prismaPath = require.resolve('prisma');
 
-      DBManager.serverFolderPath = path.resolve(`./`);
+      DBManager.serverFolderPath = path.resolve(`./`); /** not directly used */
       DBManager.schemaPath = `${DBManager.serverFolderPath}/prisma/schema.prisma`;
 
       DBManager.databaseFilePath = path.resolve(
         `${process.cwd()}/prisma/dev.db`,
       );
 
-      /** embed nestjs version: */
+      /** embed nestjs version: not really used. intel version needs different file name*/
       DBManager.introspectionExePath = `./node_modules/@prisma/engines/introspection-engine-darwin-arm64`;
       DBManager.fmtExePath = `./node_modules/@prisma/engines/prisma-fmt-darwin-arm64`;
       DBManager.queryExePath = `./node_modules/@prisma/engines/libquery_engine-darwin-arm64.dylib.node`;
@@ -123,9 +122,14 @@ export class DBManager {
     } else {
       // **/Resources/
       // after resolve, no final /
-      DBManager.serverFolderPath = path.resolve(`${app.getAppPath()}/../`); //`${__dirname}/../../../`;
+      const resourcePath = path.resolve(`${app.getAppPath()}/../`); //`${__dirname}/../../../`;
+
+      DBManager.serverFolderPath =
+        path.resolve(`./`); /** TODO: not directly used, not test yet */
       // DBManager.serverFolderPath = "/Users/grimmer/git/xwin/electron/out/XWin-darwin-arm64/XWin.app/Contents/Resources"
-      DBManager.schemaPath = `${DBManager.serverFolderPath}/schema.prisma`;
+      /** TODO: need check. for migration  */
+      DBManager.schemaPath = `${DBManager.serverFolderPath}/prisma/schema.prisma`;
+
       DBManager.databaseFilePath = sqlitePathInProd;
 
       /** mainly it requires two files
@@ -133,15 +137,15 @@ export class DBManager {
        * 2. node_modules/prisma/package.json
        * with these structure ./index.js & ../package.json
        * */
-      DBManager.prismaPath = `${DBManager.serverFolderPath}/prisma/build/index.js`;
+      DBManager.prismaPath = `${resourcePath}/prisma/build/index.js`;
 
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/engines/dist/index.js`;
       // DBManager.migrateExePath = `${DBManager.serverFolderPath}/node_modules/@prisma/engines/migration-engine-darwin-arm64`;
-      DBManager.migrateExePath = `${DBManager.serverFolderPath}/migration-engine-darwin`;
+      DBManager.migrateExePath = `${resourcePath}/migration-engine-darwin`;
 
-      DBManager.introspectionExePath = `${DBManager.serverFolderPath}/introspection-engine-darwin`;
-      DBManager.fmtExePath = `${DBManager.serverFolderPath}/prisma-fmt-darwin`;
-      DBManager.queryExePath = `${DBManager.serverFolderPath}/libquery_engine-darwin.dylib.node`;
+      DBManager.introspectionExePath = `${resourcePath}/introspection-engine-darwin`;
+      DBManager.fmtExePath = `${resourcePath}/prisma-fmt-darwin`;
+      DBManager.queryExePath = `${resourcePath}/libquery_engine-darwin.dylib.node`;
     }
     // DBManager.databaseFilePath = db_url;
   }
@@ -201,6 +205,7 @@ export class DBManager {
     }
 
     if (DBManager.migrateExePath) {
+      /** below should not matter, just dummy setting */
       /** this is to rollback the code withe the previous logic */
       process.env.PRISMA_INTROSPECTION_ENGINE_BINARY = ''; // introPath; // = process.env.PRISMA_INTROSPECTION_ENGINE_BINARY;
       process.env.PRISMA_FMT_BINARY = ''; //fmtPath; // = process.env.PRISMA_FMT_BINARY;

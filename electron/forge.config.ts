@@ -25,8 +25,8 @@ const config: ForgeConfig = {
     appBundleId: 'com.lifeoverflow.switchv',
     icon: 'images/icon',
     extraResource: [
-      '../server/SwitchV-server-macos',
-      '../server/prisma/schema.prisma',
+      // '../server/SwitchV-server-macos',
+      // '../server/prisma/schema.prisma',
       'node_modules/prisma',
       'node_modules/@prisma/engines/migration-engine-darwin',
       'node_modules/@prisma/engines/introspection-engine-darwin',
