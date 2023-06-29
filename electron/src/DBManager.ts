@@ -124,11 +124,11 @@ export class DBManager {
       // after resolve, no final /
       const resourcePath = path.resolve(`${app.getAppPath()}/../`); //`${__dirname}/../../../`;
 
-      DBManager.serverFolderPath =
-        path.resolve(`./`); /** TODO: not directly used, not test yet */
+      // DBManager.serverFolderPath =
+      //   path.resolve(`./`); /** TODO: not directly used, not test yet */
       // DBManager.serverFolderPath = "/Users/grimmer/git/xwin/electron/out/XWin-darwin-arm64/XWin.app/Contents/Resources"
       /** TODO: need check. for migration  */
-      DBManager.schemaPath = `${DBManager.serverFolderPath}/prisma/schema.prisma`;
+      DBManager.schemaPath = `${resourcePath}/app/.webpack/main/schema.prisma`;
 
       DBManager.databaseFilePath = sqlitePathInProd;
 
