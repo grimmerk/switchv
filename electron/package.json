@@ -56,7 +56,8 @@
     "style-loader": "^3.0.0",
     "ts-loader": "^9.2.2",
     "ts-node": "^10.9.1",
-    "typescript": "~4.5.4"
+    "typescript": "~4.5.4",
+    "webpack-node-externals": "^3.0.0"
   },
   "dependencies": {
     "@atlaskit/button": "^16.5.3",
@@ -67,6 +68,8 @@
     "@nestjs/core": "^10.0.3",
     "@nestjs/platform-express": "^10.0.3",
     "@prisma/client": "^4.16.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0",
     "electron-settings": "^4.0.2",
     "electron-squirrel-startup": "^1.0.0",
     "prisma": "^4.16.1",
