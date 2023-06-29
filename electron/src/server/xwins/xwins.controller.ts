@@ -79,7 +79,7 @@ export class XWinsController {
 
     let path = '';
     let isSpace = false;
-    let folders = [];
+    let folders: { path: string; inSpace: boolean }[] = [];
     if (workspace_path) {
       isSpace = true;
       path = workspace_path;
