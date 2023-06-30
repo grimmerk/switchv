@@ -99,6 +99,7 @@ const createWindow = (): BrowserWindow => {
   console.log('mas: enable devTools');
   // Create the browser window.
   const window = new BrowserWindow({
+    // maximizable: false,
     // minimizable: false, // ux not good
     height: 600,
     width: 800,

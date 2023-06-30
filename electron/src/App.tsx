@@ -63,7 +63,7 @@ const fetchWorkingFolder = async (): Promise<{ id: number, workingFolder?: strin
 
 const saveWorkingFolder = async (workingFolder: string) => {
   const url = `${SERVER_URL}/user`
-  let headers = {
+  const headers = {
     "Content-Type": "application/json",
     "Accept": "application/json"
   };
@@ -79,7 +79,7 @@ const deleteXWin = async (path: string) => {
   // console.log("deleteXwin,", path)
   const url = `${SERVER_URL}/xwins`
 
-  let headers = {
+  const headers = {
     "Content-Type": "application/json",
     "Accept": "application/json"
   };
@@ -361,7 +361,7 @@ function App() {
   }, []);
 
   const openPathSet = new Set();
-  let openPathArray = pathInfoArray.map((pathInfo) => {
+  const openPathArray = pathInfoArray.map((pathInfo) => {
     const { path } = pathInfo;
     openPathSet.add(path);
     return {
@@ -371,7 +371,7 @@ function App() {
     }
   });
 
-  let workingInfoArray: Array<{ value: string, label: string, everOpened: boolean }> = [];
+  const workingInfoArray: Array<{ value: string, label: string, everOpened: boolean }> = [];
   workingPathInfoArray.forEach((path: string) => {
     if (!openPathSet.has(path)) {
       workingInfoArray.push({
