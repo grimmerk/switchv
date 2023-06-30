@@ -17,6 +17,7 @@ import { TrayGenerator, isMAS } from './TrayGenerator';
 import { DBManager, isUnPackaged } from './DBManager';
 
 import { isDebug } from './utility';
+import { bootstrap } from './server/server';
 
 /** TODO: use Node.js path.join() instead of manual concat */
 
@@ -95,7 +96,7 @@ const onFocus = (event: any) => {
 };
 
 const createWindow = (): BrowserWindow => {
-  console.log("mas: enable devTools")
+  console.log('mas: enable devTools');
   // Create the browser window.
   const window = new BrowserWindow({
     // minimizable: false, // ux not good
@@ -412,6 +413,7 @@ const trayToggleEvtHandler = () => {
 // })
 (async () => {
   await app.whenReady();
+
   mainWindow = createWindow();
   if (isDebug) {
     console.log('when ready');
@@ -443,29 +445,38 @@ const trayToggleEvtHandler = () => {
     }
   }
 
-  if (process.env.EMBEDSERVER || !isUnPackaged) {
-    console.log('start server');
-    process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
-    if (isDebug) {
-      console.log(
-        'start server:' + `${DBManager.serverFolderPath}/SwitchV-server-macos`,
-      );
-    }
-    serverProcess = exec(
-      `${DBManager.serverFolderPath}/SwitchV-server-macos`,
-      { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
-      (error, stdout, stderr) => {
-        // TODO: figure out it why it does not print out
-        // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
-        // then it will show some logs
-        if (isDebug) {
-          console.log('print server log but seems it is never callbacked');
-          console.log(error, stderr);
-          console.log(stdout);
-        }
-      },
-    );
-  }
+  // if (process.env.EMBEDSERVER || !isUnPackaged) {
+  //   console.log('start server');
+  //   process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
+  //   if (isDebug) {
+  //     console.log(
+  //       'start server:' + `${DBManager.serverFolderPath}/SwitchV-server-macos`,
+  //     );
+  //   }
+  //   serverProcess = exec(
+  //     `${DBManager.serverFolderPath}/SwitchV-server-macos`,
+  //     { env: { DATABASE_URL: `file:${DBManager.databaseFilePath}` } },
+  //     (error, stdout, stderr) => {
+  //       // TODO: figure out it why it does not print out
+  //       // NOTE: if it is running smoothly, it will not print any logs. But if it seems that it happens to read db error,
+  //       // then it will show some logs
+  //       if (isDebug) {
+  //         console.log('print server log but seems it is never callbacked');
+  //         console.log(error, stderr);
+  //         console.log(stdout);
+  //       }
+  //     },
+  //   );
+  // } else {
+  console.log('create server');
+  process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
+  // process.env.PRISMA_INTROSPECTION_ENGINE_BINARY =
+  //   DBManager.introspectionExePath;
+  // process.env.PRISMA_FMT_BINARY = DBManager.fmtExePath;
+  process.env.PRISMA_QUERY_ENGINE_LIBRARY = DBManager.queryExePath;
+  await bootstrap();
+  console.log('create server done');
+  // }
 
   let title = '';
   if (!isDebug) {

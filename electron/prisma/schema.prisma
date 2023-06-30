@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model VSWindow {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) // workspace will update
+  // 1. this project A only
+  // 2. another space including this A project, so they will result in duplicate
+  path      String
+  closed    Boolean  @default(false) // VSCode deactivate, not really use now
+
+  isSpace         Boolean    @default(false)
+  embeddedWindows VSWindow[] @relation("SpaceEmbeddedWindows")
+
+  spaceParentId Int?
+  spaceParent   VSWindow? @relation("SpaceEmbeddedWindows", fields: [spaceParentId], references: [id], onDelete: Cascade)
+  inSpace       Boolean   @default(false)
+
+  name String?
+
+  // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#model
+
+  @@unique([path, inSpace])
+  @@index([updatedAt, path, closed, isSpace, spaceParentId, inSpace])
+}
+
+model User {
+  id            Int     @id @default(autoincrement())
+  workingFolder String?
+}
