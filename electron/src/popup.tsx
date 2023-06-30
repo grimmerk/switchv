@@ -11,7 +11,7 @@ import Button from '@atlaskit/button';
 
 import Popup from '@atlaskit/popup';
 
-import { openFolderSelector } from "./App"
+import { openFolderSelector, closeAppClick } from "./App"
 
 // import { useFilePicker } from "use-file-picker";
 
@@ -55,18 +55,24 @@ const PopupDefaultExample = ({ workingFolderPath, saveCallback, openCallback }: 
                                 Select
                             </Button>
                         </div>
-                        <div >
-                            {/* <Button
-                                onClick={() => {
-                                    if (saveCallback) {
-                                        saveCallback(folderPath);
-                                    }
-                                }}
-                                appearance="primary">
-                                Save
-                            </Button> */}
-                        </div>
 
+
+                    </div>
+                    <div style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: 'flex-end',
+                        margin: 8,
+                    }}>
+                        <Button
+                            onClick={() => {
+                                closeAppClick();
+                                // const window = BrowserWindow.getFocusedWindow();
+                                // window.close();
+                            }}
+                            appearance="warning">
+                            {"[> Quit SwitchV"}
+                        </Button>
                     </div>
                 </div >}
             trigger={(triggerProps) => (

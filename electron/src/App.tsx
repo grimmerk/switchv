@@ -43,6 +43,10 @@ export function openFolderSelector() {
   (window as any).electronAPI.openFolderSelector();
 }
 
+export function closeAppClick() {
+  console.log("mas:closeAppClick");
+  (window as any).electronAPI.closeAppClick();
+}
 
 
 function sleep(ms: number) {
@@ -514,7 +518,6 @@ function App() {
         components={{ DropdownIndicator: null, Option: ((props) => OptionUI(props, onDeleteClick)) }}
         formatOptionLabel={formatOptionLabel}
         options={pathArray} />
-
     </div>
   );
 }

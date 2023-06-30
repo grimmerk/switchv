@@ -359,6 +359,10 @@ ipcMain.on('hide-app', (event) => {
   hideWindow();
 });
 
+ipcMain.on('close-app-click', async (event) => {
+  app.quit();
+});
+
 ipcMain.on('open-folder-selector', async (event) => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],

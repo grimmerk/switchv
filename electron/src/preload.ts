@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   hideApp: () => ipcRenderer.send('hide-app'),
   openFolderSelector: () => ipcRenderer.send('open-folder-selector'),
+  closeAppClick: () => ipcRenderer.send('close-app-click'),
   popupAlert: (alert: string) => ipcRenderer.send('pop-alert', alert),
   searchWorkingFolder: (path: string) =>
     ipcRenderer.send('search-working-folder', path),
