@@ -39,12 +39,10 @@ function searchWorkingFolder(path: string) {
 }
 
 export function openFolderSelector() {
-  console.log("mas:try to invoke folder selector");
   (window as any).electronAPI.openFolderSelector();
 }
 
 export function closeAppClick() {
-  console.log("mas:closeAppClick");
   (window as any).electronAPI.closeAppClick();
 }
 

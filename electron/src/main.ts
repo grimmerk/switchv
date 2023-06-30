@@ -96,7 +96,6 @@ const onFocus = (event: any) => {
 };
 
 const createWindow = (): BrowserWindow => {
-  console.log('mas: enable devTools');
   // Create the browser window.
   const window = new BrowserWindow({
     // maximizable: false,
@@ -105,7 +104,7 @@ const createWindow = (): BrowserWindow => {
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: true, //isDebug,
+      devTools: false, //isDebug,
     },
 
     // hide window by default
