@@ -145,7 +145,7 @@ export class DBManager {
 
       DBManager.introspectionExePath = `${resourcePath}/introspection-engine-darwin`;
       DBManager.fmtExePath = `${resourcePath}/prisma-fmt-darwin`;
-      DBManager.queryExePath = `${resourcePath}/libquery_engine-darwin.dylib.node`;
+      DBManager.queryExePath = `${resourcePath}/app/.webpack/main/native_modules/client/libquery_engine-darwin-arm64.dylib.node`;
     }
     // DBManager.databaseFilePath = db_url;
   }

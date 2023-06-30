@@ -30,7 +30,7 @@ const config: ForgeConfig = {
       'node_modules/prisma',
       'node_modules/@prisma/engines/migration-engine-darwin',
       // 'node_modules/@prisma/engines/introspection-engine-darwin',
-      'node_modules/@prisma/engines/libquery_engine-darwin.dylib.node',
+      // 'node_modules/@prisma/engines/libquery_engine-darwin.dylib.node',
       // 'node_modules/@prisma/engines/prisma-fmt-darwin',
       '../node_modules',
       'images/MenuBar.png',

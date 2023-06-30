@@ -8,7 +8,7 @@ then
     cp node_modules/@prisma/engines/migration-engine-darwin-arm64 node_modules/@prisma/engines/migration-engine-darwin 
 
     # cp node_modules/@prisma/engines/introspection-engine-darwin-arm64 node_modules/@prisma/engines/introspection-engine-darwin
-    cp node_modules/@prisma/engines/libquery_engine-darwin-arm64.dylib.node node_modules/@prisma/engines/libquery_engine-darwin.dylib.node 
+    # cp node_modules/@prisma/engines/libquery_engine-darwin-arm64.dylib.node node_modules/@prisma/engines/libquery_engine-darwin.dylib.node 
     # cp node_modules/@prisma/engines/prisma-fmt-darwin-arm64 node_modules/@prisma/engines/prisma-fmt-darwin 
 else
     echo "migration arm64 does no exist, is cpu mac, not handle yet"

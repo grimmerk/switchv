@@ -15,13 +15,12 @@ export const mainConfig: Configuration = {
   module: {
     rules,
   },
-  externals: {
-    '@nestjs/microservices': '@nestjs/microservices',
-    '@nestjs/websockets': '@nestjs/websockets',
-    '@nestjs/websockets/socket-module': '@nestjs/websockets/socket-module',
-    '@nestjs/microservices/microservices-module':
-      '@nestjs/microservices/microservices-module',
-  }, //[nodeExternals()],
+  externals: [
+    '@nestjs/microservices',
+    '@nestjs/websockets',
+    '@nestjs/websockets/socket-module',
+    '@nestjs/microservices/microservices-module',
+  ], //[nodeExternals()],
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css', '.json'],
   },
