@@ -1,5 +1,5 @@
 # SwitchV
 
-This extension allow you to quickly open and switch Visual Studio Code projects.
+This extension allows you to quickly open and switch Visual Studio Code used windows.
 
-Caution: please do not install this. This extension only work when you install its dependent macOS app. But that macOS app is not uploaded to the app store yet.
+You need to install the macOS app SwitchV https://apps.apple.com/us/app/switchv/id1663612397 as well. Then you can use SwitchV app like Spotlight to help you launch Visual Studio Code (VS Code) windows quickly, even if VS Code is launched. You can also add your favorite working folder to select an folder as a VS Code window.

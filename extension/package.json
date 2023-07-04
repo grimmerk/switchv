@@ -1,8 +1,8 @@
 {
 	"name": "SwitchV",
 	"displayName": "SwitchV",
-	"description": "SwitchV VSCode extension",
-	"version": "0.0.10",
+	"description": "Quickly open and switch VS Code windows",
+	"version": "0.0.11",
 	"repository": {
 		"url": "https://github.com/grimmer0125/switchv"
 	},
@@ -20,9 +20,7 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
-		"commands": [
-			{}
-		]
+		"commands": []
 	},
 	"scripts": {
 		"make": "vsce package",
