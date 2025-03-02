@@ -1,3 +1,5 @@
 desktop/electron/out
 
 electron/embedded.provisionprofile
+dev.db
+electron/prisma/migrations

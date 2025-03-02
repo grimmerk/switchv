@@ -65,6 +65,14 @@ const config: ForgeConfig = {
               js: './src/preload.ts',
             },
           },
+          {
+            html: './src/explainer.html',
+            js: './src/explainer-renderer.ts',
+            name: 'explainer_window',
+            preload: {
+              js: './src/preload.ts',
+            },
+          },
         ],
       },
     }),
