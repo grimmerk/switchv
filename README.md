@@ -57,43 +57,15 @@ Use this to quickly open and switch VS Code projects.
 8. [fixed] close the packaged app via cmd+q seems not close SwitchV-server-macos process? check by command: lsof -i:55688. Use ctrl+c to stop development (running via yarn start) is OK. (add close button on tray to help? I guess it is not helping). 
     1. Solved by electron sending kill server process in the before-quick event handler. Another person suggests to add one more step to handle SIGINT signal on server side, ref https://stackoverflow.com/questions/71523442/child-process-doesnt-exit.
 
-### debugger issue 
+### Use VS Code Debugger  
 
 **To debug main process**
 
-Below is a workaround way to debug main process: Its reference is 
-https://github.com/electron-userland/electron-forge/issues/1369#issuecomment-1172913835
-  
+In VS Code Run and Debug, choose `Electron: Main Process` to launch and debug.
 
-```json
-{
-  "type": "node",
-  "request": "launch",
-  "name": "Electron Main",
-  "runtimeExecutable": "npm",
-  "runtimeArgs": [
-      "run",
-      "start",
-  ],
-  "cwd": "${workspaceFolder}"
-}
-```
+**To debug render process (below set up becomes broken after the timing updating electron 29 and add 2nd window, please directly set up breakpoints in the opened dev tool instead) **
 
-electron-forge official site only mention how to debug main process but it has a bug 
-https://github.com/electron-userland/electron-forge/issues/1369
-
-```json
-{
-  "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-forge-vscode-nix",
-}
-```
-
-Error: Cannot find module '/Users/liamdawson/w/@electron-forge/cli/dist/electron-forge-start'
-
-
-**To debug render process (workaround way)**
-
-[electron site](https://www.electronjs.org/docs/latest/tutorial/debugging-vscode) and [ms github site](https://github.com/Microsoft/vscode-recipes/tree/master/Electron) both mention below setting to debug main proces 
+[electron site](https://www.electronjs.org/docs/latest/tutorial/debugging-vscode) and [ms github site](https://github.com/Microsoft/vscode-recipes/tree/master/Electron) both mention below setting to debug main process
 
 
 ```json 
@@ -107,7 +79,7 @@ and ms github site has a extra setting for debugging render process. But the abo
 1. `yarn start` (to start webpack server part) 
 2. launch compound "Electron: All" launch setting (from ms github site) to debug main & **render processes**. 
 
-The drawback is you will see two copy of SwitchV. And attaching render process takes a little time (e.g. only stop at some breakpoints after a while/refresh).
+The drawback is you will see two copy of SwitchV. And attaching render process takes a little time (e.g. only stop at some breakpoints after a while/refresh).~~
 
 ## notes about packaging a macOS app
 

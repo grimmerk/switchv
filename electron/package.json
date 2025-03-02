@@ -19,7 +19,9 @@
     "make-x86": "electron-forge make --arch=x64 --platform=darwin",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "watch": "webpack --watch"
+
   },
   "keywords": [],
   "author": {
