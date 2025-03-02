@@ -160,7 +160,7 @@ const createWindow = (): BrowserWindow => {
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: false, //isDebug,
+      devTools: true, //isDebug,
     },
 
     // hide window by default

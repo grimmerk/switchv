@@ -14,6 +14,18 @@ export const rendererConfig: Configuration = {
   },
   plugins,
   resolve: {
-    extensions: ['.js', '.ts', '.jsx', '.tsx', '.css'],
+    extensions: ['.js', '.ts', '.jsx', '.tsx', '.css', '.json'],
+    fallback: {
+      path: false,
+      fs: false
+    }
   },
+  // For Electron 28+, we need to use web instead of electron-renderer for security reasons
+  // but need to provide node integration for compatibility
+  target: 'web',
+  // These are needed for webpack hot reloading to work with Electron's contextIsolation 
+  output: {
+    publicPath: '/',
+    globalObject: 'globalThis'
+  }
 };

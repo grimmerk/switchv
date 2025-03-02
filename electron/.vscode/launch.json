@@ -2,52 +2,77 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Node.js - Debug Current File",
+            "name": "Debug Current File",
             "type": "node",
             "request": "launch",
-            "program": "${file}"
+            "program": "${file}",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
         },
         {
+            "name": "Electron: Main Process",
             "type": "node",
             "request": "launch",
-            "name": "Electron Main",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "run",
-                "start",
+            "cwd": "${workspaceFolder}",
+            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-forge-vscode-win",
+            "windows": {
+                "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-forge-vscode-win.cmd"
+            },
+            "args" : [
+                ".",
                 "--remote-debugging-port=9223"
             ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Electron: ms-Main-blank-only-used-in-comound",
-            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
-            "runtimeArgs": [
-                ".",
-                "--remote-debugging-port=9223",
+            "outputCapture": "std",
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**"
             ],
-            "windows": {
-                "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+            "preLaunchTask": "npm: start",
+            "env": {
+                "NODE_ENV": "development"
             }
         },
         {
-            "name": "Electron: ms-Renderer-only-used-in-comound",
+            "name": "Electron: Renderer Process",
             "type": "chrome",
             "request": "attach",
             "port": 9223,
             "webRoot": "${workspaceFolder}",
-            "timeout": 30000
+            "timeout": 30000,
+            "urlFilter": "*main_window*",
+            "sourceMapPathOverrides": {
+                "webpack:///./~/*": "${workspaceFolder}/node_modules/*",
+                "webpack:///./*": "${workspaceFolder}/*",
+                "webpack:///*": "*"
+            }
+        },
+        {
+            "name": "Electron: Explainer Renderer Process",
+            "type": "chrome",
+            "request": "attach",
+            "port": 9223,
+            "webRoot": "${workspaceFolder}",
+            "timeout": 30000,
+            "urlFilter": "*explainer_window*",
+            "sourceMapPathOverrides": {
+                "webpack:///./~/*": "${workspaceFolder}/node_modules/*",
+                "webpack:///./*": "${workspaceFolder}/*",
+                "webpack:///*": "*"
+            }
         }
     ],
     "compounds": [
         {
-            "name": "Electron: All(require manually run start first)",
+            "name": "Electron: All Processes",
             "configurations": [
-                "Electron: ms-Main-blank-only-used-in-comound",
-                "Electron: ms-Renderer-only-used-in-comound"
-            ]
+                "Electron: Main Process", 
+                "Electron: Renderer Process",
+                "Electron: Explainer Renderer Process"
+            ],
+            "stopAll": true
         }
     ]
 }
