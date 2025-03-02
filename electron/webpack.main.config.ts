@@ -2,9 +2,6 @@ import type { Configuration } from 'webpack';
 
 import { rules } from './webpack.rules';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-// const nodeExternals = require('webpack-node-externals');
-
 export const mainConfig: Configuration = {
   /**
    * This is the main entry point for your application, it's the first file
@@ -20,8 +17,20 @@ export const mainConfig: Configuration = {
     '@nestjs/websockets',
     '@nestjs/websockets/socket-module',
     '@nestjs/microservices/microservices-module',
-  ], //[nodeExternals()],
+    'rxjs/add/observable/fromEvent',
+    'rxjs/Observable',
+    'swagger-ui-express',
+    'class-validator',
+    'class-transformer'
+  ],
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css', '.json'],
+    fallback: {
+      path: false,
+      fs: false,
+      child_process: false
+    }
   },
+  // Node.js polyfills are no longer included by default in webpack 5
+  target: 'electron-main',
 };

@@ -8,8 +8,9 @@ import { WebpackPlugin } from '@electron-forge/plugin-webpack';
 import { mainConfig } from './webpack.main.config';
 import { rendererConfig } from './webpack.renderer.config';
 
-const fs = require('fs');
+import * as fs from 'fs';
 
+// Ensure compatibility with Electron Forge v7
 const config: ForgeConfig = {
   hooks: {
     generateAssets: async () => {
@@ -61,6 +62,14 @@ const config: ForgeConfig = {
             html: './src/index.html',
             js: './src/renderer.ts',
             name: 'main_window',
+            preload: {
+              js: './src/preload.ts',
+            },
+          },
+          {
+            html: './src/explainer.html',
+            js: './src/explainer-renderer.ts',
+            name: 'explainer_window',
             preload: {
               js: './src/preload.ts',
             },
