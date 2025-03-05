@@ -1,41 +1,7 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Res,
-  HttpStatus,
-  HttpCode,
-  Body,
-  Delete,
-  Param,
-} from '@nestjs/common';
-import { Response } from 'express';
-
+import { Body, Controller, Delete, Get, HttpCode, Post } from '@nestjs/common';
 import { VSWindow as VSWindowModel } from '@prisma/client';
-
-import { XWinService } from './xwins.service';
-
 import { CreateXwinDto, DeleteXwinDto } from './xwin.dto';
-
-// const tmpWinList: CreateXwinDto[] = [];
-/** x TODO: use prisma DB client + sqlite/MongoDB instead */
-/** DB part */
-// const addXWinToInMemoryDB = (dto: CreateXwinDto) => {
-//   tmpWinList.push(dto);
-// };
-// const getXWinFromInMemoryDB = () => {
-//   if (!tmpWinList.length) {
-//     // dummy data
-//     return [
-//       {
-//         paths: ['/Users/grimmer/git/algorithms-vscode'],
-//         workspace_path: '',
-//       },
-//     ];
-//   }
-//   return tmpWinList;
-// };
-/** DB part */
+import { XWinService } from './xwins.service';
 
 @Controller('xwins')
 export class XWinsController {
@@ -49,8 +15,6 @@ export class XWinsController {
     await this.xwinService.deleteXWin({
       path_inSpace: { path, inSpace: false },
     });
-
-    // console.log('delete done');
   }
 
   /**
@@ -63,14 +27,8 @@ export class XWinsController {
    *   workspace_path: '' (empty string)
    * @param res
    */
-
-  //@Body() userData: { name?: string; email: string },
   @Post()
   async create(@Body() createCatDto: CreateXwinDto): Promise<VSWindowModel> {
-    // addXWinToInMemoryDB(createCatDto);
-
-    // console.log('post VSCode win', createCatDto);
-
     const { paths, workspace_path } = createCatDto;
     if (!paths?.length) {
       // console.log('no paths, return directly');
@@ -101,7 +59,7 @@ export class XWinsController {
       update: {
         updatedAt: new Date(),
         embeddedWindows: {
-          //set: folders, // not work since it is not to update relations
+          // set: folders, // not work since it is not to update relations
           // ref: https://github.com/prisma/prisma/issues/5456
           deleteMany: {},
           create: folders,
@@ -114,7 +72,7 @@ export class XWinsController {
           // https://stackoverflow.com/questions/68285222/create-or-update-one-to-many-relationship-in-prisma
           // https://stackoverflow.com/questions/65587200/updating-a-many-to-many-relationship-in-prisma
           // connectOrCreate will create if not present and add the categories to the posts as well.
-          // connectOrCreat??
+          // connectOrCreate??
 
           // https://stackoverflow.com/questions/70515366/how-to-update-a-many-to-many-relationship-in-prisma
           // createMany: {
@@ -137,11 +95,6 @@ export class XWinsController {
 
   @Get()
   async findAll(): Promise<VSWindowModel[]> {
-    // console.log('get VSCode win');
-
-    //return getXWinFromInMemoryDB();
-
-    //return this.postService.post({ id: Number(id) });
     const xwins = await this.xwinService.xwins({
       where: { inSpace: false },
       orderBy: {

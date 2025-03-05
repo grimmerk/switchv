@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma, VSWindow } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import { VSWindow, Prisma } from '@prisma/client';
 
 @Injectable()
 export class XWinService {

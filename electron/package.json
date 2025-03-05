@@ -7,8 +7,8 @@
   "scripts": {
     "db": "prisma migrate dev",
     "start": "cross-env NODE_ENV=development electron-forge start",
-    "dev": "cross-env EMBEDSERVER=1 NODE_ENV=development electron-forge start",
-    "start:explainer": "cross-env NODE_ENV=development electron-forge start",
+    "dev": "npm run start",
+    "start:explainer": "npm run start",
     "package": "electron-forge package",
     "package_mas": "npm run prebuild && cross-env BUILD_TYPE=prod electron-forge package --platform=darwin -- --mas && npm run postbuild",
     "prebuild": "sh prebuild.sh",
