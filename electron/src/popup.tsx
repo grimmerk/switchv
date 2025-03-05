@@ -27,7 +27,7 @@ const PopupDefaultExample = ({
       onClose={() => setIsOpen(false)}
       placement="bottom-start"
       content={(props) => (
-        <div css={contentStyles}>
+        <div className="content">
           <div style={{ display: 'flex' }}>
             <div style={{ alignItems: 'center', display: 'flex' }}>
               <div style={{ color: '#6A9955' }}>{'working folder:'}</div>

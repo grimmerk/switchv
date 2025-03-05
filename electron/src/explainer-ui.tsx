@@ -211,7 +211,7 @@ const ExplainerApp: React.FC = () => {
       <div style={styles.codeSection}>
         <SyntaxHighlighter
           language={language}
-          style={vscDarkPlus}
+          style={vscDarkPlus as any}
           customStyle={{
             background: '#1e1e1e',
             marginTop: 0,
@@ -238,7 +238,7 @@ const ExplainerApp: React.FC = () => {
                 return !inline && match ? (
                   <SyntaxHighlighter
                     language={match[1]}
-                    style={vscDarkPlus}
+                    style={vscDarkPlus as any}
                     PreTag="div"
                     {...props}
                   >
