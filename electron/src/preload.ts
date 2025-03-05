@@ -13,11 +13,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   popupAlert: (alert: string) => ipcRenderer.send('pop-alert', alert),
   searchWorkingFolder: (path: string) =>
     ipcRenderer.send('search-working-folder', path),
-  
+
   // Code Explainer APIs
-  openCodeExplainer: (code: string) => 
+  openCodeExplainer: (code: string) =>
     ipcRenderer.send('open-code-explainer', code),
-  
+
   onFolderSelected: (callback: any) =>
     ipcRenderer.on('folder-selected', callback),
 
@@ -25,19 +25,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('working-folder-iterated', callback),
   onFocusWindow: (callback: any) => ipcRenderer.on('window-focus', callback),
   onXWinNotFound: (callback: any) => ipcRenderer.on('xwin-not-found', callback),
-  
+
   // Listen for code to explain in the explainer window
-  onCodeToExplain: (callback: any) => 
+  onCodeToExplain: (callback: any) =>
     ipcRenderer.on('code-to-explain', callback),
-    
+
   // Streaming explanation events
-  onExplanationStart: (callback: any) => 
+  onExplanationStart: (callback: any) =>
     ipcRenderer.on('explanation-start', callback),
-  onExplanationChunk: (callback: any) => 
+  onExplanationChunk: (callback: any) =>
     ipcRenderer.on('explanation-chunk', callback),
-  onExplanationComplete: (callback: any) => 
+  onExplanationComplete: (callback: any) =>
     ipcRenderer.on('explanation-complete', callback),
-  onExplanationError: (callback: any) => 
+  onExplanationError: (callback: any) =>
     ipcRenderer.on('explanation-error', callback),
 });
 

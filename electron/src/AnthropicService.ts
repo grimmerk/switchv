@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { BrowserWindow } from 'electron';
 import * as dotenv from 'dotenv';
+import { BrowserWindow } from 'electron';
 import * as path from 'path';
 import { isDebug } from './utility';
 
@@ -16,27 +16,32 @@ export class AnthropicService {
   constructor() {
     // Get API key from environment variable
     this.apiKey = process.env.ANTHROPIC_API_KEY || '';
-    
+
     if (isDebug) {
-      console.log('Anthropic API key status:', this.apiKey ? 'Found' : 'Missing');
+      console.log(
+        'Anthropic API key status:',
+        this.apiKey ? 'Found' : 'Missing',
+      );
     }
-    
+
     this.setupClient();
   }
-  
+
   // Clear the cache if it gets too large
   private manageCacheSize(): void {
     const MAX_CACHE_SIZE = 50; // Maximum number of entries
     if (this.codeExplanationCache.size > MAX_CACHE_SIZE) {
       // Convert to array, sort by last access, and take most recent ones
       const entries = Array.from(this.codeExplanationCache.entries());
-      this.codeExplanationCache = new Map(entries.slice(-MAX_CACHE_SIZE/2)); // Keep half
+      this.codeExplanationCache = new Map(entries.slice(-MAX_CACHE_SIZE / 2)); // Keep half
     }
   }
 
   private setupClient(): void {
     if (!this.apiKey) {
-      console.error('Anthropic API key not found. Please set ANTHROPIC_API_KEY environment variable.');
+      console.error(
+        'Anthropic API key not found. Please set ANTHROPIC_API_KEY environment variable.',
+      );
       return;
     }
 
@@ -52,7 +57,10 @@ export class AnthropicService {
    */
   public async explainCode(code: string, window: BrowserWindow): Promise<void> {
     if (!this.anthropic) {
-      window.webContents.send('explanation-error', 'Anthropic client not initialized - API key missing');
+      window.webContents.send(
+        'explanation-error',
+        'Anthropic client not initialized - API key missing',
+      );
       return;
     }
 
@@ -62,40 +70,40 @@ export class AnthropicService {
         console.error('Window is no longer valid');
         return;
       }
-      
+
       // Start with empty explanation - this will reset the UI
       window.webContents.send('explanation-start');
-      
+
       // Check if we have this code in cache
       if (this.codeExplanationCache.has(code)) {
         if (isDebug) {
           console.log('Using cached explanation for code');
         }
-        
+
         // Send the cached explanation
         const cachedExplanation = this.codeExplanationCache.get(code);
-        
+
         // Simulate streaming with chunks for better UX
         const chunkSize = 100;
         for (let i = 0; i < cachedExplanation.length; i += chunkSize) {
           const chunk = cachedExplanation.substring(i, i + chunkSize);
           window.webContents.send('explanation-chunk', chunk);
-          
+
           // Small delay to simulate streaming
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
-        
+
         // Signal completion
         window.webContents.send('explanation-complete');
         return;
       }
-      
+
       // Not in cache, detect language
       const language = this.detectLanguage(code);
-      
+
       // Accumulate the full explanation to save in cache
       let fullExplanation = '';
-      
+
       // Create a streaming message
       const stream = await this.anthropic.messages.create({
         model: 'claude-3-7-sonnet-20250219',
@@ -126,7 +134,7 @@ ${code}
         if (chunk.type === 'content_block_delta' && chunk.delta.text) {
           // Accumulate for cache
           fullExplanation += chunk.delta.text;
-          
+
           // Send each chunk to the renderer process
           window.webContents.send('explanation-chunk', chunk.delta.text);
         }
@@ -135,27 +143,50 @@ ${code}
       // Store in cache
       this.codeExplanationCache.set(code, fullExplanation);
       this.manageCacheSize();
-      
+
       // Signal completion
       window.webContents.send('explanation-complete');
     } catch (error) {
       console.error('Error explaining code:', error);
-      window.webContents.send('explanation-error', 'Error generating explanation');
+      window.webContents.send(
+        'explanation-error',
+        'Error generating explanation',
+      );
     }
   }
 
   // Function to detect language from code - simple implementation
+  /** TODO:
+   * 1. improve it later or directly remove it and count on LLM itself
+   * 2. duplicated by detectLanguage in src/CodeExplainer.tsx
+   */
   private detectLanguage(code: string): string {
-    if (code.includes('function') || code.includes('const') || code.includes('let') || code.includes('var')) {
+    if (
+      code.includes('function') ||
+      code.includes('const') ||
+      code.includes('let') ||
+      code.includes('var')
+    ) {
       return 'javascript';
     }
-    if (code.includes('interface') || code.includes('class') || code.includes('export type')) {
+    if (
+      code.includes('interface') ||
+      code.includes('class') ||
+      code.includes('export type')
+    ) {
       return 'typescript';
     }
-    if (code.includes('import React') || code.includes('useState') || code.includes('jsx')) {
+    if (
+      code.includes('import React') ||
+      code.includes('useState') ||
+      code.includes('jsx')
+    ) {
       return 'jsx';
     }
-    if (code.includes('def ') || code.includes('import ') && code.includes(':')) {
+    if (
+      code.includes('def ') ||
+      (code.includes('import ') && code.includes(':'))
+    ) {
       return 'python';
     }
     if (code.includes('func ') || code.includes('package ')) {

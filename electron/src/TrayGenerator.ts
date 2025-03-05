@@ -1,8 +1,6 @@
-import { nativeImage, BrowserWindow, Tray, Menu, app } from 'electron';
+import { BrowserWindow, Menu, Tray, app, nativeImage } from 'electron';
 import { DBManager, isUnPackaged } from './DBManager';
 const path = require('path');
-
-// const prismaPath = require.resolve('prisma')
 
 export function isMAS() {
   return process.mas || false;
@@ -46,6 +44,7 @@ export class TrayGenerator {
     this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
   };
 
+  // ref: https://www.electronjs.org/docs/latest/tutorial/tray
   createTray = (title: string) => {
     let icon: Electron.NativeImage;
     if (isUnPackaged) {
@@ -54,20 +53,6 @@ export class TrayGenerator {
       const resoucePath = path.resolve(`${app.getAppPath()}/../`);
       icon = nativeImage.createFromPath(`${resoucePath}/MenuBar.png`);
     }
-
-    // ref: https://www.electronjs.org/docs/latest/tutorial/tray
-    // const icon = nativeImage.createFromPath('path/to/asset.png');
-    // tray = new Tray(icon);
-    // const contextMenu = Menu.buildFromTemplate([
-    //   { label: 'Item1', type: 'radio' },
-    //   { label: 'Item2', type: 'radio' },
-    //   { label: 'Item3', type: 'radio', checked: true },
-    //   { label: 'Item4', type: 'radio' }
-    // ])
-    // tray.setContextMenu(contextMenu)
-    // tray.setToolTip('This is my XWin application')
-    // tray.setTitle('This is my XWin title')
-    // note: your contextMenu, Tooltip and Title code will go here!
 
     const appPath = app.getAppPath();
 
@@ -80,18 +65,10 @@ export class TrayGenerator {
       info = 'SwitchV';
     }
 
-    // DBManager.databaseURL: string = "";
-    // DBManager.schemaPath = ""
-    // DBManager.serverPath = ""
-
-    // this.tray = new Tray("images/16.png");//icon);
     this.tray = new Tray(icon);
 
     this.tray.setToolTip(`${info}`);
     this.tray.setTitle(title);
-
-    // this.tray = new Tray(path.join(__dirname, './assets/IconTemplate.png'));
-    // this.tray.setIgnoreDoubleClickEvents(true);
 
     this.tray.on('click', this.onTrayClick);
     this.tray.on('right-click', this.rightClickMenu);

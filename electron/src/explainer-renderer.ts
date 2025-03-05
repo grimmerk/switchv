@@ -6,7 +6,7 @@
  * https://electronjs.org/docs/tutorial/application-architecture#main-and-renderer-processes
  */
 
-import './explainer.css';
 import './explainer-ui';
+import './explainer.css';
 
 console.log('👋 This is the Code Explainer renderer');
