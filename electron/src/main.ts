@@ -26,6 +26,8 @@ import { bootstrap } from './server/server';
 // whether you're running in development or production).
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+// Explainer window entry point
+declare const EXPLAINER_WINDOW_WEBPACK_ENTRY: string;
 
 // if (!isDebug) {
 //   const { Menu, MenuItem } = require('electron');
@@ -57,6 +59,7 @@ if (require('electron-squirrel-startup')) {
 
 let tray: TrayGenerator = null;
 let mainWindow: BrowserWindow = null;
+let explainerWindow: BrowserWindow = null; // Track the code explainer window
 let serverProcess: any;
 
 const WIN_WIDTH = 800;
@@ -95,6 +98,59 @@ const onFocus = (event: any) => {
   mainWindow.webContents.send('window-focus');
 };
 
+const createCodeExplainerWindow = (): BrowserWindow => {
+  // If window already exists, just return it - visibility is handled by the caller
+  if (explainerWindow && !explainerWindow.isDestroyed()) {
+    if (explainerWindow.isMinimized()) {
+      explainerWindow.restore();
+    }
+    explainerWindow.focus();
+    return explainerWindow;
+  }
+  
+  // Calculate position to create a semi-transparent floating window
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+  
+  // Create window with 700x500 size positioned at the center of the screen
+  explainerWindow = new BrowserWindow({
+    width: 700,
+    height: 500,
+    x: Math.round(width / 2 - 350),
+    y: Math.round(height / 2 - 250),
+    webPreferences: {
+      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      devTools: true, // Always enable DevTools for debugging
+      nodeIntegration: false, 
+      contextIsolation: true,
+    },
+    show: true,
+    frame: true,
+    fullscreenable: false,
+    resizable: true,
+    // Solid background
+    backgroundColor: '#2d2d2d',
+    opacity: 1.0,
+    // Always on top to ensure visibility
+    alwaysOnTop: true,
+  });
+
+  // Load the explainer renderer
+  explainerWindow.loadURL(EXPLAINER_WINDOW_WEBPACK_ENTRY);
+
+  // Open DevTools in detached mode to help debug
+  if (isDebug) {
+    explainerWindow.webContents.openDevTools({ mode: 'detach' });
+  }
+  
+  // Handle window closed event
+  explainerWindow.on('closed', () => {
+    explainerWindow = null;
+  });
+
+  return explainerWindow;
+};
+
 const createWindow = (): BrowserWindow => {
   // Create the browser window.
   const window = new BrowserWindow({
@@ -104,7 +160,7 @@ const createWindow = (): BrowserWindow => {
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: false, //isDebug,
+      devTools: true, //isDebug,
     },
 
     // hide window by default
@@ -362,6 +418,29 @@ ipcMain.on('close-app-click', async (event) => {
   app.quit();
 });
 
+// Import our Anthropic service
+import anthropicService from './AnthropicService';
+
+// Track the last explained code to detect changes
+let lastExplainedCode = '';
+
+// Handle the request to open Code Explainer window
+ipcMain.on('open-code-explainer', (event, code) => {
+  // Check if code is the same as previously explained
+  const codeChanged = code !== lastExplainedCode;
+  lastExplainedCode = code;
+  
+  const explainerWindow = createCodeExplainerWindow();
+  
+  // Send the code to the window once it's loaded
+  explainerWindow.webContents.once('did-finish-load', () => {
+    explainerWindow.webContents.send('code-to-explain', code);
+    
+    // Start explaining code using the Anthropic service
+    anthropicService.explainCode(code, explainerWindow);
+  });
+});
+
 ipcMain.on('open-folder-selector', async (event) => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],
@@ -486,7 +565,7 @@ const trayToggleEvtHandler = () => {
   if (!isDebug) {
     title = ``;
   } else {
-    title = `SwitchV(cmd+ctrl+r)`;
+    title = `CodeV(cmd+ctrl+r/e)`;
     if (DBManager.needUpdate) {
       title = `${title}${'u.'}`;
     }
@@ -505,6 +584,98 @@ const trayToggleEvtHandler = () => {
       showWindow();
     } else {
       tray.onTrayClick();
+    }
+  });
+  
+  // Register shortcut for Code Explainer (Ctrl+Cmd+E)
+  globalShortcut.register('Command+Control+E', () => {
+    if (isDebug) {
+      console.log('Code Explainer shortcut triggered');
+    }
+    
+    // Get selected text from clipboard
+    const clipboard = require('electron').clipboard;
+    const selectedCode = clipboard.readText().trim();
+    
+    // Check if this is different from previous code
+    const codeChanged = selectedCode !== lastExplainedCode;
+    
+    if (isDebug) {
+      console.log('Code changed:', codeChanged, 'Current length:', selectedCode.length);
+    }
+    
+    // Only process if code is valid
+    if (selectedCode && selectedCode.length > 0) {
+      // Update the tracked code
+      lastExplainedCode = selectedCode;
+      
+      // Check if window already exists
+      if (explainerWindow && !explainerWindow.isDestroyed()) {
+        // If window is visible but code changed, just update content
+        if (explainerWindow.isVisible() && codeChanged) {
+          console.log('Updating existing window with new code');
+          
+          // Send the new code
+          explainerWindow.webContents.send('code-to-explain', selectedCode);
+          
+          // Start new explanation
+          anthropicService.explainCode(selectedCode, explainerWindow);
+          return;
+        }
+        
+        // If window is visible but code is same, toggle visibility
+        if (explainerWindow.isVisible() && !codeChanged) {
+          console.log('Hiding window, same code');
+          explainerWindow.hide();
+          return;
+        }
+        
+        // If window exists but hidden, show it
+        if (!explainerWindow.isVisible()) {
+          console.log('Showing existing window');
+          explainerWindow.show();
+          
+          // Send the code (it may be new or the same)
+          if (codeChanged) {
+            explainerWindow.webContents.send('code-to-explain', selectedCode);
+            anthropicService.explainCode(selectedCode, explainerWindow);
+          }
+          return;
+        }
+      }
+      
+      // Create a new window if we didn't return yet
+      console.log('Creating new explainer window');
+      explainerWindow = createCodeExplainerWindow();
+      
+      // Send the code once the window is ready
+      const processCode = () => {
+        if (!explainerWindow.isVisible()) {
+          explainerWindow.show();
+        }
+        
+        // Send code with a slight delay to ensure renderer is ready
+        setTimeout(() => {
+          explainerWindow.webContents.send('code-to-explain', selectedCode);
+          anthropicService.explainCode(selectedCode, explainerWindow);
+        }, 200);
+      };
+      
+      // Handle window loading state
+      if (explainerWindow.webContents.isLoadingMainFrame()) {
+        explainerWindow.webContents.once('did-finish-load', processCode);
+      } else {
+        processCode();
+      }
+    } else if (explainerWindow && explainerWindow.isVisible()) {
+      // No code but window is visible - show a notification
+      dialog.showMessageBox({
+        type: 'info',
+        title: 'No Code Found',
+        message: 'No code was found in the clipboard.',
+        detail: 'Please select your code and press Cmd+C to copy it first, then press Ctrl+Cmd+E to explain it.',
+        buttons: ['OK']
+      });
     }
   });
 })();
