@@ -74,6 +74,14 @@ const config: ForgeConfig = {
               js: './src/preload.ts',
             },
           },
+          {
+            html: './src/settings.html',
+            js: './src/SettingsWindow.tsx',
+            name: 'settings_window',
+            preload: {
+              js: './src/preload.ts',
+            },
+          },
         ],
       },
     }),

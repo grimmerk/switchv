@@ -39,6 +39,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('explanation-complete', callback),
   onExplanationError: (callback: any) =>
     ipcRenderer.on('explanation-error', callback),
+  onDetectedLanguage: (callback: any) =>
+    ipcRenderer.on('detected-language', callback),
+    
+  // Settings windows events
+  onOpenExplainerSettings: (callback: any) =>
+    ipcRenderer.on('open-explainer-settings', callback),
+  onOpenApiKeySettings: (callback: any) =>
+    ipcRenderer.on('open-api-key-settings', callback),
+  onOpenLeftClickSettings: (callback: any) =>
+    ipcRenderer.on('open-left-click-settings', callback),
 });
 
 // All of the Node.js APIs are available in the preload process.
