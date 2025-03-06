@@ -145,15 +145,9 @@ export class AnthropicService {
           window.webContents.send('detected-language', cachedItem.language);
         }
 
-        // Simulate streaming with chunks for better UX
-        const chunkSize = 100;
-        for (let i = 0; i < cachedExplanation.length; i += chunkSize) {
-          const chunk = cachedExplanation.substring(i, i + chunkSize);
-          window.webContents.send('explanation-chunk', chunk);
-
-          // Small delay to simulate streaming
-          await new Promise((resolve) => setTimeout(resolve, 10));
-        }
+        // Send the entire explanation at once instead of chunking
+        // This avoids potential duplication issues with chunking
+        window.webContents.send('explanation-chunk', cachedExplanation);
 
         // Signal completion with language info
         window.webContents.send('explanation-complete', { 
@@ -168,7 +162,7 @@ export class AnthropicService {
       // Create a streaming message
       const stream = await this.anthropic.messages.create({
         model: 'claude-3-7-sonnet-20250219',
-        max_tokens: 1000,
+        max_tokens: 4000,
         messages: [
           {
             role: 'user',
@@ -186,6 +180,9 @@ export class AnthropicService {
       // Process the stream
       for await (const chunk of stream) {
         if (chunk.type === 'content_block_delta' && chunk.delta.text) {
+
+          console.debug("debugging delta:", chunk.delta.text);
+
           // Accumulate for cache
           fullExplanation += chunk.delta.text;
           
@@ -208,10 +205,18 @@ export class AnthropicService {
             }
           }
 
-          // Send each chunk to the renderer process
-          window.webContents.send('explanation-chunk', chunk.delta.text);
+          // Send each chunk to the renderer process - but only if it's not empty
+          if (chunk.delta.text.trim().length > 0) {
+            window.webContents.send('explanation-chunk', chunk.delta.text);
+          }
         }
       }
+
+      console.debug("debugging final fullExplanation:", fullExplanation);
+      
+      // After streaming is complete, send the full explanation again
+      // This ensures we have a clean, non-duplicated explanation in the UI
+      window.webContents.send('explanation-chunk', fullExplanation);
       
       if (isDebug) {
         console.log("fullExplanation:", fullExplanation.substring(0, 200) + "...");
@@ -235,6 +240,91 @@ export class AnthropicService {
       window.webContents.send(
         'explanation-error',
         this.apiKey ? 'Error generating explanation' : 'API key is missing',
+      );
+    }
+  }
+  
+  /**
+   * Handle chat messages in the Code Explainer by sending them to Claude API
+   * @param message The user's chat message
+   * @param window The BrowserWindow to send updates to
+   * @param messageHistory The current message history from the UI
+   */
+  public async handleChatMessage(message: string, window: BrowserWindow, messageHistory: any[]): Promise<void> {
+    // Always reload settings to get latest API key
+    await this.loadSettings();
+    
+    if (!this.anthropic) {
+      window.webContents.send(
+        'chat-response-error',
+        'Anthropic client not initialized - API key missing',
+      );
+      return;
+    }
+
+    try {
+      // Check if window is still valid
+      if (!window || window.isDestroyed()) {
+        console.error('Window is no longer valid');
+        return;
+      }
+
+      // Signal chat response starting
+      window.webContents.send('chat-response-start');
+      
+      // Format the message history for Claude API
+      // Filter out system messages and transform to Claude's format
+      const formattedMessages = messageHistory
+        .filter(msg => msg.role !== 'system')
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        }));
+      
+      // Add the current message
+      formattedMessages.push({
+        role: 'user',
+        content: message,
+      });
+
+      // Accumulate the full response to return
+      let fullResponse = '';
+
+      // Create a streaming chat message
+      const stream = await this.anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219',
+        max_tokens: 4000,
+        messages: formattedMessages,
+        stream: true,
+      });
+
+      // Process the stream
+      for await (const chunk of stream) {
+        if (chunk.type === 'content_block_delta' && chunk.delta.text) {
+          // Accumulate full response
+          fullResponse += chunk.delta.text;
+
+          // Send each chunk to the renderer process - but only if it's not empty
+          if (chunk.delta.text.trim().length > 0) {
+            window.webContents.send('chat-response-chunk', chunk.delta.text);
+          }
+        }
+      }
+
+      // Signal completion
+      window.webContents.send('chat-response-complete');
+      
+      // Send the full response for the UI to add to its state
+      window.webContents.send('chat-response', fullResponse);
+      
+      if (isDebug) {
+        console.log("Chat response sent. Length:", fullResponse.length);
+      }
+    } catch (error) {
+      console.error('Error in chat response:', error);
+      window.webContents.send(
+        'chat-response-error',
+        this.apiKey ? 'Error generating response' : 'API key is missing',
       );
     }
   }
