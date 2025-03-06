@@ -60,6 +60,16 @@ const showWindow = () => {
   // mainWindow.setVisibleOnAllWorkspaces(false);
 };
 
+// Handle chat messages from the explainer window
+ipcMain.on('send-chat-message', (event, message, messageHistory) => {
+  // Get the window that sent this message
+  const sender = BrowserWindow.fromWebContents(event.sender);
+  if (sender && !sender.isDestroyed()) {
+    // Forward the message to AnthropicService
+    anthropicService.handleChatMessage(message, sender, messageHistory);
+  }
+});
+
 const hideWindow = () => {
   mainWindow.hide();
 };
@@ -86,12 +96,12 @@ const createCodeExplainerWindow = (): BrowserWindow => {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
-  // Create window with 700x500 size positioned at the center of the screen
+  // Create window with 800x600 size positioned at the center of the screen
   explainerWindow = new BrowserWindow({
-    width: 700,
-    height: 500,
-    x: Math.round(width / 2 - 350),
-    y: Math.round(height / 2 - 250),
+    width: 800,
+    height: 600,
+    x: Math.round(width / 2 - 400),
+    y: Math.round(height / 2 - 300),
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       devTools: true, // Always enable DevTools for debugging

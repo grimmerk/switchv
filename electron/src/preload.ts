@@ -42,6 +42,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onDetectedLanguage: (callback: any) =>
     ipcRenderer.on('detected-language', callback),
     
+  // Chat-related events and methods
+  sendChatMessage: (message: string, messageHistory: any[]) =>
+    ipcRenderer.send('send-chat-message', message, messageHistory),
+  onChatResponse: (callback: any) =>
+    ipcRenderer.on('chat-response', callback),
+  onChatResponseStart: (callback: any) =>
+    ipcRenderer.on('chat-response-start', callback),
+  onChatResponseChunk: (callback: any) =>
+    ipcRenderer.on('chat-response-chunk', callback),
+  onChatResponseComplete: (callback: any) =>
+    ipcRenderer.on('chat-response-complete', callback),
+  onChatResponseError: (callback: any) =>
+    ipcRenderer.on('chat-response-error', callback),
+    
   // Settings windows events
   onOpenExplainerSettings: (callback: any) =>
     ipcRenderer.on('open-explainer-settings', callback),
