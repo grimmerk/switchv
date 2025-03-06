@@ -688,11 +688,10 @@ const trayToggleEvtHandler = async () => {
           console.log('Showing existing window');
           explainerWindow.show();
 
-          // Send the code (it may be new or the same)
-          if (codeChanged) {
-            explainerWindow.webContents.send('code-to-explain', selectedCode);
-            anthropicService.explainCode(selectedCode, explainerWindow);
-          }
+          // Always send the code and request new explanation when showing the window again
+          // This ensures a fresh explanation even if the code hasn't changed
+          explainerWindow.webContents.send('code-to-explain', selectedCode);
+          anthropicService.explainCode(selectedCode, explainerWindow);
           return;
         }
       }
