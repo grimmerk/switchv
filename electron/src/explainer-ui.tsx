@@ -1,3 +1,11 @@
+/**
+ * explainer-ui.tsx
+ * 
+ * This component provides an enhanced version of the Code Explainer interface with:
+ * 1. Advanced markdown rendering for Claude's responses (including code blocks)
+ * 2. Better styling and layout for the explanation part
+ */
+
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import * as ReactDOM from 'react-dom/client';
@@ -5,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
+import { detectLanguage } from './language-detector';
 
 // Styles for the Code Explainer UI
 const styles = {
@@ -79,47 +88,52 @@ const styles = {
   },
 };
 
-// Function to detect language from code - simple implementation
-/** TODO: remove the duplicate one here (explainer-ui), CodeExplainer, AnthropicServer */
-const detectLanguage = (code: string): string => {
-  if (
-    code.includes('function') ||
-    code.includes('const') ||
-    code.includes('let') ||
-    code.includes('var')
-  ) {
-    return 'javascript';
+// Use @speed-highlight/core to detect programming language
+// This will provide more accurate language detection for the input code display
+const getDefaultLanguage = (code: string): string => {
+  if (!code || code.trim().length === 0) {
+    return 'javascript'; // Default for empty code
   }
-  if (
-    code.includes('interface') ||
-    code.includes('class') ||
-    code.includes('export type')
-  ) {
-    return 'typescript';
+
+  try {
+    // detectLanguage returns language ID or null if not detected
+    const detectedLang = detectLanguage(code);
+    console.debug('Detected language:', detectedLang);
+
+    // Map detected language to react-syntax-highlighter supported language
+    const langMap: Record<string, string> = {
+      'js': 'javascript',
+      'jsx': 'jsx',
+      'ts': 'typescript',
+      'tsx': 'tsx',
+      'py': 'python',
+      'rb': 'ruby',
+      'go': 'go',
+      'java': 'java',
+      'cpp': 'cpp',
+      'c': 'c',
+      'cs': 'csharp',
+      'php': 'php',
+      'rs': 'rust',
+      'swift': 'swift',
+      'kt': 'kotlin',
+      'sh': 'bash',
+      'html': 'html',
+      'css': 'css',
+      'sass': 'sass',
+      'scss': 'scss',
+      'md': 'markdown',
+      'json': 'json',
+      'yaml': 'yaml',
+      'xml': 'xml',
+      'sql': 'sql'
+    };
+    
+    return detectedLang && langMap[detectedLang] ? langMap[detectedLang] : 'javascript';
+  } catch (error) {
+    console.error('Error detecting language:', error);
+    return 'javascript'; // Fallback
   }
-  if (
-    code.includes('import React') ||
-    code.includes('useState') ||
-    code.includes('jsx')
-  ) {
-    return 'jsx';
-  }
-  if (
-    code.includes('def ') ||
-    (code.includes('import ') && code.includes(':'))
-  ) {
-    return 'python';
-  }
-  if (code.includes('func ') || code.includes('package ')) {
-    return 'go';
-  }
-  if (code.includes('public class') || code.includes('private class')) {
-    return 'java';
-  }
-  if (code.includes('#include')) {
-    return 'cpp';
-  }
-  return 'javascript'; // Default
 };
 
 const ExplainerApp: React.FC = () => {
@@ -129,8 +143,22 @@ const ExplainerApp: React.FC = () => {
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const explanationRef = useRef<HTMLDivElement>(null);
 
-  // Compute syntax highlighting language
-  const language = detectLanguage(code);
+  // Initial language detection for the input code using our detector
+  const [inputLanguage, setInputLanguage] = useState<string>(detectLanguage(code));
+  // State to track language detected by LLM in its response
+  const [detectedLanguage, setDetectedLanguage] = useState<string>('');
+  
+  // Update inputLanguage when code changes
+  useEffect(() => {
+    if (code && code.trim()) {
+      const detected = detectLanguage(code);
+      setInputLanguage(detected);
+      console.log(`Local detection for input code: ${detected}`);
+    }
+  }, [code]);
+  
+  // This effect is no longer needed as we now detect languages from code blocks directly
+  // in the AnthropicService and send via 'detected-language' event
 
   console.log('ExplainerApp mounted');
 
@@ -179,15 +207,23 @@ const ExplainerApp: React.FC = () => {
       setIsLoading(false);
     };
 
+    // Handler for detected language from code blocks
+    const handleDetectedLanguage = (_event: any, language: string) => {
+      if (language) {
+        console.log(`Language detected from code block: ${language}`);
+        setDetectedLanguage(language);
+        setInputLanguage(language); // Update the input display language too
+      }
+    };
+    
     // Register all listeners if API is available
     if ((window as any).electronAPI) {
       (window as any).electronAPI.onCodeToExplain(handleCodeToExplain);
       (window as any).electronAPI.onExplanationStart(handleExplanationStart);
       (window as any).electronAPI.onExplanationChunk(handleExplanationChunk);
-      (window as any).electronAPI.onExplanationComplete(
-        handleExplanationComplete,
-      );
+      (window as any).electronAPI.onExplanationComplete(handleExplanationComplete);
       (window as any).electronAPI.onExplanationError(handleExplanationError);
+      (window as any).electronAPI.onDetectedLanguage(handleDetectedLanguage);
     } else {
       console.error('electronAPI not available');
     }
@@ -210,7 +246,7 @@ const ExplainerApp: React.FC = () => {
 
       <div style={styles.codeSection}>
         <SyntaxHighlighter
-          language={language}
+          language={inputLanguage}
           style={vscDarkPlus as any}
           customStyle={{
             background: '#1e1e1e',
@@ -231,6 +267,8 @@ const ExplainerApp: React.FC = () => {
       <div style={styles.explanationSection} ref={explanationRef}>
         <div style={styles.explanation}>
           <ReactMarkdown
+            // Remove the LANGUAGE: line from display
+            children={explanation.replace(/^LANGUAGE:\s*\w+\s*\n*/i, '')}
             remarkPlugins={[remarkGfm]}
             components={{
               code({ node, inline, className, children, ...props }) {

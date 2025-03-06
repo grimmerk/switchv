@@ -37,3 +37,12 @@ model User {
   id            Int     @id @default(autoincrement())
   workingFolder String?
 }
+
+model ExplainerSettings {
+  id                Int      @id @default(autoincrement())
+  customPrompt      String?  // Custom prompt template for code explanation
+  apiKey            String?  // User's Anthropic API key (optional, will use env if not set)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  leftClickBehavior String   @default("main_window") // "main_window" or "code_explainer"
+}

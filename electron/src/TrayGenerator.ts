@@ -37,11 +37,53 @@ export class TrayGenerator {
   rightClickMenu = () => {
     const menu: any = [
       {
+        label: 'Settings',
+        submenu: [
+          {
+            label: 'Code Explainer Settings',
+            click: () => {
+              this.openCodeExplainerSettings();
+            }
+          },
+          {
+            label: 'API Key Settings',
+            click: () => {
+              this.openApiKeySettings();
+            }
+          },
+          {
+            label: 'Left-Click Behavior',
+            click: () => {
+              this.openLeftClickSettings();
+            }
+          }
+        ]
+      },
+      { type: 'separator' },
+      {
         role: 'quit',
         accelerator: 'Command+Q',
       },
     ];
     this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
+  };
+
+  openCodeExplainerSettings = () => {
+    // Send IPC event to open the settings window
+    const { ipcMain } = require('electron');
+    ipcMain.emit('open-explainer-settings');
+  };
+
+  openApiKeySettings = () => {
+    // Send IPC event to open the API key settings
+    const { ipcMain } = require('electron');
+    ipcMain.emit('open-api-key-settings');
+  };
+
+  openLeftClickSettings = () => {
+    // Send IPC event to open left-click behavior settings
+    const { ipcMain } = require('electron');
+    ipcMain.emit('open-left-click-settings');
   };
 
   // ref: https://www.electronjs.org/docs/latest/tutorial/tray

@@ -27,5 +27,11 @@ export const rendererConfig: Configuration = {
   output: {
     publicPath: '/',
     globalObject: 'globalThis'
+  },
+  // Multiple entrypoints for different HTML pages
+  entry: {
+    main_window: './src/index.tsx',
+    explainer: './src/explainer-renderer.ts',
+    settings: './src/SettingsWindow.tsx'
   }
 };

@@ -21,6 +21,8 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 // Explainer window entry point
 declare const EXPLAINER_WINDOW_WEBPACK_ENTRY: string;
+// Settings window entry point
+declare const SETTINGS_WINDOW_WEBPACK_ENTRY: string;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -31,6 +33,7 @@ if (require('electron-squirrel-startup')) {
 let tray: TrayGenerator = null;
 let mainWindow: BrowserWindow = null;
 let explainerWindow: BrowserWindow = null; // Track the code explainer window
+let settingsWindow: BrowserWindow = null; // Track the settings window
 let serverProcess: any;
 
 const WIN_WIDTH = 800;
@@ -120,6 +123,65 @@ const createCodeExplainerWindow = (): BrowserWindow => {
   });
 
   return explainerWindow;
+};
+
+const createSettingsWindow = (settingsType: string = 'explainer'): BrowserWindow => {
+  // If window already exists, just return it - visibility is handled by the caller
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    if (settingsWindow.isMinimized()) {
+      settingsWindow.restore();
+    }
+    settingsWindow.focus();
+    
+    // Send message to switch to the specified settings type
+    if (settingsType === 'explainer') {
+      settingsWindow.webContents.send('open-explainer-settings');
+    } else if (settingsType === 'apiKey') {
+      settingsWindow.webContents.send('open-api-key-settings');
+    } else if (settingsType === 'leftClick') {
+      settingsWindow.webContents.send('open-left-click-settings');
+    }
+    
+    return settingsWindow;
+  }
+  
+  // Calculate position for settings window
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+  
+  // Create settings window
+  settingsWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    x: Math.round(width / 2 - 400),
+    y: Math.round(height / 2 - 300),
+    webPreferences: {
+      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      devTools: true,
+      nodeIntegration: false, 
+      contextIsolation: true,
+    },
+    show: true,
+    frame: true,
+    fullscreenable: false,
+    resizable: true,
+    backgroundColor: '#1a1a1a',
+  });
+
+  // Load the settings renderer with the appropriate settings type as a query parameter
+  settingsWindow.loadURL(`${SETTINGS_WINDOW_WEBPACK_ENTRY}?type=${settingsType}`);
+
+  // Open DevTools in detached mode to help debug
+  if (isDebug) {
+    settingsWindow.webContents.openDevTools({ mode: 'detach' });
+  }
+  
+  // Handle window closed event
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+
+  return settingsWindow;
 };
 
 const createWindow = (): BrowserWindow => {
@@ -336,8 +398,31 @@ ipcMain.on('close-app-click', async (event) => {
   app.quit();
 });
 
+// Settings window handlers
+ipcMain.on('open-settings', (event, settingsType = 'explainer') => {
+  createSettingsWindow(settingsType);
+});
+
+// Create Settings windows from tray menu
+ipcMain.on('open-explainer-settings', () => {
+  createSettingsWindow('explainer');
+});
+
+ipcMain.on('open-api-key-settings', () => {
+  createSettingsWindow('apiKey');
+});
+
+ipcMain.on('open-left-click-settings', () => {
+  createSettingsWindow('leftClick');
+});
+
 // Import our Anthropic service
 import anthropicService from './AnthropicService';
+
+// Track user settings
+let userSettings = {
+  leftClickBehavior: 'main_window', // Default behavior
+};
 
 // Track the last explained code to detect changes
 let lastExplainedCode = '';
@@ -382,27 +467,81 @@ ipcMain.on('open-folder-selector', async (event) => {
   mainWindow.webContents.send('folder-selected', folderPath);
 });
 
-const trayToggleEvtHandler = () => {
+// Load settings from database
+const loadUserSettings = async () => {
+  try {
+    const response = await fetch('http://localhost:55688/explainer-settings');
+    if (response.ok) {
+      const settings = await response.json();
+      if (settings) {
+        userSettings.leftClickBehavior = settings.leftClickBehavior || 'main_window';
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load user settings:', error);
+  }
+};
+
+// Handle Tray icon left-click based on user settings
+const trayToggleEvtHandler = async () => {
   if (isDebug) {
     console.log('tray toggle callback');
   }
-
-  if (BrowserWindow.getAllWindows().length === 0) {
-    if (isDebug) {
-      console.log('no window, create one');
+  
+  // Make sure settings are loaded
+  await loadUserSettings();
+  
+  // Handle different click behaviors
+  if (userSettings.leftClickBehavior === 'code_explainer') {
+    // Open Code Explainer with clipboard content
+    const clipboard = require('electron').clipboard;
+    const selectedCode = clipboard.readText().trim();
+    
+    if (selectedCode && selectedCode.length > 0) {
+      // Create or focus explainer window
+      const explainerWin = createCodeExplainerWindow();
+      
+      // Send the code to explain
+      explainerWin.webContents.once('did-finish-load', () => {
+        explainerWin.webContents.send('code-to-explain', selectedCode);
+        anthropicService.explainCode(selectedCode, explainerWin);
+      });
+      
+      // If already loaded, send directly
+      if (!explainerWin.webContents.isLoading()) {
+        explainerWin.webContents.send('code-to-explain', selectedCode);
+        anthropicService.explainCode(selectedCode, explainerWin);
+      }
+    } else {
+      // No code in clipboard, show main window as fallback
+      if (BrowserWindow.getAllWindows().length === 0) {
+        mainWindow = createWindow();
+        showWindow();
+      } else if (mainWindow && mainWindow.isVisible()) {
+        hideWindow();
+      } else if (mainWindow) {
+        showWindow();
+      }
     }
-    mainWindow = createWindow();
-    showWindow();
-  } else if (mainWindow.isVisible()) {
-    if (isDebug) {
-      console.log('is visible, to hide');
-    }
-    hideWindow();
   } else {
-    if (isDebug) {
-      console.log('is not visible, to show');
+    // Default behavior - toggle main window
+    if (BrowserWindow.getAllWindows().length === 0) {
+      if (isDebug) {
+        console.log('no window, create one');
+      }
+      mainWindow = createWindow();
+      showWindow();
+    } else if (mainWindow && mainWindow.isVisible()) {
+      if (isDebug) {
+        console.log('is visible, to hide');
+      }
+      hideWindow();
+    } else if (mainWindow) {
+      if (isDebug) {
+        console.log('is not visible, to show');
+      }
+      showWindow();
     }
-    showWindow();
   }
 };
 
@@ -445,6 +584,9 @@ const trayToggleEvtHandler = () => {
   await bootstrap();
   console.log('create server done');
 
+  // Load user settings
+  await loadUserSettings();
+
   let title = '';
   if (!isDebug) {
     title = ``;
@@ -458,16 +600,28 @@ const trayToggleEvtHandler = () => {
   tray = new TrayGenerator(mainWindow, title, trayToggleEvtHandler);
 
   // https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#global-shortcuts
-  // globalShortcut.register('Alt+CommandOrControl+N', () => {
+  // Register Cmd+Ctrl+R shortcut to always show the main window, regardless of left-click setting
   globalShortcut.register('Command+Control+R', () => {
+    if (isDebug) {
+      console.log('Command+Control+R triggered - always shows main window');
+    }
+    
     if (BrowserWindow.getAllWindows().length === 0) {
       if (isDebug) {
-        console.log('no window, create one');
+        console.log('No window, creating main window');
       }
       mainWindow = createWindow();
       showWindow();
-    } else {
-      tray.onTrayClick();
+    } else if (mainWindow && mainWindow.isVisible()) {
+      if (isDebug) {
+        console.log('Main window visible, hiding it');
+      }
+      hideWindow();
+    } else if (mainWindow) {
+      if (isDebug) {
+        console.log('Main window exists but hidden, showing it');
+      }
+      showWindow();
     }
   });
 
