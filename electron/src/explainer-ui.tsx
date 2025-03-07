@@ -360,6 +360,26 @@ const ExplainerApp: React.FC = () => {
       setIsLoading(false);
     };
     
+    // Handler for directly opening chat interface (without code)
+    const handleOpenChatInterface = () => {
+      console.log('Opening chat interface directly');
+      // Clear any existing code/explanation
+      setCode('');
+      setExplanation('');
+      // Show chat interface
+      setShowChat(true);
+      
+      // Initialize with welcome message if no messages exist
+      if (messages.length === 0) {
+        setMessages([
+          { 
+            role: 'assistant', 
+            content: "Hello! I'm Claude, an AI assistant. How can I help you with your code today?" 
+          }
+        ]);
+      }
+    };
+    
     // Store all event handlers to remove them on cleanup
     const handlers = {
       'code-to-explain': handleCodeToExplain,
@@ -368,7 +388,8 @@ const ExplainerApp: React.FC = () => {
       'explanation-complete': handleExplanationComplete,
       'explanation-error': handleExplanationError,
       'detected-language': handleDetectedLanguage,
-      'chat-response': handleChatResponse
+      'chat-response': handleChatResponse,
+      'open-chat-interface': handleOpenChatInterface
     };
     
     // Register all listeners if API is available
@@ -380,9 +401,14 @@ const ExplainerApp: React.FC = () => {
       (window as any).electronAPI.onExplanationError(handleExplanationError);
       (window as any).electronAPI.onDetectedLanguage(handleDetectedLanguage);
       
-      // New event listeners for chat
+      // Chat-related event listeners
       if ((window as any).electronAPI.onChatResponse) {
         (window as any).electronAPI.onChatResponse(handleChatResponse);
+      }
+      
+      // Open chat interface event listener
+      if ((window as any).electronAPI.onOpenChatInterface) {
+        (window as any).electronAPI.onOpenChatInterface(handleOpenChatInterface);
       }
     } else {
       console.error('electronAPI not available');

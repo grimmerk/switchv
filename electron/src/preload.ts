@@ -55,6 +55,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('chat-response-complete', callback),
   onChatResponseError: (callback: any) =>
     ipcRenderer.on('chat-response-error', callback),
+  onOpenChatInterface: (callback: any) =>
+    ipcRenderer.on('open-chat-interface', callback),
     
   // Settings windows events
   onOpenExplainerSettings: (callback: any) =>

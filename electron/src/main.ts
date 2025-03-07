@@ -135,14 +135,16 @@ const createCodeExplainerWindow = (): BrowserWindow => {
   return explainerWindow;
 };
 
-const createSettingsWindow = (settingsType: string = 'explainer'): BrowserWindow => {
+const createSettingsWindow = (
+  settingsType: string = 'explainer',
+): BrowserWindow => {
   // If window already exists, just return it - visibility is handled by the caller
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     if (settingsWindow.isMinimized()) {
       settingsWindow.restore();
     }
     settingsWindow.focus();
-    
+
     // Send message to switch to the specified settings type
     if (settingsType === 'explainer') {
       settingsWindow.webContents.send('open-explainer-settings');
@@ -151,14 +153,14 @@ const createSettingsWindow = (settingsType: string = 'explainer'): BrowserWindow
     } else if (settingsType === 'leftClick') {
       settingsWindow.webContents.send('open-left-click-settings');
     }
-    
+
     return settingsWindow;
   }
-  
+
   // Calculate position for settings window
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
-  
+
   // Create settings window
   settingsWindow = new BrowserWindow({
     width: 800,
@@ -168,7 +170,7 @@ const createSettingsWindow = (settingsType: string = 'explainer'): BrowserWindow
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       devTools: true,
-      nodeIntegration: false, 
+      nodeIntegration: false,
       contextIsolation: true,
     },
     show: true,
@@ -179,13 +181,15 @@ const createSettingsWindow = (settingsType: string = 'explainer'): BrowserWindow
   });
 
   // Load the settings renderer with the appropriate settings type as a query parameter
-  settingsWindow.loadURL(`${SETTINGS_WINDOW_WEBPACK_ENTRY}?type=${settingsType}`);
+  settingsWindow.loadURL(
+    `${SETTINGS_WINDOW_WEBPACK_ENTRY}?type=${settingsType}`,
+  );
 
   // Open DevTools in detached mode to help debug
   if (isDebug) {
     settingsWindow.webContents.openDevTools({ mode: 'detach' });
   }
-  
+
   // Handle window closed event
   settingsWindow.on('closed', () => {
     settingsWindow = null;
@@ -484,7 +488,8 @@ const loadUserSettings = async () => {
     if (response.ok) {
       const settings = await response.json();
       if (settings) {
-        userSettings.leftClickBehavior = settings.leftClickBehavior || 'main_window';
+        userSettings.leftClickBehavior =
+          settings.leftClickBehavior || 'main_window';
       }
     }
   } catch (error) {
@@ -497,26 +502,26 @@ const trayToggleEvtHandler = async () => {
   if (isDebug) {
     console.log('tray toggle callback');
   }
-  
+
   // Make sure settings are loaded
   await loadUserSettings();
-  
+
   // Handle different click behaviors
   if (userSettings.leftClickBehavior === 'code_explainer') {
     // Open Code Explainer with clipboard content
     const clipboard = require('electron').clipboard;
     const selectedCode = clipboard.readText().trim();
-    
+
     if (selectedCode && selectedCode.length > 0) {
       // Create or focus explainer window
       const explainerWin = createCodeExplainerWindow();
-      
+
       // Send the code to explain
       explainerWin.webContents.once('did-finish-load', () => {
         explainerWin.webContents.send('code-to-explain', selectedCode);
         anthropicService.explainCode(selectedCode, explainerWin);
       });
-      
+
       // If already loaded, send directly
       if (!explainerWin.webContents.isLoading()) {
         explainerWin.webContents.send('code-to-explain', selectedCode);
@@ -615,7 +620,7 @@ const trayToggleEvtHandler = async () => {
     if (isDebug) {
       console.log('Command+Control+R triggered - always shows main window');
     }
-    
+
     if (BrowserWindow.getAllWindows().length === 0) {
       if (isDebug) {
         console.log('No window, creating main window');
@@ -641,24 +646,128 @@ const trayToggleEvtHandler = async () => {
       console.log('Code Explainer shortcut triggered');
     }
 
-    // Get selected text from clipboard
-    const clipboard = require('electron').clipboard;
-    const selectedCode = clipboard.readText().trim();
+    // Get selected text using native Swift tool to simulate Cmd+C
+    const getSelectedText = async () => {
+      const clipboard = require('electron').clipboard;
+      const originalClipboard = clipboard.readText();
+      const { execFile } = require('child_process');
+      const path = require('path');
+      const fs = require('fs');
 
-    // Check if this is different from previous code
-    const codeChanged = selectedCode !== lastExplainedCode;
+      if (isDebug) {
+        console.log(
+          'Starting getSelectedText, saved original clipboard content',
+        );
+      }
 
-    if (isDebug) {
-      console.log(
-        'Code changed:',
-        codeChanged,
-        'Current length:',
-        selectedCode.length,
-      );
-    }
+      // Path to our compiled Swift tool
+      const copyToolPath = path.join(app.getAppPath(), 'resources', 'CopyTool');
 
-    // Only process if code is valid
-    if (selectedCode && selectedCode.length > 0) {
+      // Make the tool executable if needed
+      try {
+        fs.chmodSync(copyToolPath, '755');
+      } catch (err) {
+        console.error('Error making CopyTool executable:', err);
+      }
+
+      return new Promise<string>((resolve) => {
+        // Execute our Swift tool
+        execFile(copyToolPath, (error, stdout, stderr) => {
+          if (error) {
+            console.error('Error executing CopyTool:', error);
+
+            // Check if it's a permission issue
+            if (stdout && stdout.includes('PERMISSION_NEEDED')) {
+              console.log('Accessibility permission needed');
+
+              // Show a dialog explaining the permission needed
+              dialog
+                .showMessageBox({
+                  type: 'info',
+                  title: 'Accessibility Permission Required',
+                  message:
+                    'SwitchV needs Accessibility permission to automatically copy selected text.',
+                  detail:
+                    'Please grant this permission in System Settings > Privacy & Security > Accessibility when prompted. After granting permission, try using the shortcut again.',
+                  buttons: ['Cancel', 'Request Permission'],
+                  defaultId: 1,
+                })
+                .then((result) => {
+                  if (result.response === 1) {
+                    // User wants to request permission, run tool with --prompt
+                    execFile(copyToolPath, ['--prompt'], () => {
+                      // Regardless of the outcome, resolve with the current clipboard content
+                      resolve(clipboard.readText().trim());
+                    });
+                  } else {
+                    // User canceled, resolve with current clipboard
+                    resolve(clipboard.readText().trim());
+                  }
+                });
+              return;
+            }
+
+            // For other errors, fall back to reading current clipboard
+            resolve(clipboard.readText().trim());
+            return;
+          }
+
+          // Check for special messages
+          if (stdout && stdout.includes('NO_SELECTION')) {
+            console.log('No text was selected');
+            resolve('');
+            return;
+          }
+
+          // Normal case - we got selected text
+          const selectedText = stdout.trim();
+          if (isDebug) {
+            console.log('Selected text length:', selectedText.length);
+          }
+
+          resolve(selectedText);
+        });
+      });
+    };
+
+    // Get the selected text and continue with the explanation process
+    getSelectedText().then((selectedCode) => {
+      console.debug('debug 1:' + selectedCode + ';' + lastExplainedCode);
+
+      // Check if this is different from previous code
+      const codeChanged = selectedCode !== lastExplainedCode;
+
+      if (isDebug) {
+        console.log(
+          'Code changed:',
+          codeChanged,
+          'Current length:',
+          selectedCode.length,
+        );
+      }
+
+      // Open chat interface if:
+      // 1. No text is selected (selectedCode.length === 0) OR
+      // 2. Selected text is the same as last explained (codeChanged === false) 
+      if (!selectedCode?.length || !codeChanged) {
+        if (isDebug) {
+          console.log('Opening chat interface because:', 
+            !selectedCode?.length ? 'no text selected' : 'same text as before');
+        }
+
+        // Open explainer window with empty code - it will show chat interface
+        explainerWindow = createCodeExplainerWindow();
+
+        if (explainerWindow.webContents.isLoadingMainFrame()) {
+          explainerWindow.webContents.once('did-finish-load', () => {
+            explainerWindow.webContents.send('open-chat-interface');
+          });
+        } else {
+          explainerWindow.webContents.send('open-chat-interface');
+        }
+        return;
+      }
+
       // Update the tracked code
       lastExplainedCode = selectedCode;
 
@@ -719,17 +828,7 @@ const trayToggleEvtHandler = async () => {
       } else {
         processCode();
       }
-    } else if (explainerWindow && explainerWindow.isVisible()) {
-      // No code but window is visible - show a notification
-      dialog.showMessageBox({
-        type: 'info',
-        title: 'No Code Found',
-        message: 'No code was found in the clipboard.',
-        detail:
-          'Please select your code and press Cmd+C to copy it first, then press Ctrl+Cmd+E to explain it.',
-        buttons: ['OK'],
-      });
-    }
+    });
   });
 })();
 
