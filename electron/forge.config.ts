@@ -40,6 +40,7 @@ const config: ForgeConfig = {
     extendInfo: {
       LSUIElement: true,
       LSMinimumSystemVersion: '12.0',
+      NSAccessibilityUsageDescription: 'SwitchV needs accessibility access to automatically copy selected text when using the Cmd+Ctrl+E shortcut.',
     },
     osxSign: {},
   },
