@@ -660,18 +660,12 @@ const trayToggleEvtHandler = async () => {
       console.log('Code Explainer shortcut triggered');
     }
 
-    const originalClipboard = clipboard.readText().trim();
-
-    // Get selected text using native Swift tool to simulate Cmd+C
+    // Get selected text using native Swift tool with Accessibility API
     const getSelectedText = async () => {
       const path = require('path');
       const fs = require('fs');
 
-      if (isDebug) {
-        console.log(
-          'Starting getSelectedText, saved original clipboard content',
-        );
-      }
+      console.log('Starting getSelectedText using Accessibility API');
 
       // Path to our compiled Swift tool
       const copyToolPath = path.join(app.getAppPath(), 'resources', 'CopyTool');
@@ -686,11 +680,21 @@ const trayToggleEvtHandler = async () => {
       return new Promise<string>((resolve) => {
         // Execute our Swift tool
         execFile(copyToolPath, (error, stdout, stderr) => {
+          // Check for specific exit codes
           if (error) {
+            // Exit code 3 means NO_SELECTION - this is normal behavior, not an error
+            if (error.code === 3) {
+              if (isDebug) {
+                console.log('No text was selected (exit code 3)');
+              }
+              resolve('');
+              return;
+            }
+            
             console.error('Error executing CopyTool:', error);
 
             // Check if it's a permission issue
-            if (stdout && stdout.includes('PERMISSION_NEEDED')) {
+            if (stdout && stdout.includes('PERMISSION_NEEDED') || error.code === 1 || error.code === 2) {
               console.log('Accessibility permission needed');
 
               // Show a dialog explaining the permission needed
@@ -699,7 +703,7 @@ const trayToggleEvtHandler = async () => {
                   type: 'info',
                   title: 'Accessibility Permission Required',
                   message:
-                    'SwitchV needs Accessibility permission to automatically copy selected text.',
+                    'SwitchV needs Accessibility permission to get selected text.',
                   detail:
                     'Please grant this permission in System Settings > Privacy & Security > Accessibility when prompted. After granting permission, try using the shortcut again.',
                   buttons: ['Cancel', 'Request Permission'],
@@ -709,25 +713,27 @@ const trayToggleEvtHandler = async () => {
                   if (result.response === 1) {
                     // User wants to request permission, run tool with --prompt
                     execFile(copyToolPath, ['--prompt'], () => {
-                      // Regardless of the outcome, resolve with the current clipboard content
-                      resolve(clipboard.readText().trim());
+                      // After requesting permission, resolve with empty string
+                      resolve('');
                     });
                   } else {
-                    // User canceled, resolve with current clipboard
-                    resolve(clipboard.readText().trim());
+                    // User canceled, resolve with empty string
+                    resolve('');
                   }
                 });
               return;
             }
 
-            // For other errors, fall back to reading current clipboard
-            resolve(clipboard.readText().trim());
+            // For other errors, resolve with empty string
+            resolve('');
             return;
           }
 
           // Check for special messages
           if (stdout && stdout.includes('NO_SELECTION')) {
-            console.log('No text was selected');
+            if (isDebug) {
+              console.log('No text was selected (stdout)');
+            }
             resolve('');
             return;
           }
@@ -746,8 +752,7 @@ const trayToggleEvtHandler = async () => {
     // Get the selected text and continue with the explanation process
     getSelectedText().then((selectedCode) => {
       console.debug(
-        'debug 1:' + selectedCode + ';' + lastExplainedCode,
-        originalClipboard,
+        'debug 1:' + selectedCode + ';' + lastExplainedCode
       );
 
       // export enum ExplainerUIMode {
@@ -767,8 +772,10 @@ const trayToggleEvtHandler = async () => {
       //   PURE_CHAT = 'pure_chat'
       // }
 
-      // Check if this is different from previous code
-      const codeChanged = selectedCode !== originalClipboard; // lastExplainedCode;
+      // Check if this is a new selection (selectedCode will be empty if nothing is selected)
+      const hasSelection = selectedCode.length > 0;
+      // Check if selection is different from last time
+      const codeChanged = selectedCode !== lastExplainedCode;
 
       if (isDebug) {
         console.log(
@@ -779,9 +786,8 @@ const trayToggleEvtHandler = async () => {
         );
       }
 
-      // 1. No text is selected (selectedCode.length === 0) OR
-      // 2. Selected text is the same as last explained (codeChanged === false)
-      if (!selectedCode?.length || !codeChanged) {
+      // No text is selected (selectedCode.length === 0)
+      if (!selectedCode?.length) {
         if (isDebug) {
           console.log('No text selected, opening chat interface');
         }
@@ -826,76 +832,16 @@ const trayToggleEvtHandler = async () => {
         return;
       }
 
-      // If text is selected but is the same as before
-      if (!codeChanged) {
-        if (isDebug) {
-          console.log('Same text as before');
-        }
-
-        // If explainer window already exists and is visible, hide it
-        /** TODO: this has one edge case
-         * if the opened window is the pure chat window, we should not hide it
-         */
-        if (
-          explainerWindow &&
-          !explainerWindow.isDestroyed() &&
-          explainerWindow.isVisible()
-        ) {
-          explainerWindow.hide();
-          return;
-        }
-
-        // If window exists but is hidden, show it with chat interface
-        if (
-          explainerWindow &&
-          !explainerWindow.isDestroyed() &&
-          !explainerWindow.isVisible()
-        ) {
-          explainerWindow.show();
-          explainerWindow.webContents.send(
-            'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
-            { code: selectedCode },
-          );
-          return;
-        }
-
-        // Otherwise create new window with chat interface
-        explainerWindow = createCodeExplainerWindow();
-        if (explainerWindow.webContents.isLoadingMainFrame()) {
-          explainerWindow.webContents.once('did-finish-load', () => {
-            explainerWindow.webContents.send('code-to-explain', selectedCode);
-            explainerWindow.webContents.send(
-              'set-ui-mode',
-              ExplainerUIMode.CHAT_WITH_EXPLANATION,
-              { code: selectedCode },
-            );
-          });
-        } else {
-          console.log('explainerWindow.webContents.code-to-explain()2');
-
-          explainerWindow.webContents.send('code-to-explain', selectedCode);
-          explainerWindow.webContents.send(
-            'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
-            { code: selectedCode },
-          );
-        }
-        showExplainerWindow();
-        return;
-      }
+      // Text is selected, so process it - we don't need special handling 
+      // for when the text is the same as before since we're using direct selection now
 
       // Update the tracked code
       lastExplainedCode = selectedCode;
 
       // Check if window already exists
       if (explainerWindow && !explainerWindow.isDestroyed()) {
-        // If window is visible but code is same, toggle visibility (hide it)
-        if (explainerWindow.isVisible() && !codeChanged) {
-          console.log('Hiding window, same code');
-          explainerWindow.hide();
-          return;
-        }
+        // We no longer need special handling for when the code is the same as before,
+        // since we're using direct selection now
 
         // If window is visible and code changed, update with new code
         if (explainerWindow.isVisible() && codeChanged) {
