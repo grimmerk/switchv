@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('search-working-folder', path),
 
   // Code Explainer APIs
+  /** @deprecated */
   openCodeExplainer: (code: string) =>
     ipcRenderer.send('open-code-explainer', code),
 
@@ -41,12 +42,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('explanation-error', callback),
   onDetectedLanguage: (callback: any) =>
     ipcRenderer.on('detected-language', callback),
-    
+  onSkipExplanation: (callback: any) =>
+    ipcRenderer.on('skip-explanation', callback),
+
+  // UI mode control
+  onSetUIMode: (callback: any) => ipcRenderer.on('set-ui-mode', callback),
+
   // Chat-related events and methods
   sendChatMessage: (message: string, messageHistory: any[]) =>
     ipcRenderer.send('send-chat-message', message, messageHistory),
-  onChatResponse: (callback: any) =>
-    ipcRenderer.on('chat-response', callback),
+  onChatResponse: (callback: any) => ipcRenderer.on('chat-response', callback),
   onChatResponseStart: (callback: any) =>
     ipcRenderer.on('chat-response-start', callback),
   onChatResponseChunk: (callback: any) =>
@@ -55,9 +60,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('chat-response-complete', callback),
   onChatResponseError: (callback: any) =>
     ipcRenderer.on('chat-response-error', callback),
+
+  // Legacy events - keeping for backward compatibility
   onOpenChatInterface: (callback: any) =>
     ipcRenderer.on('open-chat-interface', callback),
-    
+  onOpenChatInterfaceWithCode: (callback: any) =>
+    ipcRenderer.on('open-chat-interface-with-code', callback),
+
   // Settings windows events
   onOpenExplainerSettings: (callback: any) =>
     ipcRenderer.on('open-explainer-settings', callback),

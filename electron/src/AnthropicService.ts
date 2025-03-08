@@ -2,8 +2,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import * as dotenv from 'dotenv';
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
+import {
+  DEFAULT_EXPLAINER_PROMPT,
+  processPromptTemplate,
+} from './explainer-prompt';
 import { isDebug } from './utility';
-import { DEFAULT_EXPLAINER_PROMPT, processPromptTemplate } from './explainer-prompt';
 
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
@@ -13,7 +16,10 @@ export class AnthropicService {
   private anthropic: Anthropic;
   private apiKey: string;
   private customPrompt: string | null = null;
-  private codeExplanationCache: Map<string, { explanation: string; prompt: string }> = new Map(); // Cache for explanations with prompt used
+  private codeExplanationCache: Map<
+    string,
+    { explanation: string; prompt: string }
+  > = new Map(); // Cache for explanations with prompt used
   private SERVER_URL = 'http://localhost:55688';
 
   constructor() {
@@ -70,7 +76,7 @@ export class AnthropicService {
       this.codeExplanationCache = new Map(entries.slice(-MAX_CACHE_SIZE / 2)); // Keep half
     }
   }
-  
+
   // Clear all cache entries - useful when prompt template changes significantly
   public clearCache(): void {
     this.codeExplanationCache.clear();
@@ -100,7 +106,7 @@ export class AnthropicService {
   public async explainCode(code: string, window: BrowserWindow): Promise<void> {
     // Always reload settings to get latest prompt and API key
     await this.loadSettings();
-    
+
     if (!this.anthropic) {
       window.webContents.send(
         'explanation-error',
@@ -120,20 +126,40 @@ export class AnthropicService {
       window.webContents.send('explanation-start');
 
       // Get the prompt template to use
-      const promptTemplate = this.customPrompt || DEFAULT_EXPLAINER_PROMPT;
-      
+      const promptTemplate = this.customPrompt ?? DEFAULT_EXPLAINER_PROMPT;
+
+      console.log(
+        `promptTemplate-this.customPrompt:${this.customPrompt};DEFAULT_EXPLAINER_PROMPT:${DEFAULT_EXPLAINER_PROMPT};promptTemplate:${promptTemplate}`,
+      );
+
+      // If prompt template is empty, don't send a request to LLM - user just wants to use the chat interface
+      if (promptTemplate.trim() === '') {
+        if (isDebug) {
+          console.log('Custom prompt is empty - skipping explanation request');
+        }
+        // Send skip-explanation event with the code
+        window.webContents.send('skip-explanation', {
+          reason: 'Custom prompt template is empty',
+          code,
+        });
+        return;
+      }
+
       // Process the prompt template by replacing {selected_text} with the actual code
       const prompt = processPromptTemplate(promptTemplate, code);
 
       // Check if we have this code in cache with the same prompt
       const cacheKey = code;
       const cachedItem = this.codeExplanationCache.get(cacheKey);
-      
+
       if (cachedItem && cachedItem.prompt === promptTemplate) {
         if (isDebug) {
           console.log('Using cached explanation for code');
           if (cachedItem.language) {
-            console.log('Using cached language detection:', cachedItem.language);
+            console.log(
+              'Using cached language detection:',
+              cachedItem.language,
+            );
           }
         }
 
@@ -150,8 +176,8 @@ export class AnthropicService {
         window.webContents.send('explanation-chunk', cachedExplanation);
 
         // Signal completion with language info
-        window.webContents.send('explanation-complete', { 
-          language: cachedItem.language 
+        window.webContents.send('explanation-complete', {
+          language: cachedItem.language,
         });
         return;
       }
@@ -180,26 +206,27 @@ export class AnthropicService {
       // Process the stream
       for await (const chunk of stream) {
         if (chunk.type === 'content_block_delta' && chunk.delta.text) {
-
-          console.debug("debugging delta:", chunk.delta.text);
+          console.debug('debugging delta:', chunk.delta.text);
 
           // Accumulate for cache
           fullExplanation += chunk.delta.text;
-          
+
           // Accumulate text to detect language from first code block
           if (!foundFirstCodeBlock) {
             accumulatedText += chunk.delta.text;
-            
+
             // Check if this chunk contains a code block start with language
             const codeBlockMatch = accumulatedText.match(/```(\w+)/);
             if (codeBlockMatch && codeBlockMatch[1]) {
               detectedLanguage = codeBlockMatch[1].toLowerCase();
               foundFirstCodeBlock = true;
-              
+
               if (isDebug) {
-                console.log(`Detected language from code block: ${detectedLanguage}`);
+                console.log(
+                  `Detected language from code block: ${detectedLanguage}`,
+                );
               }
-              
+
               // Send a special message to notify about detected language
               window.webContents.send('detected-language', detectedLanguage);
             }
@@ -212,16 +239,19 @@ export class AnthropicService {
         }
       }
 
-      console.debug("debugging final fullExplanation:", fullExplanation);
-      
+      console.debug('debugging final fullExplanation:', fullExplanation);
+
       // After streaming is complete, send the full explanation again
       // This ensures we have a clean, non-duplicated explanation in the UI
       window.webContents.send('explanation-chunk', fullExplanation);
-      
+
       if (isDebug) {
-        console.log("fullExplanation:", fullExplanation.substring(0, 200) + "...");
+        console.log(
+          'fullExplanation:',
+          fullExplanation.substring(0, 200) + '...',
+        );
         if (detectedLanguage) {
-          console.log("Detected language from code blocks:", detectedLanguage);
+          console.log('Detected language from code blocks:', detectedLanguage);
         }
       }
 
@@ -229,12 +259,14 @@ export class AnthropicService {
       this.codeExplanationCache.set(code, {
         explanation: fullExplanation,
         prompt: promptTemplate,
-        language: detectedLanguage
+        language: detectedLanguage,
       });
       this.manageCacheSize();
 
       // Signal completion with detected language (if any)
-      window.webContents.send('explanation-complete', { language: detectedLanguage });
+      window.webContents.send('explanation-complete', {
+        language: detectedLanguage,
+      });
     } catch (error) {
       console.error('Error explaining code:', error);
       window.webContents.send(
@@ -243,17 +275,21 @@ export class AnthropicService {
       );
     }
   }
-  
+
   /**
    * Handle chat messages in the Code Explainer by sending them to Claude API
    * @param message The user's chat message
    * @param window The BrowserWindow to send updates to
    * @param messageHistory The current message history from the UI
    */
-  public async handleChatMessage(message: string, window: BrowserWindow, messageHistory: any[]): Promise<void> {
+  public async handleChatMessage(
+    message: string,
+    window: BrowserWindow,
+    messageHistory: any[],
+  ): Promise<void> {
     // Always reload settings to get latest API key
     await this.loadSettings();
-    
+
     if (!this.anthropic) {
       window.webContents.send(
         'chat-response-error',
@@ -271,16 +307,16 @@ export class AnthropicService {
 
       // Signal chat response starting
       window.webContents.send('chat-response-start');
-      
+
       // Format the message history for Claude API
       // Filter out system messages and transform to Claude's format
       const formattedMessages = messageHistory
-        .filter(msg => msg.role !== 'system')
-        .map(msg => ({
+        .filter((msg) => msg.role !== 'system')
+        .map((msg) => ({
           role: msg.role,
           content: msg.content,
         }));
-      
+
       // Add the current message
       formattedMessages.push({
         role: 'user',
@@ -313,12 +349,12 @@ export class AnthropicService {
 
       // Signal completion
       window.webContents.send('chat-response-complete');
-      
+
       // Send the full response for the UI to add to its state
       window.webContents.send('chat-response', fullResponse);
-      
+
       if (isDebug) {
-        console.log("Chat response sent. Length:", fullResponse.length);
+        console.log('Chat response sent. Length:', fullResponse.length);
       }
     } catch (error) {
       console.error('Error in chat response:', error);

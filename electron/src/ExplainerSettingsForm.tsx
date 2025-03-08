@@ -103,11 +103,17 @@ interface ExplainerSettingsFormProps {
 
 const SERVER_URL = 'http://localhost:55688';
 
-const ExplainerSettingsForm: React.FC<ExplainerSettingsFormProps> = ({ onClose }) => {
+const ExplainerSettingsForm: React.FC<ExplainerSettingsFormProps> = ({
+  onClose,
+}) => {
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [apiKey, setApiKey] = useState<string>('');
-  const [leftClickBehavior, setLeftClickBehavior] = useState<string>('main_window');
-  const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [leftClickBehavior, setLeftClickBehavior] =
+    useState<string>('main_window');
+  const [status, setStatus] = useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -118,11 +124,11 @@ const ExplainerSettingsForm: React.FC<ExplainerSettingsFormProps> = ({ onClose }
     try {
       setIsLoading(true);
       const response = await fetch(`${SERVER_URL}/explainer-settings`);
-      
+
       if (response.ok) {
         const settings = await response.json();
         if (settings) {
-          setCustomPrompt(settings.customPrompt || DEFAULT_EXPLAINER_PROMPT);
+          setCustomPrompt(settings.customPrompt ?? DEFAULT_EXPLAINER_PROMPT);
           setApiKey(settings.apiKey || '');
           setLeftClickBehavior(settings.leftClickBehavior || 'main_window');
         } else {
@@ -147,10 +153,10 @@ const ExplainerSettingsForm: React.FC<ExplainerSettingsFormProps> = ({ onClose }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setStatus(null);
-      
+
       const response = await fetch(`${SERVER_URL}/explainer-settings`, {
         method: 'POST',
         headers: {
@@ -162,7 +168,7 @@ const ExplainerSettingsForm: React.FC<ExplainerSettingsFormProps> = ({ onClose }
           leftClickBehavior,
         }),
       });
-      
+
       if (response.ok) {
         setStatus({
           message: 'Settings saved successfully!',
@@ -198,7 +204,7 @@ const ExplainerSettingsForm: React.FC<ExplainerSettingsFormProps> = ({ onClose }
   return (
     <div style={styles.container}>
       <div style={styles.title}>Code Explainer Settings</div>
-      
+
       <form style={styles.form} onSubmit={handleSubmit}>
         <label style={styles.label}>
           Custom Prompt Template:
@@ -209,10 +215,24 @@ const ExplainerSettingsForm: React.FC<ExplainerSettingsFormProps> = ({ onClose }
             placeholder="Enter your custom prompt template..."
           />
           <div style={styles.infoText}>
-            Use {'{selected_text}'} as a placeholder for the code or text to be explained.
+            Use {'{selected_text}'} as a placeholder for the code or text to be
+            explained.
+            <br />
+            <span
+              style={{
+                marginTop: '5px',
+                fontStyle: 'italic',
+                display: 'block',
+              }}
+            >
+              Note: If the prompt template is empty, the app will immediately
+              open in chat mode with your selected code, without generating an
+              explanation. This is useful for directly asking questions about
+              your code.
+            </span>
           </div>
         </label>
-        
+
         <div style={styles.buttonContainer}>
           <button
             type="button"
@@ -221,26 +241,27 @@ const ExplainerSettingsForm: React.FC<ExplainerSettingsFormProps> = ({ onClose }
           >
             Reset to Default
           </button>
-          
+
           <div>
             <button
               type="button"
               onClick={onClose}
-              style={{ ...styles.button, backgroundColor: '#6c757d', marginRight: '10px' }}
+              style={{
+                ...styles.button,
+                backgroundColor: '#6c757d',
+                marginRight: '10px',
+              }}
             >
               Cancel
             </button>
-            
-            <button
-              type="submit"
-              style={styles.button}
-            >
+
+            <button type="submit" style={styles.button}>
               Save Settings
             </button>
           </div>
         </div>
       </form>
-      
+
       {status && (
         <div
           style={{
