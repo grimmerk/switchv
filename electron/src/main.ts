@@ -664,6 +664,7 @@ const trayToggleEvtHandler = async () => {
     const getSelectedText = async () => {
       const path = require('path');
       const fs = require('fs');
+      const { execSync } = require('child_process');
 
       console.log('Starting getSelectedText using Accessibility API');
 
@@ -677,9 +678,77 @@ const trayToggleEvtHandler = async () => {
         console.error('Error making CopyTool executable:', err);
       }
 
+      // Special handling for VS Code or Electron-based apps
+      // VS Code is an Electron app, so it might be identified as "Electron" or "Code"
+      let isVSCode = false;
+      let processName = "";
+      try {
+        // Use AppleScript to get the frontmost application name
+        const frontmostApp = execSync(`osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true'`).toString().trim();
+        console.log(`Frontmost app according to AppleScript: ${frontmostApp}`);
+        processName = frontmostApp;
+        
+        // Check if it's VS Code or any Electron app (VS Code is an Electron app)
+        if (frontmostApp.includes('Code') || frontmostApp.includes('Visual Studio Code') || frontmostApp === 'Electron') {
+          isVSCode = true;
+          console.log('VS Code/Electron detected as frontmost app');
+          
+          // For VS Code/Electron, we need to use the clipboard approach
+          // Save original clipboard
+          const originalClipboard = clipboard.readText();
+          
+          try {
+            // This is a more generic approach to capture text in Electron apps
+            // We'll use System Events to send Command+C
+            const processToTarget = frontmostApp === 'Electron' ? 'Electron' : 'Code';
+            const scriptResult = execSync(`osascript -e '
+              tell application "System Events" 
+                tell process "${processToTarget}"
+                  set frontmost to true
+                  delay 0.1
+                  keystroke "c" using {command down}
+                  delay 0.2
+                end tell
+              end tell
+            '`).toString();
+            
+            // Wait a bit for clipboard to update with a more reliable approach
+            // setTimeout doesn't block execution
+            execSync('sleep 0.2');
+            
+            // Get text from clipboard
+            const newClipboard = clipboard.readText();
+            
+            // If clipboard changed, we got a selection
+            if (newClipboard !== originalClipboard && newClipboard.trim().length > 0) {
+              console.log('Successfully got VS Code selection via clipboard, length:', newClipboard.trim().length);
+              
+              // Restore original clipboard
+              clipboard.writeText(originalClipboard);
+              
+              return newClipboard.trim();
+            } else {
+              // Restore original clipboard
+              clipboard.writeText(originalClipboard);
+            }
+          } catch (e) {
+            console.error('Error getting VS Code selection via AppleScript:', e);
+            
+            // Make sure to restore clipboard even on error
+            try {
+              clipboard.writeText(originalClipboard);
+            } catch (clipErr) {}
+          }
+        }
+      } catch (e) {
+        console.error('Error getting frontmost app:', e);
+      }
+
       return new Promise<string>((resolve) => {
-        // Execute our Swift tool
-        execFile(copyToolPath, (error, stdout, stderr) => {
+        // Execute our Swift tool with additional arguments if needed
+        const args = isVSCode ? ['--vs-code'] : [];
+        
+        execFile(copyToolPath, args, (error, stdout, stderr) => {
           // Check for specific exit codes
           if (error) {
             // Exit code 3 means NO_SELECTION - this is normal behavior, not an error
