@@ -20,9 +20,29 @@ func requestAccessibilityPermission() -> Bool {
 func getFrontmostApplication() -> (pid: pid_t, name: String)? {
     print("DEBUG: Getting frontmost application")
     
+    // Using NSWorkspace to get the currently active application
     if let app = NSWorkspace.shared.frontmostApplication {
         print("DEBUG: Frontmost app: \(app.localizedName ?? "unknown"), PID: \(app.processIdentifier)")
-        return (app.processIdentifier, app.localizedName ?? "unknown")
+        
+        // For some applications we need special handling
+        let appName = app.localizedName ?? ""
+        
+        // Special case for VS Code
+        if appName.contains("Code") || appName.contains("Visual Studio Code") {
+            print("DEBUG: VS Code detected, using special handling")
+        }
+        
+        // Special case for Notion
+        if appName == "Notion" {
+            print("DEBUG: Notion detected, using special handling")
+        }
+        
+        // Special case for Slack
+        if appName == "Slack" {
+            print("DEBUG: Slack detected, using special handling")
+        }
+        
+        return (app.processIdentifier, appName)
     }
     
     print("DEBUG: Could not get frontmost application")
@@ -49,6 +69,30 @@ func getSelectedTextDirectly() -> String {
     let appElement = getApplicationElement(pid: frontApp.pid)
     print("DEBUG: Got application element for \(frontApp.name)")
     
+    // First, check for special case applications
+    if frontApp.name.contains("Code") || frontApp.name.contains("Visual Studio Code") {
+        let vscodeResult = findSelectionInVSCode(appElement)
+        if !vscodeResult.isEmpty {
+            return vscodeResult
+        }
+    }
+    
+    if frontApp.name == "Notion" {
+        let notionResult = findSelectionInNotion(appElement)
+        if !notionResult.isEmpty {
+            return notionResult
+        }
+    }
+    
+    if frontApp.name == "Slack" {
+        // For Slack, we might use a similar approach as Notion
+        let slackResult = findSelectionInNotion(appElement) // reuse the same function for now
+        if !slackResult.isEmpty {
+            return slackResult
+        }
+    }
+    
+    // Standard approach for most applications
     // Try to get focused element from application
     var focusedElement: AnyObject?
     var focusedResult = AXUIElementCopyAttributeValue(
@@ -73,157 +117,238 @@ func getSelectedTextDirectly() -> String {
         print("DEBUG: System-wide focused element result: \(focusedResult)")
     }
     
-    // If we still couldn't get a focused element, try alternative approaches
-    if focusedResult != .success {
-        print("DEBUG: No focused element found, trying to find selected text in frontmost app")
+    // If we got a focused element, check it for selection
+    if focusedResult == .success {
+        print("DEBUG: Found focused element, checking for selection")
         
-        // Try to directly get the selected text from the application
-        var appSelectedText: AnyObject?
-        let appSelectedResult = AXUIElementCopyAttributeValue(
-            appElement,
+        // First try to get selected text directly
+        var selectedText: AnyObject?
+        let result = AXUIElementCopyAttributeValue(
+            focusedElement as! AXUIElement,
             kAXSelectedTextAttribute as CFString,
-            &appSelectedText
+            &selectedText
         )
         
-        print("DEBUG: App selected text result: \(appSelectedResult)")
-        if appSelectedResult == .success, let text = appSelectedText as? String, !text.isEmpty {
-            print("DEBUG: Found selected text directly from application")
+        if result == .success, let text = selectedText as? String, !text.isEmpty {
+            print("DEBUG: Found selected text in focused element")
             return text
         }
         
-        // Try to get main window and search from there
-        var mainWindow: AnyObject?
-        let windowResult = AXUIElementCopyAttributeValue(
-            appElement,
-            kAXMainWindowAttribute as CFString, 
-            &mainWindow
-        )
+        // Otherwise check the element recursively
+        let focusedSelection = findSelectionInElement(focusedElement as! AXUIElement)
+        if !focusedSelection.isEmpty && focusedSelection != "NO_SELECTION" {
+            return focusedSelection
+        }
+    }
+    
+    // If we still couldn't get a selection, try alternative approaches
+    print("DEBUG: No selection in focused element, trying app-wide search")
+    
+    // Try to directly get the selected text from the application
+    var appSelectedText: AnyObject?
+    let appSelectedResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXSelectedTextAttribute as CFString,
+        &appSelectedText
+    )
+    
+    print("DEBUG: App selected text result: \(appSelectedResult)")
+    if appSelectedResult == .success, let text = appSelectedText as? String, !text.isEmpty {
+        print("DEBUG: Found selected text directly from application")
+        return text
+    }
+    
+    // Try to get main window and search from there
+    var mainWindow: AnyObject?
+    let windowResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXMainWindowAttribute as CFString, 
+        &mainWindow
+    )
+    
+    print("DEBUG: Main window result: \(windowResult)")
+    if windowResult == .success {
+        print("DEBUG: Searching for selection in main window")
+        let selectedText = findSelectionInElement(mainWindow as! AXUIElement)
+        if !selectedText.isEmpty && selectedText != "NO_SELECTION" {
+            return selectedText
+        }
+    }
+    
+    // If all else fails, try to get all windows and search each one
+    var windows: AnyObject?
+    let windowsResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXWindowsAttribute as CFString,
+        &windows
+    )
+    
+    print("DEBUG: Windows result: \(windowsResult)")
+    if windowsResult == .success, let windowArray = windows as? [AXUIElement] {
+        print("DEBUG: Found \(windowArray.count) windows")
         
-        print("DEBUG: Main window result: \(windowResult)")
-        if windowResult == .success {
-            print("DEBUG: Searching for selection in main window")
-            let selectedText = findSelectionInElement(mainWindow as! AXUIElement)
+        for window in windowArray {
+            let selectedText = findSelectionInElement(window)
             if !selectedText.isEmpty && selectedText != "NO_SELECTION" {
                 return selectedText
             }
         }
-        
-        // If all else fails, try to get all windows and search each one
-        var windows: AnyObject?
-        let windowsResult = AXUIElementCopyAttributeValue(
-            appElement,
-            kAXWindowsAttribute as CFString,
-            &windows
-        )
-        
-        print("DEBUG: Windows result: \(windowsResult)")
-        if windowsResult == .success, let windowArray = windows as? [AXUIElement] {
-            print("DEBUG: Found \(windowArray.count) windows")
+    }
+    
+    print("DEBUG: Could not find selection in any window")
+    return "NO_SELECTION"
+}
+
+// Function to find selection in VS Code
+func findSelectionInVSCode(_ appElement: AXUIElement) -> String {
+    print("DEBUG: Using VS Code specific selection finding")
+    
+    // Try to get the editor element
+    var windows: AnyObject?
+    let windowsResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXWindowsAttribute as CFString,
+        &windows
+    )
+    
+    if windowsResult == .success, let windowArray = windows as? [AXUIElement] {
+        for window in windowArray {
+            // First try finding elements with specific roles that might contain editor
+            let roles = ["AXTextArea", "AXTextField", "AXWebArea", "AXScrollArea", "AXGroup"]
             
-            for window in windowArray {
-                let selectedText = findSelectionInElement(window)
-                if !selectedText.isEmpty && selectedText != "NO_SELECTION" {
-                    return selectedText
+            for role in roles {
+                let result = findElementsByRole(window, role: role)
+                for element in result {
+                    // Try getting selected text from this element
+                    var selectedText: AnyObject?
+                    let selResult = AXUIElementCopyAttributeValue(
+                        element,
+                        kAXSelectedTextAttribute as CFString,
+                        &selectedText
+                    )
+                    
+                    if selResult == .success, let text = selectedText as? String, !text.isEmpty {
+                        print("DEBUG: Found VS Code selected text in \(role)")
+                        return text
+                    }
+                    
+                    // Try getting value
+                    var value: AnyObject?
+                    let valueResult = AXUIElementCopyAttributeValue(
+                        element,
+                        kAXValueAttribute as CFString,
+                        &value
+                    )
+                    
+                    if valueResult == .success, let fullText = value as? String, !fullText.isEmpty {
+                        // For VS Code, sometimes the selection is in the value
+                        // We might need to parse the value to find the selection
+                        print("DEBUG: Found VS Code potential text content")
+                        
+                        // If we can't get the selection, but we're in a focused editor,
+                        // we might want to consider returning the whole content for debugging
+                        // return fullText
+                    }
                 }
             }
         }
+    }
+    
+    return ""
+}
+
+// Function to find selection in Notion
+func findSelectionInNotion(_ appElement: AXUIElement) -> String {
+    print("DEBUG: Using Notion specific selection finding")
+    
+    // In Notion, the selected text might be in a focused editing area
+    var focused: AnyObject?
+    let focusedResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXFocusedUIElementAttribute as CFString,
+        &focused
+    )
+    
+    if focusedResult == .success, let focusedElement = focused {
+        print("DEBUG: Found focused element in Notion")
         
-        print("DEBUG: Could not find selection in any window")
-        return "NO_SELECTION"
-    }
-    
-    // Get role of focused element for debugging
-    var role: AnyObject?
-    _ = AXUIElementCopyAttributeValue(
-        focusedElement as! AXUIElement,
-        kAXRoleAttribute as CFString,
-        &role
-    )
-    print("DEBUG: Focused element role: \(role as? String ?? "unknown")")
-    
-    // Try to get selected text from focused element
-    var selectedText: AnyObject?
-    let result = AXUIElementCopyAttributeValue(
-        focusedElement as! AXUIElement,
-        kAXSelectedTextAttribute as CFString,
-        &selectedText
-    )
-    
-    print("DEBUG: kAXSelectedTextAttribute result: \(result)")
-    if result == .success, let text = selectedText as? String, !text.isEmpty {
-        print("DEBUG: Found selected text via kAXSelectedTextAttribute")
-        return text
-    }
-    
-    // Alternative approach - get value then selected range
-    var value: AnyObject?
-    let valueResult = AXUIElementCopyAttributeValue(
-        focusedElement as! AXUIElement,
-        kAXValueAttribute as CFString,
-        &value
-    )
-    
-    print("DEBUG: kAXValueAttribute result: \(valueResult)")
-    if valueResult == .success {
-        print("DEBUG: Value type: \(type(of: value))")
-        print("DEBUG: Value content: \(value as? String ?? "not a string")")
-    }
-    
-    var selectedRange: AnyObject?
-    let rangeResult = AXUIElementCopyAttributeValue(
-        focusedElement as! AXUIElement,
-        kAXSelectedTextRangeAttribute as CFString,
-        &selectedRange
-    )
-    
-    print("DEBUG: kAXSelectedTextRangeAttribute result: \(rangeResult)")
-    if rangeResult == .success {
-        print("DEBUG: Range type: \(type(of: selectedRange))")
-        if let range = selectedRange as? CFRange {
-            print("DEBUG: Range location: \(range.location), length: \(range.length)")
-        }
-    }
-    
-    if valueResult == .success && rangeResult == .success,
-       let fullText = value as? String,
-       let range = selectedRange as? CFRange {
-        if range.length > 0 && range.location >= 0 && fullText.count >= range.location + range.length {
-            let startIndex = fullText.index(fullText.startIndex, offsetBy: range.location)
-            let endIndex = fullText.index(startIndex, offsetBy: range.length)
-            let extractedText = String(fullText[startIndex..<endIndex])
-            if !extractedText.isEmpty {
-                print("DEBUG: Extracted text using range: \(extractedText)")
-                return extractedText
-            }
-        }
-    }
-    
-    // Try a different approach - walk through child elements to find selection
-    print("DEBUG: Trying to find selection in child elements")
-    let selection = findSelectionInChildren(focusedElement as! AXUIElement)
-    if !selection.isEmpty {
-        print("DEBUG: Found selection in children: \(selection)")
-        return selection
-    }
-    
-    // If all else fails, try to get the entire text content of the element
-    if let fullText = value as? String, !fullText.isEmpty {
-        // Check if there are other attributes that might indicate this is selected text
-        var isFocused: AnyObject?
-        AXUIElementCopyAttributeValue(
+        // Try direct selection
+        var selectedText: AnyObject?
+        let selResult = AXUIElementCopyAttributeValue(
             focusedElement as! AXUIElement,
-            kAXFocusedAttribute as CFString,
-            &isFocused
+            kAXSelectedTextAttribute as CFString,
+            &selectedText
         )
         
-        if isFocused as? Bool == true {
-            print("DEBUG: Returning full text of focused element")
-            return fullText
+        if selResult == .success, let text = selectedText as? String, !text.isEmpty {
+            return text
+        }
+        
+        // Try value
+        var value: AnyObject?
+        let valueResult = AXUIElementCopyAttributeValue(
+            focusedElement as! AXUIElement,
+            kAXValueAttribute as CFString,
+            &value
+        )
+        
+        if valueResult == .success, let fullText = value as? String, !fullText.isEmpty {
+            print("DEBUG: Found Notion text content")
+            // For debugging, might return full content
+            // return fullText
         }
     }
     
-    print("DEBUG: No selection found using any method")
-    return "NO_SELECTION"
+    // Try all text areas specifically
+    let textAreas = findElementsByRole(appElement, role: "AXTextArea")
+    for textArea in textAreas {
+        var selectedText: AnyObject?
+        let selResult = AXUIElementCopyAttributeValue(
+            textArea,
+            kAXSelectedTextAttribute as CFString,
+            &selectedText
+        )
+        
+        if selResult == .success, let text = selectedText as? String, !text.isEmpty {
+            print("DEBUG: Found Notion selected text in text area")
+            return text
+        }
+    }
+    
+    return ""
+}
+
+// Helper function to find elements by role
+func findElementsByRole(_ element: AXUIElement, role: String) -> [AXUIElement] {
+    var result = [AXUIElement]()
+    
+    // Check if this element has the target role
+    var roleValue: AnyObject?
+    let roleResult = AXUIElementCopyAttributeValue(
+        element,
+        kAXRoleAttribute as CFString,
+        &roleValue
+    )
+    
+    if roleResult == .success, let elementRole = roleValue as? String, elementRole == role {
+        result.append(element)
+    }
+    
+    // Get children and check them recursively
+    var children: AnyObject?
+    let childrenResult = AXUIElementCopyAttributeValue(
+        element,
+        kAXChildrenAttribute as CFString,
+        &children
+    )
+    
+    if childrenResult == .success, let childArray = children as? [AXUIElement] {
+        for child in childArray {
+            result.append(contentsOf: findElementsByRole(child, role: role))
+        }
+    }
+    
+    return result
 }
 
 // Function to check an element for selected text
