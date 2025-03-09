@@ -425,6 +425,19 @@ const ExplainerApp: React.FC = () => {
     console.log('Explanation complete');
     setIsLoading(false);
     setIsComplete(true);
+    
+    // Notify main process that explanation is complete
+    if ((window as any).electronAPI && (window as any).electronAPI.notifyExplanationCompleted) {
+      (window as any).electronAPI.notifyExplanationCompleted(true);
+    } else {
+      // Fallback if API not available
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('explanation-completed', true);
+      } catch (e) {
+        console.error('Failed to notify main process of explanation completion', e);
+      }
+    }
 
     // After explanation is complete, initialize messages for chat
     if (codeRef.current && explanationContentRef.current) {
@@ -495,6 +508,20 @@ const ExplainerApp: React.FC = () => {
       /** NOTE: this is needed to update it soon,
        * otherwise handleExplanationStart may read old value since updating take some time */
       uiModeRef.current = mode;
+      
+      // Notify main process of mode change
+      if ((window as any).electronAPI && (window as any).electronAPI.notifyUIMode) {
+        (window as any).electronAPI.notifyUIMode(mode);
+      } else {
+        // Fallback if API not available
+        try {
+          const { ipcRenderer } = require('electron');
+          ipcRenderer.send('ui-mode-changed', mode);
+        } catch (e) {
+          console.error('Failed to notify main process of UI mode change', e);
+        }
+      }
+      
       return mode;
     });
 
@@ -513,12 +540,22 @@ const ExplainerApp: React.FC = () => {
           setCode(data.code);
         }
 
+        // Handle restoreExplanation flag
+        const shouldRestoreExplanation = data && data.restoreExplanation === true;
+        
         // Initialize with code and explanation if we have them
         if (
           explanationContentRef.current &&
           explanationContentRef.current.trim()
         ) {
-          console.log('Setting messages with explanation');
+          console.log('Setting messages with explanation' + (shouldRestoreExplanation ? ' (restore mode)' : ''));
+          
+          // If this is a restore operation, mark the explanation as complete immediately
+          if (shouldRestoreExplanation) {
+            setIsLoading(false);
+            setIsComplete(true);
+          }
+          
           setMessages([
             {
               role: 'system',

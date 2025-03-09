@@ -82,6 +82,18 @@ ipcMain.on('send-chat-message', (event, message, messageHistory) => {
   }
 });
 
+// Handle UI mode changes to track the current mode
+ipcMain.on('ui-mode-changed', (event, mode) => {
+  lastUIMode = mode;
+  console.log('UI mode changed to:', mode);
+});
+
+// Handle explanation completion status
+ipcMain.on('explanation-completed', (event, completed) => {
+  lastExplanationCompleted = completed;
+  console.log('Explanation completed status:', completed);
+});
+
 const hideWindow = () => {
   mainWindow.hide();
 };
@@ -117,7 +129,7 @@ const createCodeExplainerWindow = (): BrowserWindow => {
     y: Math.round(height / 2 - 300),
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: true, // Always enable DevTools for debugging
+      devTools: false, // Always enable DevTools for debugging
       nodeIntegration: false,
       contextIsolation: true,
       // Performance optimizations
@@ -190,7 +202,7 @@ const createSettingsWindow = (
     y: Math.round(height / 2 - 300),
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: true,
+      devTools: false,
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -228,7 +240,7 @@ const createWindow = (): BrowserWindow => {
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: true, //isDebug,
+      devTools: false, //isDebug,
     },
 
     // hide window by default
@@ -461,6 +473,10 @@ let userSettings = {
 
 // Track the last explained code to detect changes
 let lastExplainedCode = '';
+// Track the last used UI mode to restore it when reopening
+let lastUIMode = ExplainerUIMode.PURE_CHAT;
+// Track whether an explanation was completed for the current code
+let lastExplanationCompleted = false;
 
 // Handle the request to open Code Explainer window
 ipcMain.on('open-code-explainer', (event, code) => {
@@ -611,6 +627,43 @@ const trayToggleEvtHandler = async () => {
       console.log('Pre-initialized explainer window with PURE_CHAT mode');
     }
   }, 1000); // Delay by 1 second to not interfere with main window initialization
+  
+  // Add window closed event handler to explainer window to recreate it when closed
+  // This ensures the next opening will still be fast
+  const setupExplainerWindowRebuild = () => {
+    if (explainerWindow && !explainerWindow.isDestroyed()) {
+      // Remove any previous listeners to avoid duplicates
+      explainerWindow.removeAllListeners('closed');
+      
+      // Add new closed listener
+      explainerWindow.on('closed', () => {
+        console.log('Explainer window was closed, scheduling recreation');
+        // Schedule recreation after a short delay
+        setTimeout(() => {
+          if (!explainerWindow || explainerWindow.isDestroyed()) {
+            console.log('Recreating explainer window after close');
+            explainerWindow = createCodeExplainerWindow();
+            explainerWindow.hide();
+            setupExplainerWindowRebuild(); // Setup the listener again for the new window
+            
+            // Set PURE_CHAT mode as default for the recreated window
+            if (explainerWindow.webContents.isLoadingMainFrame()) {
+              explainerWindow.webContents.once('did-finish-load', () => {
+                explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+              });
+            } else {
+              explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+            }
+          }
+        }, 500);
+      });
+      
+      console.log('Set up explainer window rebuild on close');
+    }
+  };
+  
+  // Call this after the initial window is created
+  setTimeout(setupExplainerWindowRebuild, 2000);
   
   DBManager.initPath();
   // console.log({
@@ -775,15 +828,37 @@ const trayToggleEvtHandler = async () => {
         // Send code to explain
         explainerWindow.webContents.send('code-to-explain', clipboardContent);
         
-        // Set UI mode to CHAT_WITH_EXPLANATION
-        explainerWindow.webContents.send(
-          'set-ui-mode',
-          ExplainerUIMode.CHAT_WITH_EXPLANATION,
-          { code: clipboardContent }
-        );
-        
-        // Request explanation
-        anthropicService.explainCode(clipboardContent, explainerWindow);
+        // Set UI mode based on clipboard content and last explanation state
+        // If we had an explanation for this code previously and are reopening, try to restore it
+        if (clipboardContent === lastExplainedCode && lastExplanationCompleted && 
+            lastUIMode === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
+          console.log('Restoring CHAT_WITH_EXPLANATION mode with existing explanation');
+          explainerWindow.webContents.send(
+            'set-ui-mode',
+            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            { 
+              code: clipboardContent,
+              restoreExplanation: true 
+            }
+          );
+          
+          // Still request explanation in case we need to regenerate it
+          // The renderer will handle showing the cached explanation if available
+          anthropicService.explainCode(clipboardContent, explainerWindow);
+        } else {
+          // Otherwise, use CHAT_WITH_EXPLANATION mode and request a new explanation
+          explainerWindow.webContents.send(
+            'set-ui-mode',
+            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            { code: clipboardContent }
+          );
+          
+          // Request explanation
+          anthropicService.explainCode(clipboardContent, explainerWindow);
+          
+          // Reset explanation completed flag
+          lastExplanationCompleted = false;
+        }
       };
       
       // Handle window loading state

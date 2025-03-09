@@ -47,6 +47,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // UI mode control
   onSetUIMode: (callback: any) => ipcRenderer.on('set-ui-mode', callback),
+  notifyUIMode: (mode: string) => ipcRenderer.send('ui-mode-changed', mode),
+  notifyExplanationCompleted: (completed: boolean) => 
+    ipcRenderer.send('explanation-completed', completed),
 
   // Chat-related events and methods
   sendChatMessage: (message: string, messageHistory: any[]) =>
