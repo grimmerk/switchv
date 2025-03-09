@@ -12,7 +12,7 @@ import { existsSync, readdirSync } from 'fs';
 import { DBManager } from './DBManager';
 import { isMAS, TrayGenerator } from './TrayGenerator';
 import { bootstrap } from './server/server';
-import { ExplainerUIMode, isDebug } from './utility';
+import { AIAssistantUIMode, ExplainerUIMode, isDebug } from './utility';
 
 const clipboard = require('electron').clipboard;
 const { execFile } = require('child_process');
@@ -22,7 +22,9 @@ const { execFile } = require('child_process');
 // whether you're running in development or production).
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
-// Explainer window entry point
+// AI Assistant window entry point
+declare const AI_ASSISTANT_WINDOW_WEBPACK_ENTRY: string;
+// Legacy Explainer window entry point (for backward compatibility)
 declare const EXPLAINER_WINDOW_WEBPACK_ENTRY: string;
 // Settings window entry point
 declare const SETTINGS_WINDOW_WEBPACK_ENTRY: string;
@@ -35,7 +37,7 @@ if (require('electron-squirrel-startup')) {
 
 let tray: TrayGenerator = null;
 let mainWindow: BrowserWindow = null;
-let explainerWindow: BrowserWindow = null; // Track the code explainer window
+let aiAssistantWindow: BrowserWindow = null; // Track the AI Assistant window
 let settingsWindow: BrowserWindow = null; // Track the settings window
 let serverProcess: any;
 
@@ -63,16 +65,16 @@ const showWindow = () => {
   // mainWindow.setVisibleOnAllWorkspaces(false);
 };
 
-const showExplainerWindow = () => {
+const showAIAssistantWindow = () => {
   const position = getWindowPosition();
-  explainerWindow.setPosition(position.x, position.y, false);
-  explainerWindow.show();
+  aiAssistantWindow.setPosition(position.x, position.y, false);
+  aiAssistantWindow.show();
   // mainWindow.setVisibleOnAllWorkspaces(true);
-  explainerWindow.focus();
+  aiAssistantWindow.focus();
   // mainWindow.setVisibleOnAllWorkspaces(false);
 };
 
-// Handle chat messages from the explainer window
+// Handle chat messages from the AI Assistant window
 ipcMain.on('send-chat-message', (event, message, messageHistory) => {
   // Get the window that sent this message
   const sender = BrowserWindow.fromWebContents(event.sender);
@@ -87,7 +89,12 @@ ipcMain.on('ui-mode-changed', (event, mode) => {
   lastUIMode = mode;
 });
 
-// Handle explanation completion status
+// Handle insight completion status
+ipcMain.on('insight-completed', (event, completed) => {
+  lastExplanationCompleted = completed; // Keep the same variable name for backward compatibility
+});
+
+// Legacy event for backward compatibility
 ipcMain.on('explanation-completed', (event, completed) => {
   lastExplanationCompleted = completed;
 });
@@ -104,14 +111,14 @@ const onFocus = (event: any) => {
   mainWindow.webContents.send('window-focus');
 };
 
-const createCodeExplainerWindow = (): BrowserWindow => {
+const createAIAssistantWindow = (): BrowserWindow => {
   // If window already exists, just return it - visibility is handled by the caller
-  if (explainerWindow && !explainerWindow.isDestroyed()) {
-    if (explainerWindow.isMinimized()) {
-      explainerWindow.restore();
+  if (aiAssistantWindow && !aiAssistantWindow.isDestroyed()) {
+    if (aiAssistantWindow.isMinimized()) {
+      aiAssistantWindow.restore();
     }
-    explainerWindow.focus();
-    return explainerWindow;
+    aiAssistantWindow.focus();
+    return aiAssistantWindow;
   }
 
   // Calculate position to create a semi-transparent floating window
@@ -120,7 +127,7 @@ const createCodeExplainerWindow = (): BrowserWindow => {
 
   // Create window with 800x600 size positioned at the center of the screen
   // Performance optimizations added
-  explainerWindow = new BrowserWindow({
+  aiAssistantWindow = new BrowserWindow({
     width: 800,
     height: 600,
     x: Math.round(width / 2 - 400),
@@ -148,22 +155,27 @@ const createCodeExplainerWindow = (): BrowserWindow => {
     paintWhenInitiallyHidden: true, // Paint even when initially hidden
   });
 
-  // Load the explainer renderer
-  explainerWindow.loadURL(EXPLAINER_WINDOW_WEBPACK_ENTRY);
+  // Load the AI Assistant renderer
+  aiAssistantWindow.loadURL(AI_ASSISTANT_WINDOW_WEBPACK_ENTRY);
 
   // Open DevTools in detached mode to help debug
   if (isDebug) {
-    explainerWindow.webContents.openDevTools({ mode: 'detach' });
+    aiAssistantWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
   // Handle window closed event
-  explainerWindow.on('closed', () => {
-    explainerWindow = null;
+  aiAssistantWindow.on('closed', () => {
+    aiAssistantWindow = null;
   });
 
   /** TODO: add window.on('move', () => { */
 
-  return explainerWindow;
+  return aiAssistantWindow;
+};
+
+// Legacy function for backward compatibility - will be removed after migration
+const createCodeaiAssistantWindow = (): BrowserWindow => {
+  return createAIAssistantWindow();
 };
 
 const createSettingsWindow = (
@@ -472,25 +484,31 @@ let userSettings = {
 // Track the last explained code to detect changes
 let lastExplainedCode = '';
 // Track the last used UI mode to restore it when reopening
-let lastUIMode = ExplainerUIMode.PURE_CHAT;
+let lastUIMode = AIAssistantUIMode.SMART_CHAT;
 // Track whether an explanation was completed for the current code
 let lastExplanationCompleted = false;
 
-// Handle the request to open Code Explainer window
-ipcMain.on('open-code-explainer', (event, code) => {
-  // Check if code is the same as previously explained
+// Handle the request to open AI Assistant window
+ipcMain.on('open-ai-assistant', (event, code) => {
+  // Check if code is the same as previously analyzed
   const codeChanged = code !== lastExplainedCode;
   lastExplainedCode = code;
 
-  const explainerWindow = createCodeExplainerWindow();
+  aiAssistantWindow = createAIAssistantWindow();
 
   // Send the code to the window once it's loaded
-  explainerWindow.webContents.once('did-finish-load', () => {
-    explainerWindow.webContents.send('code-to-explain', code);
+  aiAssistantWindow.webContents.once('did-finish-load', () => {
+    aiAssistantWindow.webContents.send('code-to-analyze', code);
 
-    // Start explaining code using the Anthropic service
-    anthropicService.explainCode(code, explainerWindow);
+    // Start analyzing code using the Anthropic service
+    anthropicService.explainCode(code, aiAssistantWindow);
   });
+});
+
+// Legacy handler for backward compatibility
+ipcMain.on('open-code-explainer', (event, code) => {
+  // Forward to the new handler
+  ipcMain.emit('open-ai-assistant', event, code);
 });
 
 ipcMain.on('open-folder-selector', async (event) => {
@@ -579,99 +597,102 @@ const trayToggleEvtHandler = async () => {
     const selectedCode = clipboard.readText().trim();
 
     if (selectedCode && selectedCode.length > 0) {
-      // Create or focus explainer window
-      const explainerWin = createCodeExplainerWindow();
+      // Create or focus AI Assistant window
+      const aiAssistantWin = createAIAssistantWindow();
 
       // Make sure the window is visible
-      showExplainerWindow();
+      showAIAssistantWindow();
 
       // Handle loading state properly
       const processCode = () => {
-        // Set UI mode to CHAT_WITH_EXPLANATION
-        explainerWin.webContents.send(
+        // Set UI mode to INSIGHT_CHAT
+        aiAssistantWin.webContents.send(
           'set-ui-mode',
-          ExplainerUIMode.CHAT_WITH_EXPLANATION,
+          AIAssistantUIMode.INSIGHT_CHAT,
           {
             code: selectedCode,
           },
         );
 
-        // Send the code and start explanation
-        explainerWin.webContents.send('code-to-explain', selectedCode);
-        anthropicService.explainCode(selectedCode, explainerWin);
+        // Send the code and start analysis
+        aiAssistantWin.webContents.send('code-to-analyze', selectedCode);
+        anthropicService.explainCode(selectedCode, aiAssistantWin);
       };
 
       // If window is still loading, wait for it to load
-      if (explainerWin.webContents.isLoadingMainFrame()) {
-        explainerWin.webContents.once('did-finish-load', processCode);
+      if (aiAssistantWin.webContents.isLoadingMainFrame()) {
+        aiAssistantWin.webContents.once('did-finish-load', processCode);
       } else {
         // Window already loaded, process immediately
         processCode();
       }
     } else {
-      // No code in clipboard, open Pure Chat instead (better UX than opening main window)
-      // Create or focus explainer window
-      const explainerWin = createCodeExplainerWindow();
+      // No code in clipboard, open Smart Chat instead (better UX than opening main window)
+      // Create or focus AI Assistant window
+      const aiAssistantWin = createAIAssistantWindow();
 
       // Show window first for better perceived performance
-      showExplainerWindow();
+      showAIAssistantWindow();
 
-      // Set UI mode to PURE_CHAT
-      if (explainerWin.webContents.isLoadingMainFrame()) {
-        explainerWin.webContents.once('did-finish-load', () => {
-          explainerWin.webContents.send(
+      // Set UI mode to SMART_CHAT
+      if (aiAssistantWin.webContents.isLoadingMainFrame()) {
+        aiAssistantWin.webContents.once('did-finish-load', () => {
+          aiAssistantWin.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.PURE_CHAT,
+            AIAssistantUIMode.SMART_CHAT,
           );
         });
       } else {
-        explainerWin.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        aiAssistantWin.webContents.send(
+          'set-ui-mode',
+          AIAssistantUIMode.SMART_CHAT,
+        );
       }
     }
   } else if (userSettings.leftClickBehavior === 'pure_chat') {
-    // Open Pure Chat interface
+    // Open Smart Chat interface
 
-    // Check if explainer window already exists
-    if (explainerWindow && !explainerWindow.isDestroyed()) {
+    // Check if AI Assistant window already exists
+    if (aiAssistantWindow && !aiAssistantWindow.isDestroyed()) {
       // If window is visible, toggle visibility (hide it)
-      if (explainerWindow.isVisible()) {
-        explainerWindow.hide();
+      if (aiAssistantWindow.isVisible()) {
+        aiAssistantWindow.hide();
         return;
       }
 
       // Show the existing window
-      explainerWindow.show();
+      aiAssistantWindow.show();
 
-      // Set UI mode to PURE_CHAT
-      if (explainerWindow.webContents.isLoadingMainFrame()) {
-        explainerWindow.webContents.once('did-finish-load', () => {
-          explainerWindow.webContents.send(
+      // Set UI mode to SMART_CHAT
+      if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+        aiAssistantWindow.webContents.once('did-finish-load', () => {
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.PURE_CHAT,
+            AIAssistantUIMode.SMART_CHAT,
           );
         });
       } else {
-        explainerWindow.webContents.send(
+        aiAssistantWindow.webContents.send(
           'set-ui-mode',
-          ExplainerUIMode.PURE_CHAT,
+          AIAssistantUIMode.SMART_CHAT,
         );
       }
     } else {
       // Create a new window
-      explainerWindow = createCodeExplainerWindow();
+      aiAssistantWindow = createAIAssistantWindow();
 
-      // Set UI mode to PURE_CHAT
-      if (explainerWindow.webContents.isLoadingMainFrame()) {
-        explainerWindow.webContents.once('did-finish-load', () => {
-          explainerWindow.webContents.send(
+      // Set UI mode to SMART_CHAT
+      if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+        aiAssistantWindow.webContents.once('did-finish-load', () => {
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.PURE_CHAT,
+            AIAssistantUIMode.SMART_CHAT,
           );
         });
       } else {
-        explainerWindow.webContents.send(
+        aiAssistantWindow.webContents.send(
           'set-ui-mode',
-          ExplainerUIMode.PURE_CHAT,
+          AIAssistantUIMode.SMART_CHAT,
         );
       }
     }
@@ -708,24 +729,24 @@ const trayToggleEvtHandler = async () => {
     console.log('when ready');
   }
 
-  // Pre-initialize explainerWindow for faster first open
+  // Pre-initialize aiAssistantWindow for faster first open
   // This is done after mainWindow is created, but before showing it
   // so that initial startup isn't slowed down
   setTimeout(() => {
     // Create explainer window but keep it hidden
-    explainerWindow = createCodeExplainerWindow();
-    explainerWindow.hide(); // Ensure it's hidden
+    aiAssistantWindow = createCodeaiAssistantWindow();
+    aiAssistantWindow.hide(); // Ensure it's hidden
 
     // Preload PURE_CHAT mode for faster response
-    if (explainerWindow.webContents.isLoadingMainFrame()) {
-      explainerWindow.webContents.once('did-finish-load', () => {
-        explainerWindow.webContents.send(
+    if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+      aiAssistantWindow.webContents.once('did-finish-load', () => {
+        aiAssistantWindow.webContents.send(
           'set-ui-mode',
           ExplainerUIMode.PURE_CHAT,
         );
       });
     } else {
-      explainerWindow.webContents.send(
+      aiAssistantWindow.webContents.send(
         'set-ui-mode',
         ExplainerUIMode.PURE_CHAT,
       );
@@ -734,30 +755,30 @@ const trayToggleEvtHandler = async () => {
 
   // Add window closed event handler to explainer window to recreate it when closed
   // This ensures the next opening will still be fast
-  const setupExplainerWindowRebuild = () => {
-    if (explainerWindow && !explainerWindow.isDestroyed()) {
+  const setupaiAssistantWindowRebuild = () => {
+    if (aiAssistantWindow && !aiAssistantWindow.isDestroyed()) {
       // Remove any previous listeners to avoid duplicates
-      explainerWindow.removeAllListeners('closed');
+      aiAssistantWindow.removeAllListeners('closed');
 
       // Add new closed listener
-      explainerWindow.on('closed', () => {
+      aiAssistantWindow.on('closed', () => {
         // Schedule recreation after a short delay
         setTimeout(() => {
-          if (!explainerWindow || explainerWindow.isDestroyed()) {
-            explainerWindow = createCodeExplainerWindow();
-            explainerWindow.hide();
-            setupExplainerWindowRebuild(); // Setup the listener again for the new window
+          if (!aiAssistantWindow || aiAssistantWindow.isDestroyed()) {
+            aiAssistantWindow = createCodeaiAssistantWindow();
+            aiAssistantWindow.hide();
+            setupaiAssistantWindowRebuild(); // Setup the listener again for the new window
 
             // Set PURE_CHAT mode as default for the recreated window
-            if (explainerWindow.webContents.isLoadingMainFrame()) {
-              explainerWindow.webContents.once('did-finish-load', () => {
-                explainerWindow.webContents.send(
+            if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+              aiAssistantWindow.webContents.once('did-finish-load', () => {
+                aiAssistantWindow.webContents.send(
                   'set-ui-mode',
                   ExplainerUIMode.PURE_CHAT,
                 );
               });
             } else {
-              explainerWindow.webContents.send(
+              aiAssistantWindow.webContents.send(
                 'set-ui-mode',
                 ExplainerUIMode.PURE_CHAT,
               );
@@ -769,7 +790,7 @@ const trayToggleEvtHandler = async () => {
   };
 
   // Call this after the initial window is created
-  setTimeout(setupExplainerWindowRebuild, 2000);
+  setTimeout(setupaiAssistantWindowRebuild, 2000);
 
   DBManager.initPath();
   // console.log({
@@ -842,20 +863,20 @@ const trayToggleEvtHandler = async () => {
   // Register shortcut for Pure Chat Mode (Ctrl+Cmd+C)
   globalShortcut.register('Command+Control+C', () => {
     // Check if explainer window already exists
-    if (explainerWindow && !explainerWindow.isDestroyed()) {
+    if (aiAssistantWindow && !aiAssistantWindow.isDestroyed()) {
       // If window is visible, check its current mode
-      if (explainerWindow.isVisible()) {
+      if (aiAssistantWindow.isVisible()) {
         // For now, just hide the window if it's visible (simplified toggle behavior)
-        explainerWindow.hide();
+        aiAssistantWindow.hide();
         return;
       } else {
         // Performance optimization: Show window immediately before setting mode
         // This improves perceived performance as the window appears faster
-        explainerWindow.show();
+        aiAssistantWindow.show();
 
         // Use setTimeout with 0ms to ensure show() completes first
         setTimeout(() => {
-          explainerWindow.webContents.send(
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.PURE_CHAT,
           );
@@ -865,31 +886,31 @@ const trayToggleEvtHandler = async () => {
     }
 
     // If we reach here, we need to create a new window
-    // Set show:true in createCodeExplainerWindow to show window immediately
-    explainerWindow = createCodeExplainerWindow();
+    // Set show:true in createCodeaiAssistantWindow to show window immediately
+    aiAssistantWindow = createCodeaiAssistantWindow();
 
     // Set position immediately to ensure window appears in the right place
     const position = getWindowPosition();
-    explainerWindow.setPosition(position.x, position.y, false);
+    aiAssistantWindow.setPosition(position.x, position.y, false);
 
     // Set UI mode after a minimal delay to ensure window is visible first
-    if (explainerWindow.webContents.isLoadingMainFrame()) {
-      explainerWindow.webContents.once('did-finish-load', () => {
-        explainerWindow.webContents.send(
+    if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+      aiAssistantWindow.webContents.once('did-finish-load', () => {
+        aiAssistantWindow.webContents.send(
           'set-ui-mode',
           ExplainerUIMode.PURE_CHAT,
         );
       });
     } else {
       // Immediate mode set is better for performance
-      explainerWindow.webContents.send(
+      aiAssistantWindow.webContents.send(
         'set-ui-mode',
         ExplainerUIMode.PURE_CHAT,
       );
     }
 
     // Focus window to bring it to front
-    explainerWindow.focus();
+    aiAssistantWindow.focus();
   });
 
   // Register shortcut for Code Explainer (Ctrl+Cmd+E)
@@ -904,12 +925,12 @@ const trayToggleEvtHandler = async () => {
 
       // If window exists and is visible and code hasn't changed, hide it
       if (
-        explainerWindow &&
-        !explainerWindow.isDestroyed() &&
-        explainerWindow.isVisible() &&
+        aiAssistantWindow &&
+        !aiAssistantWindow.isDestroyed() &&
+        aiAssistantWindow.isVisible() &&
         !codeChanged
       ) {
-        explainerWindow.hide();
+        aiAssistantWindow.hide();
         return;
       }
 
@@ -917,27 +938,27 @@ const trayToggleEvtHandler = async () => {
       lastExplainedCode = clipboardContent;
 
       // Create window if needed, otherwise use existing one
-      if (!explainerWindow || explainerWindow.isDestroyed()) {
-        explainerWindow = createCodeExplainerWindow();
+      if (!aiAssistantWindow || aiAssistantWindow.isDestroyed()) {
+        aiAssistantWindow = createCodeaiAssistantWindow();
       }
 
       const processCode = () => {
         // Show the window if not visible
-        if (!explainerWindow.isVisible()) {
-          showExplainerWindow();
+        if (!aiAssistantWindow.isVisible()) {
+          showAIAssistantWindow();
         }
 
         // Send code to explain
-        explainerWindow.webContents.send('code-to-explain', clipboardContent);
+        aiAssistantWindow.webContents.send('code-to-explain', clipboardContent);
 
         // Set UI mode based on clipboard content and last explanation state
         // If we had an explanation for this code previously and are reopening, try to restore it
         if (
           clipboardContent === lastExplainedCode &&
           lastExplanationCompleted &&
-          lastUIMode === ExplainerUIMode.CHAT_WITH_EXPLANATION
+          lastUIMode === AIAssistantUIMode.INSIGHT_CHAT
         ) {
-          explainerWindow.webContents.send(
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.CHAT_WITH_EXPLANATION,
             {
@@ -948,17 +969,17 @@ const trayToggleEvtHandler = async () => {
 
           // Still request explanation in case we need to regenerate it
           // The renderer will handle showing the cached explanation if available
-          anthropicService.explainCode(clipboardContent, explainerWindow);
+          anthropicService.explainCode(clipboardContent, aiAssistantWindow);
         } else {
           // Otherwise, use CHAT_WITH_EXPLANATION mode and request a new explanation
-          explainerWindow.webContents.send(
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.CHAT_WITH_EXPLANATION,
             { code: clipboardContent },
           );
 
           // Request explanation
-          anthropicService.explainCode(clipboardContent, explainerWindow);
+          anthropicService.explainCode(clipboardContent, aiAssistantWindow);
 
           // Reset explanation completed flag
           lastExplanationCompleted = false;
@@ -966,8 +987,8 @@ const trayToggleEvtHandler = async () => {
       };
 
       // Handle window loading state
-      if (explainerWindow.webContents.isLoadingMainFrame()) {
-        explainerWindow.webContents.once('did-finish-load', processCode);
+      if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+        aiAssistantWindow.webContents.once('did-finish-load', processCode);
       } else {
         processCode();
       }
@@ -977,36 +998,36 @@ const trayToggleEvtHandler = async () => {
       // If window exists and is visible in PURE_CHAT mode, hide it
       // Since we can't directly know if it's in PURE_CHAT mode, we'll just hide it if empty clipboard
       if (
-        explainerWindow &&
-        !explainerWindow.isDestroyed() &&
-        explainerWindow.isVisible()
+        aiAssistantWindow &&
+        !aiAssistantWindow.isDestroyed() &&
+        aiAssistantWindow.isVisible()
       ) {
-        explainerWindow.hide();
+        aiAssistantWindow.hide();
         return;
       }
 
       // Create or show explainer window
-      if (!explainerWindow || explainerWindow.isDestroyed()) {
-        explainerWindow = createCodeExplainerWindow();
+      if (!aiAssistantWindow || aiAssistantWindow.isDestroyed()) {
+        aiAssistantWindow = createCodeaiAssistantWindow();
       }
 
       // Set UI mode to PURE_CHAT
-      if (explainerWindow.webContents.isLoadingMainFrame()) {
-        explainerWindow.webContents.once('did-finish-load', () => {
-          explainerWindow.webContents.send(
+      if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+        aiAssistantWindow.webContents.once('did-finish-load', () => {
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.PURE_CHAT,
           );
         });
       } else {
-        explainerWindow.webContents.send(
+        aiAssistantWindow.webContents.send(
           'set-ui-mode',
           ExplainerUIMode.PURE_CHAT,
         );
       }
 
       // Show the window
-      showExplainerWindow();
+      showAIAssistantWindow();
     }
 
     // End of the new implementation
@@ -1139,26 +1160,26 @@ const trayToggleEvtHandler = async () => {
 
         // If explainer window already exists and is visible, hide it
         if (
-          explainerWindow &&
-          !explainerWindow.isDestroyed() &&
-          explainerWindow.isVisible()
+          aiAssistantWindow &&
+          !aiAssistantWindow.isDestroyed() &&
+          aiAssistantWindow.isVisible()
         ) {
           if (isDebug) {
             console.log(
               'Explainer window visible with no selection, hiding it',
             );
           }
-          explainerWindow.hide();
+          aiAssistantWindow.hide();
           return;
         }
 
         // Otherwise open explainer window with empty code - it will show pure chat interface
-        explainerWindow = createCodeExplainerWindow();
+        aiAssistantWindow = createCodeaiAssistantWindow();
 
-        if (explainerWindow.webContents.isLoadingMainFrame()) {
-          console.log('explainerWindow.webContents.isLoadingMainFrame()');
-          explainerWindow.webContents.once('did-finish-load', () => {
-            explainerWindow.webContents.send(
+        if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+          console.log('aiAssistantWindow.webContents.isLoadingMainFrame()');
+          aiAssistantWindow.webContents.once('did-finish-load', () => {
+            aiAssistantWindow.webContents.send(
               'set-ui-mode',
               ExplainerUIMode.PURE_CHAT,
             );
@@ -1166,14 +1187,14 @@ const trayToggleEvtHandler = async () => {
         } else {
           // TODO: sometimes this would not show the new window 
           console.log(
-            "explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);",
+            "aiAssistantWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);",
           );
-          explainerWindow.webContents.send(
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.PURE_CHAT,
           );
         }
-        showExplainerWindow();
+        showaiAssistantWindow();
         return;
       }
 
@@ -1186,22 +1207,22 @@ const trayToggleEvtHandler = async () => {
         // If explainer window already exists and is visible, hide it
         // TODO: this has one edge case: if the opened window is the pure chat window, we should not hide it         
         if (
-          explainerWindow &&
-          !explainerWindow.isDestroyed() &&
-          explainerWindow.isVisible()
+          aiAssistantWindow &&
+          !aiAssistantWindow.isDestroyed() &&
+          aiAssistantWindow.isVisible()
         ) {
-          explainerWindow.hide();
+          aiAssistantWindow.hide();
           return;
         }
 
         // If window exists but is hidden, show it with chat interface
         if (
-          explainerWindow &&
-          !explainerWindow.isDestroyed() &&
-          !explainerWindow.isVisible()
+          aiAssistantWindow &&
+          !aiAssistantWindow.isDestroyed() &&
+          !aiAssistantWindow.isVisible()
         ) {
-          explainerWindow.show();
-          explainerWindow.webContents.send(
+          aiAssistantWindow.show();
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.CHAT_WITH_EXPLANATION,
             { code: selectedCode },
@@ -1210,27 +1231,27 @@ const trayToggleEvtHandler = async () => {
         }
 
         // Otherwise create new window with chat interface
-        explainerWindow = createCodeExplainerWindow();
-        if (explainerWindow.webContents.isLoadingMainFrame()) {
-          explainerWindow.webContents.once('did-finish-load', () => {
-            explainerWindow.webContents.send('code-to-explain', selectedCode);
-            explainerWindow.webContents.send(
+        aiAssistantWindow = createCodeaiAssistantWindow();
+        if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+          aiAssistantWindow.webContents.once('did-finish-load', () => {
+            aiAssistantWindow.webContents.send('code-to-explain', selectedCode);
+            aiAssistantWindow.webContents.send(
               'set-ui-mode',
               ExplainerUIMode.CHAT_WITH_EXPLANATION,
               { code: selectedCode },
             );
           });
         } else {
-          console.log('explainerWindow.webContents.code-to-explain()2');
+          console.log('aiAssistantWindow.webContents.code-to-explain()2');
 
-          explainerWindow.webContents.send('code-to-explain', selectedCode);
-          explainerWindow.webContents.send(
+          aiAssistantWindow.webContents.send('code-to-explain', selectedCode);
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.CHAT_WITH_EXPLANATION,
             { code: selectedCode },
           );
         }
-        showExplainerWindow();
+        showaiAssistantWindow();
         return;
       }
 
@@ -1238,81 +1259,81 @@ const trayToggleEvtHandler = async () => {
       lastExplainedCode = selectedCode;
 
       // Check if window already exists
-      if (explainerWindow && !explainerWindow.isDestroyed()) {
+      if (aiAssistantWindow && !aiAssistantWindow.isDestroyed()) {
         // If window is visible but code is same, toggle visibility (hide it)
-        if (explainerWindow.isVisible() && !codeChanged) {
+        if (aiAssistantWindow.isVisible() && !codeChanged) {
           console.log('Hiding window, same code');
-          explainerWindow.hide();
+          aiAssistantWindow.hide();
           return;
         }
 
         // If window is visible and code changed, update with new code
-        if (explainerWindow.isVisible() && codeChanged) {
+        if (aiAssistantWindow.isVisible() && codeChanged) {
           console.log('Updating existing window with new code');
 
           // Send code and set UI mode to CHAT_WITH_EXPLANATION by default
-          explainerWindow.webContents.send('code-to-explain', selectedCode);
-          explainerWindow.webContents.send(
+          aiAssistantWindow.webContents.send('code-to-explain', selectedCode);
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.CHAT_WITH_EXPLANATION,
             { code: selectedCode },
           );
 
           // Still explain code in the background so the explanation is available when toggled
-          anthropicService.explainCode(selectedCode, explainerWindow);
+          anthropicService.explainCode(selectedCode, aiAssistantWindow);
           return;
         }
 
         // If window exists but hidden, show it
-        if (!explainerWindow.isVisible()) {
+        if (!aiAssistantWindow.isVisible()) {
           console.log('Showing existing window');
-          explainerWindow.show();
+          aiAssistantWindow.show();
 
           // Send code and set UI mode to CHAT_WITH_EXPLANATION by default
-          explainerWindow.webContents.send('code-to-explain', selectedCode);
-          explainerWindow.webContents.send(
+          aiAssistantWindow.webContents.send('code-to-explain', selectedCode);
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.CHAT_WITH_EXPLANATION,
             { code: selectedCode },
           );
 
           // Still explain code in the background so the explanation is available when toggled
-          anthropicService.explainCode(selectedCode, explainerWindow);
+          anthropicService.explainCode(selectedCode, aiAssistantWindow);
           return;
         }
       }
 
       // Create a new window if we didn't return yet
       console.log('Creating new explainer window');
-      explainerWindow = createCodeExplainerWindow();
+      aiAssistantWindow = createCodeaiAssistantWindow();
 
       // Send the code once the window is ready
       const processCode = () => {
-        if (!explainerWindow.isVisible()) {
-          // explainerWindow.show();
-          showExplainerWindow();
+        if (!aiAssistantWindow.isVisible()) {
+          // aiAssistantWindow.show();
+          showaiAssistantWindow();
         }
 
         // Send code with a slight delay to ensure renderer is ready
         setTimeout(() => {
           // First send the code to the window
-          explainerWindow.webContents.send('code-to-explain', selectedCode);
+          aiAssistantWindow.webContents.send('code-to-explain', selectedCode);
 
           // Set UI mode to CHAT_WITH_EXPLANATION by default
-          explainerWindow.webContents.send(
+          aiAssistantWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.CHAT_WITH_EXPLANATION,
             { code: selectedCode },
           );
 
           // Still explain code in the background so the explanation is available when toggled
-          anthropicService.explainCode(selectedCode, explainerWindow);
+          anthropicService.explainCode(selectedCode, aiAssistantWindow);
         }, 200);
       };
 
       // Handle window loading state
-      if (explainerWindow.webContents.isLoadingMainFrame()) {
-        explainerWindow.webContents.once('did-finish-load', processCode);
+      if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
+        aiAssistantWindow.webContents.once('did-finish-load', processCode);
       } else {
         processCode();
       }

@@ -31,7 +31,8 @@ export const rendererConfig: Configuration = {
   // Multiple entrypoints for different HTML pages
   entry: {
     main_window: './src/index.tsx',
-    explainer: './src/explainer-renderer.ts',
+    explainer: './src/explainer-renderer.ts', // Keep for backwards compatibility during transition
+    ai_assistant: './src/ai-assistant-renderer.ts',
     settings: './src/SettingsWindow.tsx'
   }
 };
