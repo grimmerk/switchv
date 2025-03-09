@@ -660,94 +660,202 @@ const trayToggleEvtHandler = async () => {
       console.log('Code Explainer shortcut triggered');
     }
 
-    const originalClipboard = clipboard.readText().trim();
-
-    // Get selected text using native Swift tool to simulate Cmd+C
+    // Get selected text using AppleScript clipboard approach for all apps
     const getSelectedText = async () => {
-      const path = require('path');
-      const fs = require('fs');
+      const { execSync } = require('child_process');
 
-      if (isDebug) {
-        console.log(
-          'Starting getSelectedText, saved original clipboard content',
-        );
-      }
+      console.log('Starting getSelectedText using universal clipboard approach');
 
-      // Path to our compiled Swift tool
-      const copyToolPath = path.join(app.getAppPath(), 'resources', 'CopyTool');
-
-      // Make the tool executable if needed
       try {
-        fs.chmodSync(copyToolPath, '755');
-      } catch (err) {
-        console.error('Error making CopyTool executable:', err);
-      }
-
-      return new Promise<string>((resolve) => {
-        // Execute our Swift tool
-        execFile(copyToolPath, (error, stdout, stderr) => {
-          if (error) {
-            console.error('Error executing CopyTool:', error);
-
-            // Check if it's a permission issue
-            if (stdout && stdout.includes('PERMISSION_NEEDED')) {
-              console.log('Accessibility permission needed');
-
-              // Show a dialog explaining the permission needed
-              dialog
-                .showMessageBox({
-                  type: 'info',
-                  title: 'Accessibility Permission Required',
-                  message:
-                    'SwitchV needs Accessibility permission to automatically copy selected text.',
-                  detail:
-                    'Please grant this permission in System Settings > Privacy & Security > Accessibility when prompted. After granting permission, try using the shortcut again.',
-                  buttons: ['Cancel', 'Request Permission'],
-                  defaultId: 1,
-                })
-                .then((result) => {
-                  if (result.response === 1) {
-                    // User wants to request permission, run tool with --prompt
-                    execFile(copyToolPath, ['--prompt'], () => {
-                      // Regardless of the outcome, resolve with the current clipboard content
-                      resolve(clipboard.readText().trim());
-                    });
-                  } else {
-                    // User canceled, resolve with current clipboard
-                    resolve(clipboard.readText().trim());
-                  }
-                });
-              return;
+        // Use AppleScript to get the frontmost application name
+        const frontmostApp = execSync(`osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true'`).toString().trim();
+        console.log(`Frontmost app according to AppleScript: ${frontmostApp}`);
+        
+        // Save original clipboard
+        const originalClipboard = clipboard.readText();
+        console.log(`Original clipboard length: ${originalClipboard.length}`);
+        
+        try {
+          // For special apps, we might need different delays
+          let preDelay = 0.1;  // Default pre-command delay
+          let postDelay = 0.2; // Default post-command delay
+          
+          // App-specific adjustments
+          if (frontmostApp === 'Terminal' || frontmostApp === 'iTerm2') {
+            console.log('Terminal/iTerm detected - using special Terminal handling');
+            
+            // For Terminal/iTerm, we need a special AppleScript approach
+            // This includes multiple attempts and different commands
+            try {
+              console.log('Terminal: Trying special selection detection method');
+              
+              // First try: use the Edit menu's Copy command instead of keyboard shortcut
+              // This is sometimes more reliable in Terminal apps
+              const menuResult = execSync(`osascript -e '
+                tell application "System Events"
+                  tell process "${frontmostApp}"
+                    set frontmost to true
+                    delay 0.2
+                    click menu item "Copy" of menu "Edit" of menu bar 1
+                    delay 0.3
+                  end tell
+                end tell
+              '`).toString();
+              
+              console.log('Terminal: Executed menu-based copy command');
+              execSync('sleep 0.3'); // Longer wait for Terminal
+              
+              // Check if clipboard changed
+              const termClipboard = clipboard.readText();
+              if (termClipboard !== originalClipboard && termClipboard.trim().length > 0) {
+                console.log(`Terminal: Got selection via menu copy, length: ${termClipboard.trim().length}`);
+                
+                // Process the result and return
+                const trimmedTerm = termClipboard.trim();
+                
+                // Filter out known Terminal prompts
+                if (trimmedTerm === "⌥⌘1" || trimmedTerm === "⌥⌘2" || trimmedTerm === "⌥⌘3" || 
+                    trimmedTerm === "⌘⌥1" || trimmedTerm === "⌘⌥2" || trimmedTerm === "⌘⌥3") {
+                  console.log('Terminal: Detected Terminal prompt - treating as NO_SELECTION');
+                  clipboard.writeText(originalClipboard);
+                  return '';
+                }
+                
+                // If we got real text, return it
+                clipboard.writeText(originalClipboard);
+                return trimmedTerm;
+              } else {
+                console.log('Terminal: No selection detected via menu method');
+              }
+              
+              // If menu method failed, fall back to keyboard shortcut with longer delays
+              preDelay = 0.3;   // Much longer for Terminal
+              postDelay = 0.4;  // Much longer for Terminal
+              console.log('Terminal: Trying keyboard shortcut with longer delays');
+            } catch (termErr) {
+              console.error('Terminal: Error with menu-based approach, falling back to keyboard:', termErr);
+              // Fall back to keyboard approach with longer delays
+              preDelay = 0.3;
+              postDelay = 0.4;
             }
-
-            // For other errors, fall back to reading current clipboard
-            resolve(clipboard.readText().trim());
-            return;
+          } else if (frontmostApp.includes('Code') || frontmostApp === 'Electron') {
+            console.log('VS Code/Electron detected - using specific detection for whole-line copying');
           }
-
-          // Check for special messages
-          if (stdout && stdout.includes('NO_SELECTION')) {
-            console.log('No text was selected');
-            resolve('');
-            return;
+          
+          // Use System Events to send Command+C to the frontmost app
+          const scriptResult = execSync(`osascript -e '
+            tell application "System Events" 
+              tell process "${frontmostApp}"
+                set frontmost to true
+                delay ${preDelay}
+                keystroke "c" using {command down}
+                delay ${postDelay}
+              end tell
+            end tell
+          '`).toString();
+          
+          // Wait a bit for clipboard to update
+          execSync('sleep 0.2');
+          
+          // Get text from clipboard
+          const newClipboard = clipboard.readText();
+          
+          // If clipboard changed, we got a selection
+          if (newClipboard !== originalClipboard && newClipboard.trim().length > 0) {
+            console.log(`Got selection via clipboard, length: ${newClipboard.trim().length}`);
+            
+            // Special handling for VS Code's auto-copy-line behavior
+            if (frontmostApp.includes('Code') || frontmostApp === 'Electron') {
+              // Check if this might be a "whole line" copy without actual selection
+              const trimmedText = newClipboard.trim();
+              
+              // Check if text looks like a single line that was copied without selection
+              const lines = newClipboard.split('\n');
+              const isSingleLine = lines.length <= 2 && (lines.length === 1 || lines[1] === '');
+              const isVSCodeLineEnd = newClipboard.endsWith('\n') || newClipboard.endsWith('\r\n');
+              
+              if (isVSCodeLineEnd && isSingleLine) {
+                console.log('Detected VS Code whole-line copy without selection - treating as NO_SELECTION');
+                
+                // Restore original clipboard
+                clipboard.writeText(originalClipboard);
+                
+                // Return empty string to indicate no selection
+                return '';
+              }
+            }
+            
+            // Special handling for Terminal common outputs
+            if (frontmostApp === 'Terminal' || frontmostApp === 'iTerm2') {
+              // Add more debug info to understand what's happening
+              const trimmed = newClipboard.trim();
+              console.log(`Terminal clipboard content: "${trimmed}" (${trimmed.length} chars)`);
+              
+              // Debug: log each character code for better debugging
+              let charCodes = "";
+              for (let i = 0; i < trimmed.length; i++) {
+                charCodes += `${trimmed.charCodeAt(i)} `;
+              }
+              console.log(`Character codes: ${charCodes}`);
+              
+              // Filter out common terminal prompts and status indicators that might be mistaken for selections
+              // Expanded pattern to catch more variations
+              if (trimmed === "⌥⌘1" || trimmed === "⌥⌘2" || trimmed === "⌥⌘3" || 
+                  trimmed === "⌘⌥1" || trimmed === "⌘⌥2" || trimmed === "⌘⌥3") {
+                console.log('Detected Terminal prompt/status - treating as NO_SELECTION');
+                
+                // Restore original clipboard
+                clipboard.writeText(originalClipboard);
+                
+                return '';
+              }
+              
+              // Additional check: if the text is very short and looks like a terminal control sequence
+              if (trimmed.length < 10 && /^[⌥⌘$%#>]/.test(trimmed)) {
+                console.log('Detected potential Terminal control sequence - treating as NO_SELECTION');
+                
+                // Restore original clipboard
+                clipboard.writeText(originalClipboard);
+                
+                return '';
+              }
+            }
+            
+            // Store the selection to return
+            const selectedText = newClipboard.trim();
+            
+            // Restore original clipboard
+            clipboard.writeText(originalClipboard);
+            
+            return selectedText;
+          } else {
+            console.log('No clipboard change detected - no selection');
+            
+            // Restore original clipboard just in case
+            clipboard.writeText(originalClipboard);
+            
+            return '';
           }
-
-          // Normal case - we got selected text
-          const selectedText = stdout.trim();
-          if (isDebug) {
-            console.log('Selected text length:', selectedText.length);
-          }
-
-          resolve(selectedText);
-        });
-      });
+        } catch (e) {
+          console.error('Error in AppleScript clipboard approach:', e);
+          
+          // Make sure to restore clipboard even on error
+          try {
+            clipboard.writeText(originalClipboard);
+          } catch (clipErr) {}
+          
+          return '';
+        }
+      } catch (e) {
+        console.error('Error getting frontmost app:', e);
+        return '';
+      }
     };
 
     // Get the selected text and continue with the explanation process
     getSelectedText().then((selectedCode) => {
       console.debug(
-        'debug 1:' + selectedCode + ';' + lastExplainedCode,
-        originalClipboard,
+        'debug 1:' + selectedCode + ';' + lastExplainedCode
       );
 
       // export enum ExplainerUIMode {
@@ -767,8 +875,10 @@ const trayToggleEvtHandler = async () => {
       //   PURE_CHAT = 'pure_chat'
       // }
 
-      // Check if this is different from previous code
-      const codeChanged = selectedCode !== originalClipboard; // lastExplainedCode;
+      // Check if this is a new selection (selectedCode will be empty if nothing is selected)
+      const hasSelection = selectedCode.length > 0;
+      // Check if selection is different from last time
+      const codeChanged = selectedCode !== lastExplainedCode;
 
       if (isDebug) {
         console.log(
@@ -779,9 +889,8 @@ const trayToggleEvtHandler = async () => {
         );
       }
 
-      // 1. No text is selected (selectedCode.length === 0) OR
-      // 2. Selected text is the same as last explained (codeChanged === false)
-      if (!selectedCode?.length || !codeChanged) {
+      // No text is selected (selectedCode.length === 0)
+      if (!selectedCode?.length) {
         if (isDebug) {
           console.log('No text selected, opening chat interface');
         }
@@ -826,76 +935,16 @@ const trayToggleEvtHandler = async () => {
         return;
       }
 
-      // If text is selected but is the same as before
-      if (!codeChanged) {
-        if (isDebug) {
-          console.log('Same text as before');
-        }
-
-        // If explainer window already exists and is visible, hide it
-        /** TODO: this has one edge case
-         * if the opened window is the pure chat window, we should not hide it
-         */
-        if (
-          explainerWindow &&
-          !explainerWindow.isDestroyed() &&
-          explainerWindow.isVisible()
-        ) {
-          explainerWindow.hide();
-          return;
-        }
-
-        // If window exists but is hidden, show it with chat interface
-        if (
-          explainerWindow &&
-          !explainerWindow.isDestroyed() &&
-          !explainerWindow.isVisible()
-        ) {
-          explainerWindow.show();
-          explainerWindow.webContents.send(
-            'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
-            { code: selectedCode },
-          );
-          return;
-        }
-
-        // Otherwise create new window with chat interface
-        explainerWindow = createCodeExplainerWindow();
-        if (explainerWindow.webContents.isLoadingMainFrame()) {
-          explainerWindow.webContents.once('did-finish-load', () => {
-            explainerWindow.webContents.send('code-to-explain', selectedCode);
-            explainerWindow.webContents.send(
-              'set-ui-mode',
-              ExplainerUIMode.CHAT_WITH_EXPLANATION,
-              { code: selectedCode },
-            );
-          });
-        } else {
-          console.log('explainerWindow.webContents.code-to-explain()2');
-
-          explainerWindow.webContents.send('code-to-explain', selectedCode);
-          explainerWindow.webContents.send(
-            'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
-            { code: selectedCode },
-          );
-        }
-        showExplainerWindow();
-        return;
-      }
+      // Text is selected, so process it - we don't need special handling 
+      // for when the text is the same as before since we're using direct selection now
 
       // Update the tracked code
       lastExplainedCode = selectedCode;
 
       // Check if window already exists
       if (explainerWindow && !explainerWindow.isDestroyed()) {
-        // If window is visible but code is same, toggle visibility (hide it)
-        if (explainerWindow.isVisible() && !codeChanged) {
-          console.log('Hiding window, same code');
-          explainerWindow.hide();
-          return;
-        }
+        // We no longer need special handling for when the code is the same as before,
+        // since we're using direct selection now
 
         // If window is visible and code changed, update with new code
         if (explainerWindow.isVisible() && codeChanged) {
