@@ -85,13 +85,11 @@ ipcMain.on('send-chat-message', (event, message, messageHistory) => {
 // Handle UI mode changes to track the current mode
 ipcMain.on('ui-mode-changed', (event, mode) => {
   lastUIMode = mode;
-  console.log('UI mode changed to:', mode);
 });
 
 // Handle explanation completion status
 ipcMain.on('explanation-completed', (event, completed) => {
   lastExplanationCompleted = completed;
-  console.log('Explanation completed status:', completed);
 });
 
 const hideWindow = () => {
@@ -620,11 +618,9 @@ const trayToggleEvtHandler = async () => {
     if (explainerWindow.webContents.isLoadingMainFrame()) {
       explainerWindow.webContents.once('did-finish-load', () => {
         explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
-        console.log('Pre-initialized explainer window with PURE_CHAT mode');
       });
     } else {
       explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
-      console.log('Pre-initialized explainer window with PURE_CHAT mode');
     }
   }, 1000); // Delay by 1 second to not interfere with main window initialization
   
@@ -637,11 +633,9 @@ const trayToggleEvtHandler = async () => {
       
       // Add new closed listener
       explainerWindow.on('closed', () => {
-        console.log('Explainer window was closed, scheduling recreation');
         // Schedule recreation after a short delay
         setTimeout(() => {
           if (!explainerWindow || explainerWindow.isDestroyed()) {
-            console.log('Recreating explainer window after close');
             explainerWindow = createCodeExplainerWindow();
             explainerWindow.hide();
             setupExplainerWindowRebuild(); // Setup the listener again for the new window
@@ -657,8 +651,6 @@ const trayToggleEvtHandler = async () => {
           }
         }, 500);
       });
-      
-      console.log('Set up explainer window rebuild on close');
     }
   };
   
@@ -687,12 +679,9 @@ const trayToggleEvtHandler = async () => {
       app.startAccessingSecurityScopedResource(securityBookmark);
     }
   }
-
-  console.log('create server');
   process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
   process.env.PRISMA_QUERY_ENGINE_LIBRARY = DBManager.queryExePath;
   await bootstrap();
-  console.log('create server done');
 
   // Load user settings
   await loadUserSettings();
@@ -737,9 +726,6 @@ const trayToggleEvtHandler = async () => {
   
   // Register shortcut for Pure Chat Mode (Ctrl+Cmd+C)
   globalShortcut.register('Command+Control+C', () => {
-    if (isDebug) {
-      console.log('Pure Chat shortcut triggered (Cmd+Ctrl+C)');
-    }
     
     // Check if explainer window already exists
     if (explainerWindow && !explainerWindow.isDestroyed()) {
@@ -785,18 +771,12 @@ const trayToggleEvtHandler = async () => {
 
   // Register shortcut for Code Explainer (Ctrl+Cmd+E)
   globalShortcut.register('Command+Control+E', () => {
-    if (isDebug) {
-      console.log('Code Explainer shortcut triggered (Cmd+Ctrl+E)');
-    }
 
     // Simplified approach: directly read clipboard content
     const clipboardContent = clipboard.readText().trim();
     
     // Check if clipboard has content
     if (clipboardContent.length > 0) {
-      if (isDebug) {
-        console.log('Clipboard has content, length:', clipboardContent.length);
-      }
       
       // Check if code changed from last time
       const codeChanged = clipboardContent !== lastExplainedCode;
@@ -804,9 +784,6 @@ const trayToggleEvtHandler = async () => {
       // If window exists and is visible and code hasn't changed, hide it
       if (explainerWindow && !explainerWindow.isDestroyed() && 
           explainerWindow.isVisible() && !codeChanged) {
-        if (isDebug) {
-          console.log('Window visible with same content - hiding window');
-        }
         explainerWindow.hide();
         return;
       }
@@ -832,7 +809,6 @@ const trayToggleEvtHandler = async () => {
         // If we had an explanation for this code previously and are reopening, try to restore it
         if (clipboardContent === lastExplainedCode && lastExplanationCompleted && 
             lastUIMode === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
-          console.log('Restoring CHAT_WITH_EXPLANATION mode with existing explanation');
           explainerWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.CHAT_WITH_EXPLANATION,
@@ -869,16 +845,10 @@ const trayToggleEvtHandler = async () => {
       }
     } else {
       // No content in clipboard - open pure chat interface
-      if (isDebug) {
-        console.log('No content in clipboard, opening pure chat interface');
-      }
       
       // If window exists and is visible in PURE_CHAT mode, hide it
       // Since we can't directly know if it's in PURE_CHAT mode, we'll just hide it if empty clipboard
       if (explainerWindow && !explainerWindow.isDestroyed() && explainerWindow.isVisible()) {
-        if (isDebug) {
-          console.log('Window visible with empty clipboard - hiding window');
-        }
         explainerWindow.hide();
         return;
       }
@@ -1221,9 +1191,6 @@ const trayToggleEvtHandler = async () => {
 // app.once('window-all-closed', app.quit); ? seems not important
 // mainWindow.removeAllListeners('close'); ? seems not important
 app.once('before-quit', () => {
-  if (isDebug) {
-    console.log('before quit, kill server process');
-  }
   if (serverProcess) {
     serverProcess.kill();
   }

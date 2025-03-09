@@ -93,8 +93,8 @@ We've implemented several optimizations to improve window opening speed and user
 ## Pending Tasks and Solutions (2025/3/9)
 
 1. **Console Logs Cleanup**:
-  - Need to remove unnecessary console logs from main.ts and explainer-ui.tsx
-  - Keep critical logs for debugging purposes
+  - COMPLETED: Removed unnecessary console logs from main.ts and explainer-ui.tsx
+  - Kept critical logs for debugging purposes (those inside isDebug checks)
 
 2. **Preloading Clarification**:
   - Current preloading: Window is created at app startup (via setTimeout in main.ts)
@@ -102,7 +102,7 @@ We've implemented several optimizations to improve window opening speed and user
   - The placeholder would show immediately while React initializes
 
 3. **ExplainerUIMode Renaming**:
-  - Rename SPLIT to EXPLANATION_SPLIT
+  - COMPLETED: Renamed SPLIT to EXPLANATION_SPLIT in utility.ts and explainer-ui.tsx
   - Other modes can be renamed for clarity if needed
 
 4. **Scroll Optimization Note**:
@@ -133,26 +133,6 @@ We've implemented several optimizations to improve window opening speed and user
 10. **Future Features**:
    - Save explanation/chat history
    - Add Markdown/syntax highlighting in input UI
-
-## Pending Tasks and Solutions (2025/3/9)
-
-1. **Console Logs Cleanup**: 
-   - Need to remove unnecessary console logs from main.ts and explainer-ui.tsx
-   - Keep critical logs for debugging purposes
-
-2. **Preloading Clarification**:
-   - Current preloading: Window is created at app startup (via setTimeout in main.ts)
-   - Loading placeholder: Not currently implemented, but could improve perceived performance 
-   - The placeholder would show immediately while React initializes
-
-3. **ExplainerUIMode Renaming**:
-   - Rename SPLIT to EXPLANATION_SPLIT
-   - Other modes can be renamed for clarity if needed
-
-4. **Scroll Optimization Note**:
-   - Current condition: `(!(mode === ExplainerUIMode.PURE_CHAT && messagesRef.current.length <= 1))`
-   - This skips scrolling for PURE_CHAT with just welcome message
-   - No chat history implemented yet, but code is future-proofed for when it's added
 
 5. **Settings Window Height**:
    - Increase height to ensure "Save" success message is visible

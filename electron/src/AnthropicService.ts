@@ -206,7 +206,7 @@ export class AnthropicService {
       // Process the stream
       for await (const chunk of stream) {
         if (chunk.type === 'content_block_delta' && chunk.delta.text) {
-          console.debug('debugging delta:', chunk.delta.text);
+          // console.debug('debugging delta:', chunk.delta.text);
 
           // Accumulate for cache
           fullExplanation += chunk.delta.text;
@@ -239,7 +239,7 @@ export class AnthropicService {
         }
       }
 
-      console.debug('debugging final fullExplanation:', fullExplanation);
+      // console.debug('debugging final fullExplanation:', fullExplanation);
 
       // After streaming is complete, send the full explanation again
       // This ensures we have a clean, non-duplicated explanation in the UI

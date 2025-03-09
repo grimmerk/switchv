@@ -308,7 +308,6 @@ const ExplainerApp: React.FC = () => {
     }
   }, [messages, isLoading]);
 
-  console.log('ExplainerApp rendering');
 
   // Define all event handlers outside of useEffect to avoid closure issues
 
@@ -330,7 +329,6 @@ const ExplainerApp: React.FC = () => {
 
   // Handler for explanation start
   const handleExplanationStart = () => {
-    console.log('Explanation started:', codeRef.current);
     // Clear the explanation state completely
     setExplanation('');
     setIsLoading(true);
@@ -342,11 +340,9 @@ const ExplainerApp: React.FC = () => {
       uiModeRef.current === ExplainerUIMode.CHAT_WITH_EXPLANATION &&
       codeRef.current
     ) {
-      console.log('In explanation start, CHAT_WITH_EXPLANATION mode detected');
       setMessages([{ role: 'user', content: codeRef.current }]);
-    } else if (uiModeRef.current === ExplainerUIMode.SPLIT) {
-      console.log('In explanation start, SPLIT mode detected');
-      // Only reset messages in SPLIT mode
+    } else if (uiModeRef.current === ExplainerUIMode.EXPLANATION_SPLIT) {
+      // Only reset messages in EXPLANATION_SPLIT mode
       setMessages([]);
     }
     setShowChat(false);
@@ -354,7 +350,6 @@ const ExplainerApp: React.FC = () => {
 
   // Handler for explanation chunks
   const handleExplanationChunk = (_event: any, chunk: string) => {
-    console.log('Received explanation chunk:', chunk.length, 'chars;', chunk);
     // If chunk is very large (full explanation), just set it directly
     // Otherwise append to existing explanation
     if (chunk.length > 1000) {
@@ -368,26 +363,14 @@ const ExplainerApp: React.FC = () => {
       explanationRef.current.scrollTop = explanationRef.current.scrollHeight;
     }
 
-    console.log(
-      'debug in handleExplanationChunk: ExplainerUIMode:',
-      uiModeRef.current,
-    );
-
     // In CHAT_WITH_EXPLANATION mode, update the assistant message if we have one
     if (uiModeRef.current === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
-      console.log(
-        'Updating chat message in CHAT_WITH_EXPLANATION mode:',
-        messagesRef.current,
-      );
-
       // Find if we already have an assistant message
       const assistantMessageIndex = messagesRef.current.findIndex(
         (msg) => msg.role === 'assistant',
       );
 
       if (assistantMessageIndex >= 0) {
-        console.log("Updating assistant's message in CHAT_WITH_EXPLANATION");
-
         // Update existing assistant message
         const updatedMessages = [...messagesRef.current];
         // If it's a full explanation, replace
@@ -399,10 +382,6 @@ const ExplainerApp: React.FC = () => {
         }
         setMessages(updatedMessages);
       } else if (messagesRef.current.length > 0) {
-        console.log(
-          'Adding new assistant message in CHAT_WITH_EXPLANATION mode',
-        );
-
         // Add a new assistant message if there's at least a user message
         setMessages([
           ...messagesRef.current,
@@ -422,7 +401,6 @@ const ExplainerApp: React.FC = () => {
 
   // Handler for explanation complete
   const handleExplanationComplete = () => {
-    console.log('Explanation complete');
     setIsLoading(false);
     setIsComplete(true);
     
@@ -453,7 +431,6 @@ const ExplainerApp: React.FC = () => {
 
       // If we're already in CHAT_WITH_EXPLANATION mode, make sure messages are visible
       if (uiModeRef.current === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
-        console.log('Explanation complete while in CHAT_WITH_EXPLANATION mode');
         // Ensure chat messages are scrolled to bottom
         setTimeout(() => {
           if (chatMessagesRef.current) {
@@ -477,7 +454,6 @@ const ExplainerApp: React.FC = () => {
     _event: any,
     data: { reason: string; code: string },
   ) => {
-    console.log('Skipping explanation:', data?.reason || 'No reason provided');
     setIsLoading(false);
 
     // Get the code from the data if provided, or use current code state
@@ -500,10 +476,7 @@ const ExplainerApp: React.FC = () => {
     mode: ExplainerUIMode,
     data: any = {},
   ) => {
-    console.log(`Setting UI mode to: ${mode}`, data);
-
     // Set the UI mode state
-    // setUIMode(mode);
     setUIMode((oldValue) => {
       /** NOTE: this is needed to update it soon,
        * otherwise handleExplanationStart may read old value since updating take some time */
@@ -526,11 +499,11 @@ const ExplainerApp: React.FC = () => {
     });
 
     // Update backward compatibility state
-    setShowChat(mode !== ExplainerUIMode.SPLIT);
+    setShowChat(mode !== ExplainerUIMode.EXPLANATION_SPLIT);
 
     // Handle each mode specifically
     switch (mode) {
-      case ExplainerUIMode.SPLIT:
+      case ExplainerUIMode.EXPLANATION_SPLIT:
         // Nothing special needed for split mode
         break;
 
@@ -548,8 +521,6 @@ const ExplainerApp: React.FC = () => {
           explanationContentRef.current &&
           explanationContentRef.current.trim()
         ) {
-          console.log('Setting messages with explanation' + (shouldRestoreExplanation ? ' (restore mode)' : ''));
-          
           // If this is a restore operation, mark the explanation as complete immediately
           if (shouldRestoreExplanation) {
             setIsLoading(false);
@@ -568,7 +539,6 @@ const ExplainerApp: React.FC = () => {
         }
         // Otherwise just set the code as the first message and wait for explanation
         else if (data.code || codeRef.current) {
-          console.log('Setting messages with just code (no explanation yet)');
           setMessages([
             { role: 'user', content: data.code || codeRef.current },
           ]);
@@ -578,14 +548,9 @@ const ExplainerApp: React.FC = () => {
       case ExplainerUIMode.CHAT_WITH_CODE:
         // Initialize with just the code
         if (data && data.code) {
-          console.log(
-            'Setting code from data:',
-            data.code.substring(0, 50) + '...',
-          );
           setCode(data.code);
           setMessages([{ role: 'user', content: data.code }]);
         } else if (code) {
-          console.log('Using existing code for message');
           setMessages([{ role: 'user', content: codeRef.current }]);
         }
         break;
@@ -601,7 +566,6 @@ const ExplainerApp: React.FC = () => {
             messagesRef.current[0].role !== 'assistant' ||
             !messagesRef.current[0].content.includes("Hello! I'm Claude")) {
           
-          console.log('Setting welcome message for PURE_CHAT mode');
           // Use a simple welcome message to avoid unnecessary rendering
           setMessages([
             {
@@ -632,7 +596,6 @@ const ExplainerApp: React.FC = () => {
   // Handler for detected language from code blocks
   const handleDetectedLanguage = (_event: any, language: string) => {
     if (language) {
-      console.log(`Language detected from code block: ${language}`);
       setDetectedLanguage(language);
       setInputLanguage(language); // Update the input display language too
     }
@@ -640,7 +603,6 @@ const ExplainerApp: React.FC = () => {
 
   // Handler for chat response
   const handleChatResponse = (_event: any, responseText: string) => {
-    console.log('Received chat response:', responseText);
     // Add the assistant's response to the messages
     setMessages((prev) => [
       ...prev,
@@ -651,7 +613,6 @@ const ExplainerApp: React.FC = () => {
 
   // Handler for directly opening chat interface (without code)
   const handleOpenChatInterface = () => {
-    console.log('Opening chat interface directly');
     // Clear any existing code/explanation
     setCode('');
     setExplanation('');
@@ -675,8 +636,6 @@ const ExplainerApp: React.FC = () => {
     _event: any,
     receivedCode: string,
   ) => {
-    console.log('Opening chat interface with selected code');
-
     // Keep the code reference (don't clear it)
     if (receivedCode && receivedCode.trim().length > 0) {
       setCode(receivedCode);
@@ -697,8 +656,6 @@ const ExplainerApp: React.FC = () => {
 
   // Set up listeners for all the events (once only)
   useEffect(() => {
-    console.log('Setting up event listeners');
-
     // Store all event handlers to remove them on cleanup
     const handlers = {
       'code-to-explain': handleCodeToExplain,
@@ -756,7 +713,6 @@ const ExplainerApp: React.FC = () => {
     // Cleanup function to remove all event listeners
     return () => {
       if ((window as any).electronAPI) {
-        console.log('Cleaning up event listeners');
         const ipcRenderer = require('electron').ipcRenderer;
 
         // Remove all listeners
@@ -833,7 +789,7 @@ const ExplainerApp: React.FC = () => {
   // Toggle between UI modes
   const toggleUIMode = () => {
     // If in split mode, switch to chat with explanation
-    if (uiMode === ExplainerUIMode.SPLIT) {
+    if (uiMode === ExplainerUIMode.EXPLANATION_SPLIT) {
       // If we have an explanation, switch to CHAT_WITH_EXPLANATION
       if (explanation && explanation.trim()) {
         handleSetUIMode(null, ExplainerUIMode.CHAT_WITH_EXPLANATION);
@@ -849,7 +805,7 @@ const ExplainerApp: React.FC = () => {
     }
     // Otherwise switch back to split mode
     else {
-      handleSetUIMode(null, ExplainerUIMode.SPLIT);
+      handleSetUIMode(null, ExplainerUIMode.EXPLANATION_SPLIT);
     }
 
     // For backward compatibility
@@ -969,9 +925,6 @@ const ExplainerApp: React.FC = () => {
     return showChat ? { maxHeight: '30%' } : {}; // Reduce height if chat is shown
   };
 
-  console.log('debug: ExplainerUIMode:', uiMode);
-  console.log('debug: messages:', messages);
-  console.log('debug: explanation:', explanation);
 
   return (
     <div style={styles.container}>
@@ -982,10 +935,10 @@ const ExplainerApp: React.FC = () => {
             style={{ ...styles.closeButton, marginRight: '5px' }}
             onClick={toggleUIMode}
             title={
-              uiMode !== ExplainerUIMode.SPLIT ? 'Show Split View' : 'Show Chat'
+              uiMode !== ExplainerUIMode.EXPLANATION_SPLIT ? 'Show Split View' : 'Show Chat'
             }
           >
-            {uiMode !== ExplainerUIMode.SPLIT ? '↑' : '↓'}
+            {uiMode !== ExplainerUIMode.EXPLANATION_SPLIT ? '↑' : '↓'}
           </button>
           <button style={styles.closeButton} onClick={closeWindow}>
             ✕
@@ -993,7 +946,7 @@ const ExplainerApp: React.FC = () => {
         </div>
       </div>
 
-      {uiMode === ExplainerUIMode.SPLIT && (
+      {uiMode === ExplainerUIMode.EXPLANATION_SPLIT && (
         <div style={{ ...styles.codeSection, ...getCodeSectionStyle() }}>
           <SyntaxHighlighter
             language={inputLanguage}
@@ -1014,16 +967,16 @@ const ExplainerApp: React.FC = () => {
         </div>
       )}
 
-      {uiMode === ExplainerUIMode.SPLIT && <div style={styles.divider}></div>}
+      {uiMode === ExplainerUIMode.EXPLANATION_SPLIT && <div style={styles.divider}></div>}
 
       {/* Only show explanation in split mode */}
-      {uiMode === ExplainerUIMode.SPLIT && (
+      {uiMode === ExplainerUIMode.EXPLANATION_SPLIT && (
         <div
           style={{ ...styles.explanationSection, ...getContentHeight() }}
           ref={explanationRef}
         >
           <div style={styles.explanation}>
-            {/* Use the memoized renderer function for SPLIT mode too */}
+            {/* Use the memoized renderer function for EXPLANATION_SPLIT mode too */}
             {renderMarkdown(explanation.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''))}
 
             {isLoading && (
@@ -1038,7 +991,7 @@ const ExplainerApp: React.FC = () => {
       )}
 
       {/* Chat section - completely replaces explanation section when in any chat mode */}
-      {uiMode !== ExplainerUIMode.SPLIT && (
+      {uiMode !== ExplainerUIMode.EXPLANATION_SPLIT && (
         <div style={styles.chatContainer}>
           {/* Messages display */}
           <div style={styles.chatMessages} ref={chatMessagesRef}>
