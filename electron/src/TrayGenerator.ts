@@ -65,9 +65,9 @@ export class TrayGenerator {
       {
         label: 'Keyboard Shortcuts',
         submenu: [
-          { label: 'Cmd+Ctrl+R: Open Main Window', enabled: false },
-          { label: 'Cmd+Ctrl+E: Explain Code/Open Chat', enabled: false },
-          { label: 'Cmd+Ctrl+C: Open Pure Chat', enabled: false },
+          { label: 'Cmd+Ctrl+R: Open CodeV Quick Switcher', enabled: false },
+          { label: 'Cmd+Ctrl+E: AI Assistant Insight', enabled: false },
+          { label: 'Cmd+Ctrl+C: AI Assistant Smart Chat', enabled: false },
         ],
       },
       { type: 'separator' },
