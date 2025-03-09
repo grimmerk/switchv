@@ -325,7 +325,7 @@ app.on('activate', () => {
 ipcMain.on('invoke-vscode', (event, path, option) => {
   if (isDebug) {
     console.log('invoke', { /*event,*/ path });
-    tray.tray.setTitle(`XWin(${path ? path[path.length - 1] : 'n'})`);
+    tray.tray.setTitle(`CodeV(${path ? path[path.length - 1] : 'n'})`);
   }
 
   if (!existsSync(path)) {
