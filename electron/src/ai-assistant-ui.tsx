@@ -15,7 +15,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { detectLanguage } from './language-detector';
-import { AIAssistantUIMode, ExplainerUIMode } from './utility';
+import { AIAssistantUIMode } from './utility';
 
 // Styles for the AI Assistant UI
 const styles = {
@@ -416,10 +416,7 @@ const AIAssistantApp: React.FC = () => {
         const { ipcRenderer } = require('electron');
         ipcRenderer.send('insight-completed', true);
       } catch (e) {
-        console.error(
-          'Failed to notify main process of insight completion',
-          e,
-        );
+        console.error('Failed to notify main process of insight completion', e);
       }
     }
 
@@ -479,29 +476,24 @@ const AIAssistantApp: React.FC = () => {
   // Handler for explicitly setting UI mode
   const handleSetUIMode = (
     _event: any,
-    mode: AIAssistantUIMode | ExplainerUIMode,
+    mode: AIAssistantUIMode,
     data: any = {},
   ) => {
-    // Convert legacy ExplainerUIMode to AIAssistantUIMode if needed
     let aiAssistantMode: AIAssistantUIMode;
-    
+
     if (typeof mode === 'string') {
       // Handle string values (from IPC)
       switch (mode) {
-        case 'explanation_split':
-        case ExplainerUIMode.EXPLANATION_SPLIT:
+        case AIAssistantUIMode.INSIGHT_SPLIT:
           aiAssistantMode = AIAssistantUIMode.INSIGHT_SPLIT;
           break;
-        case 'chat_with_explanation':
-        case ExplainerUIMode.CHAT_WITH_EXPLANATION:
+        case AIAssistantUIMode.INSIGHT_CHAT:
           aiAssistantMode = AIAssistantUIMode.INSIGHT_CHAT;
           break;
-        case 'chat_with_code':
-        case ExplainerUIMode.CHAT_WITH_CODE:
+        case AIAssistantUIMode.INSIGHT_SOURCE_CHAT:
           aiAssistantMode = AIAssistantUIMode.INSIGHT_SOURCE_CHAT;
           break;
-        case 'pure_chat':
-        case ExplainerUIMode.PURE_CHAT:
+        case AIAssistantUIMode.SMART_CHAT:
           aiAssistantMode = AIAssistantUIMode.SMART_CHAT;
           break;
         default:
@@ -511,16 +503,16 @@ const AIAssistantApp: React.FC = () => {
     } else {
       // Handle enum values
       switch (mode) {
-        case ExplainerUIMode.EXPLANATION_SPLIT:
+        case AIAssistantUIMode.INSIGHT_SPLIT:
           aiAssistantMode = AIAssistantUIMode.INSIGHT_SPLIT;
           break;
-        case ExplainerUIMode.CHAT_WITH_EXPLANATION:
+        case AIAssistantUIMode.INSIGHT_CHAT:
           aiAssistantMode = AIAssistantUIMode.INSIGHT_CHAT;
           break;
-        case ExplainerUIMode.CHAT_WITH_CODE:
+        case AIAssistantUIMode.INSIGHT_SOURCE_CHAT:
           aiAssistantMode = AIAssistantUIMode.INSIGHT_SOURCE_CHAT;
           break;
-        case ExplainerUIMode.PURE_CHAT:
+        case AIAssistantUIMode.SMART_CHAT:
           aiAssistantMode = AIAssistantUIMode.SMART_CHAT;
           break;
         default:
@@ -570,14 +562,10 @@ const AIAssistantApp: React.FC = () => {
         }
 
         // Handle restoreInsight flag
-        const shouldRestoreInsight =
-          data && data.restoreInsight === true;
+        const shouldRestoreInsight = data && data.restoreInsight === true;
 
         // Initialize with code and insight if we have them
-        if (
-          insightContentRef.current &&
-          insightContentRef.current.trim()
-        ) {
+        if (insightContentRef.current && insightContentRef.current.trim()) {
           // If this is a restore operation, mark the insight as complete immediately
           if (shouldRestoreInsight) {
             setIsLoading(false);
@@ -638,11 +626,15 @@ const AIAssistantApp: React.FC = () => {
 
     // Optimize scroll behavior based on UI mode
     // Use a shorter timeout for SMART_CHAT mode for better responsiveness
-    const scrollTimeout = aiAssistantMode === AIAssistantUIMode.SMART_CHAT ? 10 : 100;
+    const scrollTimeout =
+      aiAssistantMode === AIAssistantUIMode.SMART_CHAT ? 10 : 100;
 
     // For SMART_CHAT mode with just welcome message, we can skip scrolling
     if (
-      !(aiAssistantMode === AIAssistantUIMode.SMART_CHAT && messagesRef.current.length <= 1)
+      !(
+        aiAssistantMode === AIAssistantUIMode.SMART_CHAT &&
+        messagesRef.current.length <= 1
+      )
     ) {
       setTimeout(() => {
         if (chatMessagesRef.current) {
@@ -759,7 +751,7 @@ const AIAssistantApp: React.FC = () => {
       if ((window as any).electronAPI.onSkipInsight) {
         (window as any).electronAPI.onSkipInsight(handleSkipInsight);
       }
-      
+
       // Legacy event names - for backward compatibility
       (window as any).electronAPI.onCodeToExplain(handleCodeToAnalyze);
       (window as any).electronAPI.onExplanationStart(handleInsightStart);
@@ -1100,9 +1092,7 @@ const AIAssistantApp: React.FC = () => {
           >
             <div style={styles.insight}>
               {/* Use the memoized renderer function for INSIGHT_SPLIT mode too */}
-              {renderMarkdown(
-                insight.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''),
-              )}
+              {renderMarkdown(insight.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''))}
 
               {isLoading && (
                 <div style={styles.loading}>
@@ -1218,7 +1208,9 @@ const AIAssistantApp: React.FC = () => {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-  const root = ReactDOM.createRoot(document.getElementById('ai-assistant-root'));
+  const root = ReactDOM.createRoot(
+    document.getElementById('ai-assistant-root'),
+  );
   root.render(<AIAssistantApp />);
 
   console.log('AIAssistantApp rendered');

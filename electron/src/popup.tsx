@@ -3,7 +3,7 @@ import Button from '@atlaskit/button';
 import Popup from '@atlaskit/popup';
 import { css } from '@emotion/react';
 import { useState } from 'react';
-import { closeAppClick, openFolderSelector } from './App';
+import { closeAppClick, openFolderSelector } from './switcher-ui';
 
 // Brand color theme matching app.tsx
 const THEME = {

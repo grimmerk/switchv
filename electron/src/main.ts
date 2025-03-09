@@ -12,7 +12,7 @@ import { existsSync, readdirSync } from 'fs';
 import { DBManager } from './DBManager';
 import { isMAS, TrayGenerator } from './TrayGenerator';
 import { bootstrap } from './server/server';
-import { AIAssistantUIMode, ExplainerUIMode, isDebug } from './utility';
+import { AIAssistantUIMode, isDebug } from './utility';
 
 const clipboard = require('electron').clipboard;
 const { execFile } = require('child_process');
@@ -24,8 +24,6 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 // AI Assistant window entry point
 declare const AI_ASSISTANT_WINDOW_WEBPACK_ENTRY: string;
-// Legacy Explainer window entry point (for backward compatibility)
-declare const EXPLAINER_WINDOW_WEBPACK_ENTRY: string;
 // Settings window entry point
 declare const SETTINGS_WINDOW_WEBPACK_ENTRY: string;
 
@@ -742,13 +740,13 @@ const trayToggleEvtHandler = async () => {
       aiAssistantWindow.webContents.once('did-finish-load', () => {
         aiAssistantWindow.webContents.send(
           'set-ui-mode',
-          ExplainerUIMode.PURE_CHAT,
+          AIAssistantUIMode.SMART_CHAT,
         );
       });
     } else {
       aiAssistantWindow.webContents.send(
         'set-ui-mode',
-        ExplainerUIMode.PURE_CHAT,
+        AIAssistantUIMode.SMART_CHAT,
       );
     }
   }, 1000); // Delay by 1 second to not interfere with main window initialization
@@ -774,13 +772,13 @@ const trayToggleEvtHandler = async () => {
               aiAssistantWindow.webContents.once('did-finish-load', () => {
                 aiAssistantWindow.webContents.send(
                   'set-ui-mode',
-                  ExplainerUIMode.PURE_CHAT,
+                  AIAssistantUIMode.SMART_CHAT,
                 );
               });
             } else {
               aiAssistantWindow.webContents.send(
                 'set-ui-mode',
-                ExplainerUIMode.PURE_CHAT,
+                AIAssistantUIMode.SMART_CHAT,
               );
             }
           }
@@ -878,7 +876,7 @@ const trayToggleEvtHandler = async () => {
         setTimeout(() => {
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.PURE_CHAT,
+            AIAssistantUIMode.SMART_CHAT,
           );
         }, 0);
         return;
@@ -898,14 +896,14 @@ const trayToggleEvtHandler = async () => {
       aiAssistantWindow.webContents.once('did-finish-load', () => {
         aiAssistantWindow.webContents.send(
           'set-ui-mode',
-          ExplainerUIMode.PURE_CHAT,
+          AIAssistantUIMode.SMART_CHAT,
         );
       });
     } else {
       // Immediate mode set is better for performance
       aiAssistantWindow.webContents.send(
         'set-ui-mode',
-        ExplainerUIMode.PURE_CHAT,
+        AIAssistantUIMode.SMART_CHAT,
       );
     }
 
@@ -960,7 +958,7 @@ const trayToggleEvtHandler = async () => {
         ) {
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            AIAssistantUIMode.INSIGHT_CHAT,
             {
               code: clipboardContent,
               restoreExplanation: true,
@@ -974,7 +972,7 @@ const trayToggleEvtHandler = async () => {
           // Otherwise, use CHAT_WITH_EXPLANATION mode and request a new explanation
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            AIAssistantUIMode.INSIGHT_CHAT,
             { code: clipboardContent },
           );
 
@@ -1016,13 +1014,13 @@ const trayToggleEvtHandler = async () => {
         aiAssistantWindow.webContents.once('did-finish-load', () => {
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.PURE_CHAT,
+            AIAssistantUIMode.SMART_CHAT,
           );
         });
       } else {
         aiAssistantWindow.webContents.send(
           'set-ui-mode',
-          ExplainerUIMode.PURE_CHAT,
+          AIAssistantUIMode.SMART_CHAT,
         );
       }
 
@@ -1181,17 +1179,17 @@ const trayToggleEvtHandler = async () => {
           aiAssistantWindow.webContents.once('did-finish-load', () => {
             aiAssistantWindow.webContents.send(
               'set-ui-mode',
-              ExplainerUIMode.PURE_CHAT,
+              AIAssistantUIMode.SMART_CHAT,
             );
           });
         } else {
           // TODO: sometimes this would not show the new window 
           console.log(
-            "aiAssistantWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);",
+            "aiAssistantWindow.webContents.send('set-ui-mode', AIAssistantUIMode.SMART_CHAT);",
           );
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.PURE_CHAT,
+            AIAssistantUIMode.SMART_CHAT,
           );
         }
         showaiAssistantWindow();
@@ -1224,7 +1222,7 @@ const trayToggleEvtHandler = async () => {
           aiAssistantWindow.show();
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            AIAssistantUIMode.INSIGHT_CHAT,
             { code: selectedCode },
           );
           return;
@@ -1237,7 +1235,7 @@ const trayToggleEvtHandler = async () => {
             aiAssistantWindow.webContents.send('code-to-explain', selectedCode);
             aiAssistantWindow.webContents.send(
               'set-ui-mode',
-              ExplainerUIMode.CHAT_WITH_EXPLANATION,
+              AIAssistantUIMode.INSIGHT_CHAT,
               { code: selectedCode },
             );
           });
@@ -1247,7 +1245,7 @@ const trayToggleEvtHandler = async () => {
           aiAssistantWindow.webContents.send('code-to-explain', selectedCode);
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            AIAssistantUIMode.INSIGHT_CHAT,
             { code: selectedCode },
           );
         }
@@ -1275,7 +1273,7 @@ const trayToggleEvtHandler = async () => {
           aiAssistantWindow.webContents.send('code-to-explain', selectedCode);
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            AIAssistantUIMode.INSIGHT_CHAT,
             { code: selectedCode },
           );
 
@@ -1293,7 +1291,7 @@ const trayToggleEvtHandler = async () => {
           aiAssistantWindow.webContents.send('code-to-explain', selectedCode);
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            AIAssistantUIMode.INSIGHT_CHAT,
             { code: selectedCode },
           );
 
@@ -1322,7 +1320,7 @@ const trayToggleEvtHandler = async () => {
           // Set UI mode to CHAT_WITH_EXPLANATION by default
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
-            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            AIAssistantUIMode.INSIGHT_CHAT,
             { code: selectedCode },
           );
 

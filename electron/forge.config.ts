@@ -68,14 +68,6 @@ const config: ForgeConfig = {
             },
           },
           {
-            html: './src/explainer.html',
-            js: './src/explainer-renderer.ts',
-            name: 'explainer_window',
-            preload: {
-              js: './src/preload.ts',
-            },
-          },
-          {
             html: './src/ai-assistant.html',
             js: './src/ai-assistant-renderer.ts',
             name: 'ai_assistant_window',
