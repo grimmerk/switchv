@@ -53,7 +53,7 @@ const styles = {
   codeSection: {
     padding: '15px',
     borderBottom: '1px solid #3a3a3a',
-    maxHeight: '30%', // Reduced from 40% to make room for chat
+    maxHeight: '55%', // Dramatically increased from 35% to 55% for better code visibility
     overflow: 'auto',
   },
   divider: {
@@ -63,7 +63,8 @@ const styles = {
   },
   explanationSection: {
     padding: '15px',
-    flex: 1, // Takes available space
+    flex: 1, // Takes all available space
+    height: 'calc(100% - 120px)', // Specifically add height calculation to use all remaining space
     overflow: 'auto',
     position: 'relative' as 'relative',
   },
@@ -918,11 +919,11 @@ const ExplainerApp: React.FC = () => {
 
   // Calculate content height based on whether chat is visible
   const getCodeSectionStyle = () => {
-    return { maxHeight: '40%' }; // Code section height (only visible in non-chat mode)
+    return {}; // Remove fixed height to use the one defined in styles.codeSection
   };
 
   const getContentHeight = () => {
-    return showChat ? { maxHeight: '30%' } : {}; // Reduce height if chat is shown
+    return showChat ? { maxHeight: '30%' } : { flex: 1 }; // Use flex: 1 to take remaining space when in split mode
   };
 
 
@@ -931,15 +932,18 @@ const ExplainerApp: React.FC = () => {
       <div style={styles.header}>
         <h2 style={styles.title}>Code Explainer</h2>
         <div>
-          <button
-            style={{ ...styles.closeButton, marginRight: '5px' }}
-            onClick={toggleUIMode}
-            title={
-              uiMode !== ExplainerUIMode.EXPLANATION_SPLIT ? 'Show Split View' : 'Show Chat'
-            }
-          >
-            {uiMode !== ExplainerUIMode.EXPLANATION_SPLIT ? '↑' : '↓'}
-          </button>
+          {/* Hide Split View toggle button in PURE_CHAT mode */}
+          {uiMode !== ExplainerUIMode.PURE_CHAT && (
+            <button
+              style={{ ...styles.closeButton, marginRight: '5px' }}
+              onClick={toggleUIMode}
+              title={
+                uiMode !== ExplainerUIMode.EXPLANATION_SPLIT ? 'Show Split View' : 'Show Chat'
+              }
+            >
+              {uiMode !== ExplainerUIMode.EXPLANATION_SPLIT ? '↑' : '↓'}
+            </button>
+          )}
           <button style={styles.closeButton} onClick={closeWindow}>
             ✕
           </button>
@@ -947,45 +951,64 @@ const ExplainerApp: React.FC = () => {
       </div>
 
       {uiMode === ExplainerUIMode.EXPLANATION_SPLIT && (
-        <div style={{ ...styles.codeSection, ...getCodeSectionStyle() }}>
-          <SyntaxHighlighter
-            language={inputLanguage}
-            style={vscDarkPlus as any}
-            customStyle={{
-              background: '#1e1e1e',
-              marginTop: 0,
-              borderRadius: '4px',
-              fontSize: '14px',
-              lineHeight: '1.5',
-              height: 'auto',
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          height: 'calc(100vh - 60px)', // Full height minus header
+          overflow: 'hidden'
+        }}>
+          {/* Code section */}
+          <div style={{ 
+            ...styles.codeSection, 
+            height: 'auto',
+            maxHeight: '40%', 
+            minHeight: '100px',
+            flexShrink: 0
+          }}>
+            <SyntaxHighlighter
+              language={inputLanguage}
+              style={vscDarkPlus as any}
+              customStyle={{
+                background: '#1e1e1e',
+                marginTop: 0,
+                borderRadius: '4px',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                height: 'auto',
+              }}
+              showLineNumbers={true}
+              wrapLines={true}
+            >
+              {code || '// Waiting for code...'}
+            </SyntaxHighlighter>
+          </div>
+
+          <div style={styles.divider}></div>
+
+          {/* Explanation section - Takes all remaining space */}
+          <div
+            style={{ 
+              ...styles.explanationSection, 
+              flex: 1,            // Take all remaining space
+              overflow: 'auto',
+              display: 'flex',    // Use flex layout
+              flexDirection: 'column', 
+              minHeight: '60%'    // At least 60% of the space
             }}
-            showLineNumbers={true}
-            wrapLines={true}
+            ref={explanationRef}
           >
-            {code || '// Waiting for code...'}
-          </SyntaxHighlighter>
-        </div>
-      )}
+            <div style={styles.explanation}>
+              {/* Use the memoized renderer function for EXPLANATION_SPLIT mode too */}
+              {renderMarkdown(explanation.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''))}
 
-      {uiMode === ExplainerUIMode.EXPLANATION_SPLIT && <div style={styles.divider}></div>}
-
-      {/* Only show explanation in split mode */}
-      {uiMode === ExplainerUIMode.EXPLANATION_SPLIT && (
-        <div
-          style={{ ...styles.explanationSection, ...getContentHeight() }}
-          ref={explanationRef}
-        >
-          <div style={styles.explanation}>
-            {/* Use the memoized renderer function for EXPLANATION_SPLIT mode too */}
-            {renderMarkdown(explanation.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''))}
-
-            {isLoading && (
-              <div style={styles.loading}>
-                <span>[Generating</span>
-                <span style={styles.loadingIndicator}>▋</span>
-                <span>]</span>
-              </div>
-            )}
+              {isLoading && (
+                <div style={styles.loading}>
+                  <span>[Generating</span>
+                  <span style={styles.loadingIndicator}>▋</span>
+                  <span>]</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

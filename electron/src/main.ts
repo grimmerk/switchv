@@ -192,12 +192,12 @@ const createSettingsWindow = (
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
-  // Create settings window
+  // Create settings window - increased height to ensure save message is visible
   settingsWindow = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 650, // Increased from 600 to ensure save message is fully visible
     x: Math.round(width / 2 - 400),
-    y: Math.round(height / 2 - 300),
+    y: Math.round(height / 2 - 325), // Adjusted y position to center the taller window
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       devTools: false,
@@ -516,19 +516,48 @@ ipcMain.on('open-folder-selector', async (event) => {
   mainWindow.webContents.send('folder-selected', folderPath);
 });
 
-// Load settings from database
+// Load settings from database with retry mechanism
 const loadUserSettings = async () => {
-  try {
-    const response = await fetch('http://localhost:55688/explainer-settings');
-    if (response.ok) {
-      const settings = await response.json();
-      if (settings) {
-        userSettings.leftClickBehavior =
-          settings.leftClickBehavior || 'main_window';
+  // Number of retries and delay between retries
+  const maxRetries = 3;
+  const retryDelay = 1000; // ms
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Add timeout to the fetch request to avoid long waits
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch('http://localhost:55688/explainer-settings', {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const settings = await response.json();
+        if (settings) {
+          userSettings.leftClickBehavior =
+            settings.leftClickBehavior || 'main_window';
+        }
+        return; // Success, exit the function
+      }
+    } catch (error) {
+      // Only log on final attempt
+      if (attempt === maxRetries - 1) {
+        if (isDebug) {
+          console.error('Failed to load user settings after retries:', error);
+        }
+      } else {
+        // Wait before next retry
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
-  } catch (error) {
-    console.error('Failed to load user settings:', error);
+  }
+  
+  // If we reached here, all attempts failed
+  if (isDebug) {
+    console.log('Using default settings after failed load attempts');
   }
 };
 
@@ -544,33 +573,84 @@ const trayToggleEvtHandler = async () => {
   // Handle different click behaviors
   if (userSettings.leftClickBehavior === 'code_explainer') {
     // Open Code Explainer with clipboard content
-    // const clipboard = require('electron').clipboard;
     const selectedCode = clipboard.readText().trim();
 
     if (selectedCode && selectedCode.length > 0) {
       // Create or focus explainer window
       const explainerWin = createCodeExplainerWindow();
+      
+      // Make sure the window is visible
+      showExplainerWindow();
 
-      // Send the code to explain
-      explainerWin.webContents.once('did-finish-load', () => {
+      // Handle loading state properly
+      const processCode = () => {
+        // Set UI mode to CHAT_WITH_EXPLANATION
+        explainerWin.webContents.send('set-ui-mode', ExplainerUIMode.CHAT_WITH_EXPLANATION, {
+          code: selectedCode
+        });
+        
+        // Send the code and start explanation
         explainerWin.webContents.send('code-to-explain', selectedCode);
         anthropicService.explainCode(selectedCode, explainerWin);
-      });
+      };
 
-      // If already loaded, send directly
-      if (!explainerWin.webContents.isLoading()) {
-        explainerWin.webContents.send('code-to-explain', selectedCode);
-        anthropicService.explainCode(selectedCode, explainerWin);
+      // If window is still loading, wait for it to load
+      if (explainerWin.webContents.isLoadingMainFrame()) {
+        explainerWin.webContents.once('did-finish-load', processCode);
+      } else {
+        // Window already loaded, process immediately
+        processCode();
       }
     } else {
-      // No code in clipboard, show main window as fallback
-      if (BrowserWindow.getAllWindows().length === 0) {
-        mainWindow = createWindow();
-        showWindow();
-      } else if (mainWindow && mainWindow.isVisible()) {
-        hideWindow();
-      } else if (mainWindow) {
-        showWindow();
+      // No code in clipboard, open Pure Chat instead (better UX than opening main window)
+      // Create or focus explainer window
+      const explainerWin = createCodeExplainerWindow();
+      
+      // Show window first for better perceived performance
+      showExplainerWindow();
+      
+      // Set UI mode to PURE_CHAT
+      if (explainerWin.webContents.isLoadingMainFrame()) {
+        explainerWin.webContents.once('did-finish-load', () => {
+          explainerWin.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        });
+      } else {
+        explainerWin.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      }
+    }
+  } else if (userSettings.leftClickBehavior === 'pure_chat') {
+    // Open Pure Chat interface
+    
+    // Check if explainer window already exists
+    if (explainerWindow && !explainerWindow.isDestroyed()) {
+      // If window is visible, toggle visibility (hide it)
+      if (explainerWindow.isVisible()) {
+        explainerWindow.hide();
+        return;
+      }
+      
+      // Show the existing window
+      explainerWindow.show();
+      
+      // Set UI mode to PURE_CHAT
+      if (explainerWindow.webContents.isLoadingMainFrame()) {
+        explainerWindow.webContents.once('did-finish-load', () => {
+          explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        });
+      } else {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      }
+    } else {
+      // Create a new window
+      explainerWindow = createCodeExplainerWindow();
+      
+      // Set UI mode to PURE_CHAT
+      if (explainerWindow.webContents.isLoadingMainFrame()) {
+        explainerWindow.webContents.once('did-finish-load', () => {
+          explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        });
+      } else {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
       }
     }
   } else {
