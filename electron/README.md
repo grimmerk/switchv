@@ -1,14 +1,15 @@
-# SwitchV Electron App
+# CodeV Electron App
 
 ## Code Explainer Feature
 
-SwitchV now includes a Code Explainer feature powered by Anthropic's Claude AI. This feature allows you to get detailed explanations of code snippets with a simple keyboard shortcut.
+CodeV now includes a Code Explainer feature powered by Anthropic's Claude AI. This feature allows you to get detailed explanations of code snippets with a simple keyboard shortcut.
 
 ### Setup
 
 1. Make sure you have an Anthropic API key. You can get one from [Anthropic's website](https://console.anthropic.com/).
 
 2. Add your API key to the `.env` file in the `electron` directory:
+
    ```
    ANTHROPIC_API_KEY=your_api_key_here
    ```
@@ -21,6 +22,7 @@ SwitchV now includes a Code Explainer feature powered by Anthropic's Claude AI. 
 ### Usage
 
 1. Start the application:
+
    ```
    yarn start
    ```
@@ -30,6 +32,7 @@ SwitchV now includes a Code Explainer feature powered by Anthropic's Claude AI. 
 3. Press `Cmd+C` to copy the selected code to your clipboard.
 
 4. Press `Ctrl+Cmd+E` to open the Code Explainer window, which will:
+
    - Create a floating window with the code from your clipboard
    - Generate an explanation using Anthropic Claude
 

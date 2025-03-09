@@ -215,7 +215,7 @@ const PopupDefaultExample = ({
                 color: '#888',
               }}
             >
-              SwitchV v1.0
+              CodeV v1.0
             </div>
 
             <Button
