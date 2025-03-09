@@ -89,12 +89,12 @@ ipcMain.on('ui-mode-changed', (event, mode) => {
 
 // Handle insight completion status
 ipcMain.on('insight-completed', (event, completed) => {
-  lastExplanationCompleted = completed; // Keep the same variable name for backward compatibility
+  lastInsightCompleted = completed; // Keep the same variable name for backward compatibility
 });
 
 // Legacy event for backward compatibility
-ipcMain.on('explanation-completed', (event, completed) => {
-  lastExplanationCompleted = completed;
+ipcMain.on('ai-assistant-insight-completed', (event, completed) => {
+  lastInsightCompleted = completed;
 });
 
 const hideWindow = () => {
@@ -483,8 +483,8 @@ let userSettings = {
 let lastExplainedCode = '';
 // Track the last used UI mode to restore it when reopening
 let lastUIMode = AIAssistantUIMode.SMART_CHAT;
-// Track whether an explanation was completed for the current code
-let lastExplanationCompleted = false;
+// Track whether an insight was completed for the current code
+let lastInsightCompleted = false;
 
 ipcMain.on('open-folder-selector', async (event) => {
   const result = await dialog.showOpenDialog({
@@ -590,7 +590,7 @@ const trayToggleEvtHandler = async () => {
         );
 
         // Send the code and start analysis
-        aiAssistantWin.webContents.send('code-to-analyze', selectedCode);
+        aiAssistantWin.webContents.send('code-to-generate-insight', selectedCode);
         anthropicService.explainCode(selectedCode, aiAssistantWin);
       };
 
@@ -924,13 +924,13 @@ const trayToggleEvtHandler = async () => {
         }
 
         // Send code to explain
-        aiAssistantWindow.webContents.send('code-to-explain', clipboardContent);
+        aiAssistantWindow.webContents.send('code-to-generate-insight', clipboardContent);
 
-        // Set UI mode based on clipboard content and last explanation state
-        // If we had an explanation for this code previously and are reopening, try to restore it
+        // Set UI mode based on clipboard content and last insight state
+        // If we had an insight for this code previously and are reopening, try to restore it
         if (
           clipboardContent === lastExplainedCode &&
-          lastExplanationCompleted &&
+          lastInsightCompleted &&
           lastUIMode === AIAssistantUIMode.INSIGHT_CHAT
         ) {
           aiAssistantWindow.webContents.send(
@@ -938,15 +938,15 @@ const trayToggleEvtHandler = async () => {
             AIAssistantUIMode.INSIGHT_CHAT,
             {
               code: clipboardContent,
-              restoreExplanation: true,
+              restoreInsight: true,
             },
           );
 
-          // Still request explanation in case we need to regenerate it
-          // The renderer will handle showing the cached explanation if available
+          // Still request insight in case we need to regenerate it
+          // The renderer will handle showing the cached insight if available
           anthropicService.explainCode(clipboardContent, aiAssistantWindow);
         } else {
-          // Otherwise, use CHAT_WITH_EXPLANATION mode and request a new explanation
+          // Otherwise, use INSIGHT_CHAT mode and request a new insight
           aiAssistantWindow.webContents.send(
             'set-ui-mode',
             AIAssistantUIMode.INSIGHT_CHAT,
@@ -957,7 +957,7 @@ const trayToggleEvtHandler = async () => {
           anthropicService.explainCode(clipboardContent, aiAssistantWindow);
 
           // Reset explanation completed flag
-          lastExplanationCompleted = false;
+          lastInsightCompleted = false;
         }
       };
 

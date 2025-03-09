@@ -23,26 +23,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onXWinNotFound: (callback: any) => ipcRenderer.on('xwin-not-found', callback),
 
   // Listen for code to explain in the ai assistant window
-  onCodeToExplain: (callback: any) =>
-    ipcRenderer.on('code-to-explain', callback),
+  onCodeToGenerateInsight: (callback: any) =>
+    ipcRenderer.on('code-to-generate-insight', callback),
 
   // Streaming explanation events
-  onExplanationStart: (callback: any) =>
-    ipcRenderer.on('explanation-start', callback),
-  onExplanationChunk: (callback: any) =>
-    ipcRenderer.on('explanation-chunk', callback),
-  onExplanationComplete: (callback: any) =>
-    ipcRenderer.on('explanation-complete', callback),
-  onExplanationError: (callback: any) =>
-    ipcRenderer.on('explanation-error', callback),
+  onAIAssistantInsightStart: (callback: any) =>
+    ipcRenderer.on('ai-assistant-insight-start', callback),
+  onAIAssistantInsightChunk: (callback: any) =>
+    ipcRenderer.on('ai-assistant-insight-chunk', callback),
+  onAIAssistantInsightComplete: (callback: any) =>
+    ipcRenderer.on('ai-assistant-insight-complete', callback),
+  onAIAssistantInsightError: (callback: any) =>
+    ipcRenderer.on('ai-assistant-insight-error', callback),
   onDetectedLanguage: (callback: any) =>
     ipcRenderer.on('detected-language', callback),
-  onSkipExplanation: (callback: any) =>
-    ipcRenderer.on('skip-explanation', callback),
+  onSkipInsight: (callback: any) =>
+    ipcRenderer.on('skip-ai-assistant-insight', callback),
 
   // UI mode control
-  notifyExplanationCompleted: (completed: boolean) =>
-    ipcRenderer.send('explanation-completed', completed),
+  notifyAIAssistantInsightCompleted: (completed: boolean) =>
+    ipcRenderer.send('ai-assistant-insight-completed', completed),
   onSetUIMode: (callback: any) => ipcRenderer.on('set-ui-mode', callback),
   notifyUIMode: (mode: string) => ipcRenderer.send('ui-mode-changed', mode),
 

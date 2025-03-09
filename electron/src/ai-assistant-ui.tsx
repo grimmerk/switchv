@@ -311,13 +311,13 @@ const AIAssistantApp: React.FC = () => {
 
   // Define all event handlers outside of useEffect to avoid closure issues
 
-  // 1. * handleCodeToAnalyze (update code)
+  // 1. * handleCodeToGenerateInsight (update code)
   // 2. handleInsightStart (code -> messages )
   // 3. handleSetUIMode (code -> messages) which would set the code into messages again
   // Handler for receiving code
-  const handleCodeToAnalyze = (_event: any, receivedCode: string) => {
+  const handleCodeToGenerateInsight = (_event: any, receivedCode: string) => {
     console.log(
-      'Received code to analyze, length:',
+      'Received code to generate insight, length:',
       receivedCode?.length || 0,
       receivedCode,
     );
@@ -687,7 +687,7 @@ const AIAssistantApp: React.FC = () => {
   useEffect(() => {
     // Store all event handlers to remove them on cleanup
     const handlers = {
-      'code-to-analyze': handleCodeToAnalyze,
+      'code-to-generate-insight': handleCodeToGenerateInsight,
       'insight-start': handleInsightStart,
       'insight-chunk': handleInsightChunk,
       'insight-complete': handleInsightComplete,
@@ -697,19 +697,18 @@ const AIAssistantApp: React.FC = () => {
       'chat-response': handleChatResponse,
       'set-ui-mode': handleSetUIMode,
       // Legacy handlers - keeping for backward compatibility
-      'code-to-explain': handleCodeToAnalyze,
-      'explanation-start': handleInsightStart,
-      'explanation-chunk': handleInsightChunk,
-      'explanation-complete': handleInsightComplete,
-      'explanation-error': handleInsightError,
-      'skip-explanation': handleSkipInsight,
+      'ai-assistant-insight-start': handleInsightStart,
+      'ai-assistant-insight-chunk': handleInsightChunk,
+      'ai-assistant-insight-complete': handleInsightComplete,
+      'ai-assistant-insight-error': handleInsightError,
+      'skip-ai-assistant-insight': handleSkipInsight,
     };
 
     // Register all listeners if API is available
     if ((window as any).electronAPI) {
       // New event names
-      if ((window as any).electronAPI.onCodeToAnalyze) {
-        (window as any).electronAPI.onCodeToAnalyze(handleCodeToAnalyze);
+      if ((window as any).electronAPI.onCodeToGenerateInsight) {
+        (window as any).electronAPI.onCodeToGenerateInsight(handleCodeToGenerateInsight);
       }
       if ((window as any).electronAPI.onInsightStart) {
         (window as any).electronAPI.onInsightStart(handleInsightStart);
@@ -728,12 +727,12 @@ const AIAssistantApp: React.FC = () => {
       }
 
       // Legacy event names - for backward compatibility
-      (window as any).electronAPI.onCodeToExplain(handleCodeToAnalyze);
-      (window as any).electronAPI.onExplanationStart(handleInsightStart);
-      (window as any).electronAPI.onExplanationChunk(handleInsightChunk);
-      (window as any).electronAPI.onExplanationComplete(handleInsightComplete);
-      (window as any).electronAPI.onExplanationError(handleInsightError);
-      (window as any).electronAPI.onSkipExplanation(handleSkipInsight);
+      (window as any).electronAPI.onCodeToGenerateInsight(handleCodeToGenerateInsight);
+      (window as any).electronAPI.onAIAssistantInsightStart(handleInsightStart);
+      (window as any).electronAPI.onAIAssistantInsightChunk(handleInsightChunk);
+      (window as any).electronAPI.onAIAssistantInsightComplete(handleInsightComplete);
+      (window as any).electronAPI.onAIAssistantInsightError(handleInsightError);
+      (window as any).electronAPI.onSkipInsight(handleSkipInsight);
       (window as any).electronAPI.onDetectedLanguage(handleDetectedLanguage);
 
       // Chat-related event listeners

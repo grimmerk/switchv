@@ -153,5 +153,5 @@ We've implemented several optimizations to improve window opening speed and user
 
 10. **Future Features**:
 
-- Save explanation/chat history
+- Save insight/chat history (as explainer and explanation have been renamed to AI assistant and insight)
 - Add Markdown/syntax highlighting in input UI
