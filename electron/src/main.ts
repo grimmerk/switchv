@@ -34,7 +34,7 @@ if (require('electron-squirrel-startup')) {
 }
 
 let tray: TrayGenerator = null;
-let mainWindow: BrowserWindow = null;
+let switcherWindow: BrowserWindow = null;
 let aiAssistantWindow: BrowserWindow = null; // Track the AI Assistant window
 let settingsWindow: BrowserWindow = null; // Track the settings window
 let serverProcess: any;
@@ -56,10 +56,10 @@ const getWindowPosition = () => {
 // NOTE: setVisibleOnAllWorkspaces is needed ?
 const showWindow = () => {
   const position = getWindowPosition();
-  mainWindow.setPosition(position.x, position.y, false);
-  mainWindow.show();
+  switcherWindow.setPosition(position.x, position.y, false);
+  switcherWindow.show();
   // mainWindow.setVisibleOnAllWorkspaces(true);
-  mainWindow.focus();
+  switcherWindow.focus();
   // mainWindow.setVisibleOnAllWorkspaces(false);
 };
 
@@ -98,7 +98,7 @@ ipcMain.on('ai-assistant-insight-completed', (event, completed) => {
 });
 
 const hideWindow = () => {
-  mainWindow.hide();
+  switcherWindow.hide();
 };
 
 const onBlur = (event: any) => {
@@ -106,7 +106,7 @@ const onBlur = (event: any) => {
 };
 
 const onFocus = (event: any) => {
-  mainWindow.webContents.send('window-focus');
+  switcherWindow.webContents.send('window-focus');
 };
 
 const createAIAssistantWindow = (): BrowserWindow => {
@@ -239,7 +239,7 @@ const createSettingsWindow = (
   return settingsWindow;
 };
 
-const createWindow = (): BrowserWindow => {
+const createSwitcherWindow = (): BrowserWindow => {
   // Create the browser window.
   const window = new BrowserWindow({
     // maximizable: false,
@@ -267,7 +267,7 @@ const createWindow = (): BrowserWindow => {
 
   if (tray) {
     // TODO: change to use some Tray method & not set tray here
-    tray.mainWindow = window;
+    tray.attachedWindow = window;
   }
 
   window.on('blur', onBlur);
@@ -284,7 +284,7 @@ const createWindow = (): BrowserWindow => {
   // });
 
   window.on('move', () => {
-    const bounds = mainWindow.getBounds();
+    const bounds = switcherWindow.getBounds();
     const currentDisplay = screen.getDisplayNearestPoint({
       x: bounds.x,
       y: bounds.y,
@@ -325,7 +325,7 @@ app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
-    mainWindow = createWindow();
+    switcherWindow = createSwitcherWindow();
   }
 });
 
@@ -341,9 +341,9 @@ ipcMain.on('invoke-vscode', (event, path, option) => {
       console.log('file not exist');
     }
     // send message to Electron, not really use now, just in case
-    mainWindow.webContents.send('xwin-not-found');
+    switcherWindow.webContents.send('xwin-not-found');
 
-    dialog.showMessageBox(mainWindow, {
+    dialog.showMessageBox(switcherWindow, {
       message: 'Path is not a folder, neither workspace',
       buttons: ['OK'],
       defaultId: 0, // bound to buttons array
@@ -389,7 +389,7 @@ ipcMain.on('invoke-vscode', (event, path, option) => {
 });
 
 ipcMain.on('pop-alert', (event, alert: string) => {
-  dialog.showMessageBox(mainWindow, {
+  dialog.showMessageBox(switcherWindow, {
     message: alert,
     buttons: ['OK'],
     defaultId: 0, // bound to buttons array
@@ -442,7 +442,7 @@ ipcMain.on('search-working-folder', (event, path: string) => {
   console.timeEnd('readdir');
   console.log({ returnPathlist: returnPathlist.length });
 
-  mainWindow.webContents.send('working-folder-iterated', returnPathlist);
+  switcherWindow.webContents.send('working-folder-iterated', returnPathlist);
 });
 
 ipcMain.on('hide-app', (event) => {
@@ -506,7 +506,7 @@ ipcMain.on('open-folder-selector', async (event) => {
 
   const folderPath = filePaths[0];
 
-  mainWindow.webContents.send('folder-selected', folderPath);
+  switcherWindow.webContents.send('folder-selected', folderPath);
 });
 
 // Load settings from database with retry mechanism
@@ -677,14 +677,14 @@ const trayToggleEvtHandler = async () => {
       if (isDebug) {
         console.log('no window, create one');
       }
-      mainWindow = createWindow();
+      switcherWindow = createSwitcherWindow();
       showWindow();
-    } else if (mainWindow && mainWindow.isVisible()) {
+    } else if (switcherWindow && switcherWindow.isVisible()) {
       if (isDebug) {
         console.log('is visible, to hide');
       }
       hideWindow();
-    } else if (mainWindow) {
+    } else if (switcherWindow) {
       if (isDebug) {
         console.log('is not visible, to show');
       }
@@ -699,7 +699,7 @@ const trayToggleEvtHandler = async () => {
 (async () => {
   await app.whenReady();
 
-  mainWindow = createWindow();
+  switcherWindow = createSwitcherWindow();
   if (isDebug) {
     console.log('when ready');
   }
@@ -807,7 +807,7 @@ const trayToggleEvtHandler = async () => {
     }
   }
 
-  tray = new TrayGenerator(mainWindow, title, trayToggleEvtHandler);
+  tray = new TrayGenerator(switcherWindow, title, trayToggleEvtHandler);
 
   // https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#global-shortcuts
   // Register Cmd+Ctrl+R shortcut to always show the main window, regardless of left-click setting
@@ -820,14 +820,14 @@ const trayToggleEvtHandler = async () => {
       if (isDebug) {
         console.log('No window, creating main window');
       }
-      mainWindow = createWindow();
+      switcherWindow = createSwitcherWindow();
       showWindow();
-    } else if (mainWindow && mainWindow.isVisible()) {
+    } else if (switcherWindow && switcherWindow.isVisible()) {
       if (isDebug) {
         console.log('Main window visible, hiding it');
       }
       hideWindow();
-    } else if (mainWindow) {
+    } else if (switcherWindow) {
       if (isDebug) {
         console.log('Main window exists but hidden, showing it');
       }

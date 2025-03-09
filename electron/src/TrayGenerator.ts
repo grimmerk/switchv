@@ -12,17 +12,17 @@ export const isMasStr = isMAS() ? 'mas' : 'nonMas';
 // https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
 export class TrayGenerator {
   tray: Tray;
-  mainWindow: BrowserWindow;
+  attachedWindow: BrowserWindow;
   onTrayClickCallback: any;
   title: string;
 
   constructor(
-    mainWindow: BrowserWindow,
+    attachedWindow: BrowserWindow,
     title: string,
     onTrayClickCallback: any,
   ) {
     this.tray = null;
-    this.mainWindow = mainWindow;
+    this.attachedWindow = attachedWindow;
     this.onTrayClickCallback = onTrayClickCallback;
 
     this.createTray(title);
