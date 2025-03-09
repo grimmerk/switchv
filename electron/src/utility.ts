@@ -6,7 +6,7 @@ export const isDebug = BUILD_TYPE !== 'prod';
 // Define UI modes for explainer window
 export enum ExplainerUIMode {
   // Split view with code on top and explanation below
-  SPLIT = 'split',
+  EXPLANATION_SPLIT = 'explanation_split',
   
   // Chat interface with code and explanation as first messages
   // The LLM has already been queried for an explanation

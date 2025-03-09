@@ -196,6 +196,22 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({ onClose }
             Left-clicking the menu bar icon will open the Code Explainer with the current clipboard content.
             You can still access the main window with the hotkey Cmd+Ctrl+R.
           </div>
+          
+          <label style={styles.radioOption}>
+            <input
+              type="radio"
+              name="leftClickBehavior"
+              value="pure_chat"
+              checked={leftClickBehavior === 'pure_chat'}
+              onChange={() => setLeftClickBehavior('pure_chat')}
+            />
+            <span style={styles.radioLabel}>Open Pure Chat</span>
+          </label>
+          <div style={styles.description}>
+            Left-clicking the menu bar icon will open the Chat interface directly without code.
+            This provides the fastest access to chat with Claude. You can still access the
+            main window with Cmd+Ctrl+R and explain code with Cmd+Ctrl+E.
+          </div>
         </div>
         
         <div style={styles.buttonContainer}>

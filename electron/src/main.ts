@@ -85,13 +85,11 @@ ipcMain.on('send-chat-message', (event, message, messageHistory) => {
 // Handle UI mode changes to track the current mode
 ipcMain.on('ui-mode-changed', (event, mode) => {
   lastUIMode = mode;
-  console.log('UI mode changed to:', mode);
 });
 
 // Handle explanation completion status
 ipcMain.on('explanation-completed', (event, completed) => {
   lastExplanationCompleted = completed;
-  console.log('Explanation completed status:', completed);
 });
 
 const hideWindow = () => {
@@ -194,12 +192,12 @@ const createSettingsWindow = (
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
-  // Create settings window
+  // Create settings window - increased height to ensure save message is visible
   settingsWindow = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 650, // Increased from 600 to ensure save message is fully visible
     x: Math.round(width / 2 - 400),
-    y: Math.round(height / 2 - 300),
+    y: Math.round(height / 2 - 325), // Adjusted y position to center the taller window
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       devTools: false,
@@ -518,19 +516,48 @@ ipcMain.on('open-folder-selector', async (event) => {
   mainWindow.webContents.send('folder-selected', folderPath);
 });
 
-// Load settings from database
+// Load settings from database with retry mechanism
 const loadUserSettings = async () => {
-  try {
-    const response = await fetch('http://localhost:55688/explainer-settings');
-    if (response.ok) {
-      const settings = await response.json();
-      if (settings) {
-        userSettings.leftClickBehavior =
-          settings.leftClickBehavior || 'main_window';
+  // Number of retries and delay between retries
+  const maxRetries = 3;
+  const retryDelay = 1000; // ms
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Add timeout to the fetch request to avoid long waits
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch('http://localhost:55688/explainer-settings', {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const settings = await response.json();
+        if (settings) {
+          userSettings.leftClickBehavior =
+            settings.leftClickBehavior || 'main_window';
+        }
+        return; // Success, exit the function
+      }
+    } catch (error) {
+      // Only log on final attempt
+      if (attempt === maxRetries - 1) {
+        if (isDebug) {
+          console.error('Failed to load user settings after retries:', error);
+        }
+      } else {
+        // Wait before next retry
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
-  } catch (error) {
-    console.error('Failed to load user settings:', error);
+  }
+  
+  // If we reached here, all attempts failed
+  if (isDebug) {
+    console.log('Using default settings after failed load attempts');
   }
 };
 
@@ -546,33 +573,84 @@ const trayToggleEvtHandler = async () => {
   // Handle different click behaviors
   if (userSettings.leftClickBehavior === 'code_explainer') {
     // Open Code Explainer with clipboard content
-    // const clipboard = require('electron').clipboard;
     const selectedCode = clipboard.readText().trim();
 
     if (selectedCode && selectedCode.length > 0) {
       // Create or focus explainer window
       const explainerWin = createCodeExplainerWindow();
+      
+      // Make sure the window is visible
+      showExplainerWindow();
 
-      // Send the code to explain
-      explainerWin.webContents.once('did-finish-load', () => {
+      // Handle loading state properly
+      const processCode = () => {
+        // Set UI mode to CHAT_WITH_EXPLANATION
+        explainerWin.webContents.send('set-ui-mode', ExplainerUIMode.CHAT_WITH_EXPLANATION, {
+          code: selectedCode
+        });
+        
+        // Send the code and start explanation
         explainerWin.webContents.send('code-to-explain', selectedCode);
         anthropicService.explainCode(selectedCode, explainerWin);
-      });
+      };
 
-      // If already loaded, send directly
-      if (!explainerWin.webContents.isLoading()) {
-        explainerWin.webContents.send('code-to-explain', selectedCode);
-        anthropicService.explainCode(selectedCode, explainerWin);
+      // If window is still loading, wait for it to load
+      if (explainerWin.webContents.isLoadingMainFrame()) {
+        explainerWin.webContents.once('did-finish-load', processCode);
+      } else {
+        // Window already loaded, process immediately
+        processCode();
       }
     } else {
-      // No code in clipboard, show main window as fallback
-      if (BrowserWindow.getAllWindows().length === 0) {
-        mainWindow = createWindow();
-        showWindow();
-      } else if (mainWindow && mainWindow.isVisible()) {
-        hideWindow();
-      } else if (mainWindow) {
-        showWindow();
+      // No code in clipboard, open Pure Chat instead (better UX than opening main window)
+      // Create or focus explainer window
+      const explainerWin = createCodeExplainerWindow();
+      
+      // Show window first for better perceived performance
+      showExplainerWindow();
+      
+      // Set UI mode to PURE_CHAT
+      if (explainerWin.webContents.isLoadingMainFrame()) {
+        explainerWin.webContents.once('did-finish-load', () => {
+          explainerWin.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        });
+      } else {
+        explainerWin.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      }
+    }
+  } else if (userSettings.leftClickBehavior === 'pure_chat') {
+    // Open Pure Chat interface
+    
+    // Check if explainer window already exists
+    if (explainerWindow && !explainerWindow.isDestroyed()) {
+      // If window is visible, toggle visibility (hide it)
+      if (explainerWindow.isVisible()) {
+        explainerWindow.hide();
+        return;
+      }
+      
+      // Show the existing window
+      explainerWindow.show();
+      
+      // Set UI mode to PURE_CHAT
+      if (explainerWindow.webContents.isLoadingMainFrame()) {
+        explainerWindow.webContents.once('did-finish-load', () => {
+          explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        });
+      } else {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      }
+    } else {
+      // Create a new window
+      explainerWindow = createCodeExplainerWindow();
+      
+      // Set UI mode to PURE_CHAT
+      if (explainerWindow.webContents.isLoadingMainFrame()) {
+        explainerWindow.webContents.once('did-finish-load', () => {
+          explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        });
+      } else {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
       }
     }
   } else {
@@ -620,11 +698,9 @@ const trayToggleEvtHandler = async () => {
     if (explainerWindow.webContents.isLoadingMainFrame()) {
       explainerWindow.webContents.once('did-finish-load', () => {
         explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
-        console.log('Pre-initialized explainer window with PURE_CHAT mode');
       });
     } else {
       explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
-      console.log('Pre-initialized explainer window with PURE_CHAT mode');
     }
   }, 1000); // Delay by 1 second to not interfere with main window initialization
   
@@ -637,11 +713,9 @@ const trayToggleEvtHandler = async () => {
       
       // Add new closed listener
       explainerWindow.on('closed', () => {
-        console.log('Explainer window was closed, scheduling recreation');
         // Schedule recreation after a short delay
         setTimeout(() => {
           if (!explainerWindow || explainerWindow.isDestroyed()) {
-            console.log('Recreating explainer window after close');
             explainerWindow = createCodeExplainerWindow();
             explainerWindow.hide();
             setupExplainerWindowRebuild(); // Setup the listener again for the new window
@@ -657,8 +731,6 @@ const trayToggleEvtHandler = async () => {
           }
         }, 500);
       });
-      
-      console.log('Set up explainer window rebuild on close');
     }
   };
   
@@ -687,12 +759,9 @@ const trayToggleEvtHandler = async () => {
       app.startAccessingSecurityScopedResource(securityBookmark);
     }
   }
-
-  console.log('create server');
   process.env.DATABASE_URL = `file:${DBManager.databaseFilePath}`;
   process.env.PRISMA_QUERY_ENGINE_LIBRARY = DBManager.queryExePath;
   await bootstrap();
-  console.log('create server done');
 
   // Load user settings
   await loadUserSettings();
@@ -737,9 +806,6 @@ const trayToggleEvtHandler = async () => {
   
   // Register shortcut for Pure Chat Mode (Ctrl+Cmd+C)
   globalShortcut.register('Command+Control+C', () => {
-    if (isDebug) {
-      console.log('Pure Chat shortcut triggered (Cmd+Ctrl+C)');
-    }
     
     // Check if explainer window already exists
     if (explainerWindow && !explainerWindow.isDestroyed()) {
@@ -785,18 +851,12 @@ const trayToggleEvtHandler = async () => {
 
   // Register shortcut for Code Explainer (Ctrl+Cmd+E)
   globalShortcut.register('Command+Control+E', () => {
-    if (isDebug) {
-      console.log('Code Explainer shortcut triggered (Cmd+Ctrl+E)');
-    }
 
     // Simplified approach: directly read clipboard content
     const clipboardContent = clipboard.readText().trim();
     
     // Check if clipboard has content
     if (clipboardContent.length > 0) {
-      if (isDebug) {
-        console.log('Clipboard has content, length:', clipboardContent.length);
-      }
       
       // Check if code changed from last time
       const codeChanged = clipboardContent !== lastExplainedCode;
@@ -804,9 +864,6 @@ const trayToggleEvtHandler = async () => {
       // If window exists and is visible and code hasn't changed, hide it
       if (explainerWindow && !explainerWindow.isDestroyed() && 
           explainerWindow.isVisible() && !codeChanged) {
-        if (isDebug) {
-          console.log('Window visible with same content - hiding window');
-        }
         explainerWindow.hide();
         return;
       }
@@ -832,7 +889,6 @@ const trayToggleEvtHandler = async () => {
         // If we had an explanation for this code previously and are reopening, try to restore it
         if (clipboardContent === lastExplainedCode && lastExplanationCompleted && 
             lastUIMode === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
-          console.log('Restoring CHAT_WITH_EXPLANATION mode with existing explanation');
           explainerWindow.webContents.send(
             'set-ui-mode',
             ExplainerUIMode.CHAT_WITH_EXPLANATION,
@@ -869,16 +925,10 @@ const trayToggleEvtHandler = async () => {
       }
     } else {
       // No content in clipboard - open pure chat interface
-      if (isDebug) {
-        console.log('No content in clipboard, opening pure chat interface');
-      }
       
       // If window exists and is visible in PURE_CHAT mode, hide it
       // Since we can't directly know if it's in PURE_CHAT mode, we'll just hide it if empty clipboard
       if (explainerWindow && !explainerWindow.isDestroyed() && explainerWindow.isVisible()) {
-        if (isDebug) {
-          console.log('Window visible with empty clipboard - hiding window');
-        }
         explainerWindow.hide();
         return;
       }
@@ -1221,9 +1271,6 @@ const trayToggleEvtHandler = async () => {
 // app.once('window-all-closed', app.quit); ? seems not important
 // mainWindow.removeAllListeners('close'); ? seems not important
 app.once('before-quit', () => {
-  if (isDebug) {
-    console.log('before quit, kill server process');
-  }
   if (serverProcess) {
     serverProcess.kill();
   }

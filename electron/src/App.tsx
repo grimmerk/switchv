@@ -105,7 +105,21 @@ const retryFetchXwinData = async (): Promise<any[]> => {
 
 const OPTION_KEY = 18;
 
-/** https://stackoverflow.com/questions/52819756/react-select-replacing-components-for-custom-option-content */
+// Brand color theme - Based on SwitchV app icon's turquoise color
+const THEME = {
+  primary: '#00BCD4',      // Turquoise, main brand color
+  text: {
+    primary: '#E9E9E9',    // Light text for dark background
+    secondary: '#A0A0A0',  // Grey text for paths
+    newItem: '#6A9955'     // Green for unopened items
+  },
+  background: {
+    hover: '#3a3a3a',      // Hover background color
+    selected: '#064f61'    // Selected item background color
+  }
+};
+
+/** Enhanced option label formatter - horizontal layout for higher information density */
 const formatOptionLabel = (
   {
     value,
@@ -114,29 +128,70 @@ const formatOptionLabel = (
   }: { value: string; label: string; everOpened: boolean },
   { inputValue }: { inputValue: string },
 ) => {
-  // https://stackoverflow.com/a/34899885/7354486
+  // Split input into search words
   const searchWords = (inputValue ?? '')
     .split(' ')
     .filter((sub: string) => sub);
 
+  // Extract path and name
   const path = label.slice(0, label.lastIndexOf('/'));
   let name = label.slice(label.lastIndexOf('/') + 1);
   name = name.replace(/\.code-workspace/, ' (Workspace)');
 
-  const nameStyle: any = {};
-  const pathStyle: any = {};
+  // Determine styles based on whether the item has been opened
+  const nameStyle: any = {
+    fontWeight: '500',
+    fontSize: '15px', // Increased font size
+    minWidth: '180px', // Fixed width for project names for better alignment
+    paddingRight: '10px'
+  };
+  
+  const pathStyle: any = {
+    fontSize: '14px', // Increased font size
+    color: THEME.text.secondary,
+    flex: 1,
+    textOverflow: 'ellipsis',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap'
+  };
+  
   if (!everOpened) {
-    nameStyle['color'] = '#6A9955';
-    pathStyle['color'] = '#ccc';
+    nameStyle.color = THEME.text.newItem;
+  } else {
+    nameStyle.color = THEME.text.primary;
   }
 
   return (
-    <div style={{ display: 'flex', ...nameStyle }}>
-      <div>
-        <Highlighter searchWords={searchWords} textToHighlight={name} />
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center',
+      padding: '2px 0',
+      width: '100%',
+      height: '30px' // Increased height for better readability
+    }}>
+      <div style={nameStyle}>
+        <Highlighter 
+          searchWords={searchWords} 
+          textToHighlight={name}
+          highlightStyle={{ 
+            backgroundColor: 'rgba(0, 188, 212, 0.2)', 
+            color: '#fff',
+            padding: '0 2px',
+            borderRadius: '2px'
+          }} 
+        />
       </div>
-      <div style={{ marginLeft: '10px', color: 'grey', ...pathStyle }}>
-        <Highlighter searchWords={searchWords} textToHighlight={path} />
+      <div style={pathStyle}>
+        <Highlighter 
+          searchWords={searchWords} 
+          textToHighlight={path}
+          highlightStyle={{ 
+            backgroundColor: 'rgba(0, 188, 212, 0.1)', 
+            color: '#ccc',
+            padding: '0 2px',
+            borderRadius: '2px'
+          }} 
+        />
       </div>
     </div>
   );
@@ -149,39 +204,45 @@ export interface SelectInputOptionInterface {
   isSelected: boolean;
 }
 
-// ref
-// 1. https://github.com/JedWatson/react-select/issues/4126#issuecomment-658955445
-// 2. https://codesandbox.io/s/restless-brook-oe3qz3?file=/src/App.tsx:745-751
+// Enhanced Option component with improved styling and hover effects
 const OptionUI: FC<OptionProps<SelectInputOptionInterface>> = (
   props,
   onDeleteClick,
 ) => {
-  const { selectOption, selectProps, data } = props;
+  const { selectOption, selectProps, data, isSelected, isFocused } = props;
   const { value, label } = data;
 
   return (
     <div
       key={value}
       style={{
-        // padding: "2px",
         display: 'flex',
-        // border: "1px solid",
-        // justifyContent: "space-between"
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '2px 8px',
+        margin: '2px 0',
+        borderRadius: '3px',
+        backgroundColor: isSelected 
+          ? THEME.background.selected 
+          : (isFocused ? THEME.background.hover : 'transparent'),
+        transition: 'background-color 0.2s ease',
+        cursor: 'pointer',
+        height: '34px' // Increased height to match item height
       }}
     >
-      {/* <input type="checkbox" checked={props.isSelected} onChange={() => null} /> */}
-      {/* <div> */}
       <components.Option {...props} />
       <div>
         <HoverButton
-          width={25}
-          onClick={() => {
+          width={22}
+          height={22}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering selection
             if (onDeleteClick) {
               onDeleteClick(data);
             }
           }}
         >
-          X
+          ✕
         </HoverButton>
       </div>
     </div>
@@ -370,14 +431,42 @@ function App() {
   };
 
   return (
-    <div>
+    <div style={{
+      backgroundColor: '#1a1a1a',
+      borderRadius: '8px',
+      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh'
+    }}>
       <div
         style={{
           display: 'flex',
           flexDirection: 'row',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '10px 15px',
+          borderBottom: '1px solid #333',
+          backgroundColor: '#252525'
         }}
       >
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          color: THEME.text.primary,
+          fontWeight: 'bold',
+          fontSize: '16px'
+        }}>
+          <span style={{ 
+            color: THEME.primary, 
+            marginRight: '8px',
+            fontSize: '18px' 
+          }}>
+            📂
+          </span>
+          VS Code Projects
+        </div>
         <PopupDefaultExample workingFolderPath={workingFolderPath} />
       </div>
 
@@ -386,16 +475,18 @@ function App() {
         ref={ref}
         noOptionsMessage={() => {
           if (pathArray.length > 0) {
-            return 'not found';
+            return '⚠️ No matching projects found';
           }
-          return 'no data';
+          return '📂 No projects available';
         }}
         menuIsOpen={true}
         autoFocus={true}
-        maxMenuHeight={450}
+        maxMenuHeight={500}
         inputValue={inputValue}
         value={selectedOptions}
         openMenuOnFocus={true}
+        placeholder="Search projects..."
+        classNamePrefix="switchv-select"
         onKeyDown={(evt) => {
           // here first, then handleKeyDown
           if (evt.key == 'Escape') {
@@ -418,13 +509,59 @@ function App() {
         onChange={(evt: any) => {
           invokeVSCode(evt.value, optionPress.current);
         }}
-        // use selectProps instead of directly pass? https://stackoverflow.com/a/60375724/7354486?
+        // Custom components
         components={{
           DropdownIndicator: null,
           Option: (props) => OptionUI(props, onDeleteClick),
         }}
         formatOptionLabel={formatOptionLabel}
         options={pathArray}
+        styles={{
+          control: (base) => ({
+            ...base,
+            backgroundColor: '#2d2d2d',
+            borderColor: '#444',
+            borderRadius: '4px',
+            boxShadow: 'none',
+            '&:hover': {
+              borderColor: THEME.primary
+            },
+            padding: '4px',
+            margin: '10px 15px'
+          }),
+          input: (base) => ({
+            ...base,
+            color: THEME.text.primary,
+            fontSize: '14px',
+          }),
+          menu: (base) => ({
+            ...base,
+            backgroundColor: 'transparent',
+            boxShadow: 'none',
+            margin: '0'
+          }),
+          menuList: (base) => ({
+            ...base,
+            backgroundColor: 'transparent',
+            padding: '0 6px',
+            margin: '0 6px',
+            maxHeight: '480px' // Increased max height for more items
+          }),
+          option: (base) => ({
+            ...base,
+            backgroundColor: 'transparent',
+            cursor: 'pointer',
+            padding: 0,
+            margin: 0,
+            height: '34px' // Increased height for better readability
+          }),
+          noOptionsMessage: (base) => ({
+            ...base,
+            color: THEME.text.secondary,
+            textAlign: 'center',
+            padding: '20px 0'
+          })
+        }}
       />
     </div>
   );
