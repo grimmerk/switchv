@@ -425,6 +425,19 @@ const ExplainerApp: React.FC = () => {
     console.log('Explanation complete');
     setIsLoading(false);
     setIsComplete(true);
+    
+    // Notify main process that explanation is complete
+    if ((window as any).electronAPI && (window as any).electronAPI.notifyExplanationCompleted) {
+      (window as any).electronAPI.notifyExplanationCompleted(true);
+    } else {
+      // Fallback if API not available
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('explanation-completed', true);
+      } catch (e) {
+        console.error('Failed to notify main process of explanation completion', e);
+      }
+    }
 
     // After explanation is complete, initialize messages for chat
     if (codeRef.current && explanationContentRef.current) {
@@ -495,6 +508,20 @@ const ExplainerApp: React.FC = () => {
       /** NOTE: this is needed to update it soon,
        * otherwise handleExplanationStart may read old value since updating take some time */
       uiModeRef.current = mode;
+      
+      // Notify main process of mode change
+      if ((window as any).electronAPI && (window as any).electronAPI.notifyUIMode) {
+        (window as any).electronAPI.notifyUIMode(mode);
+      } else {
+        // Fallback if API not available
+        try {
+          const { ipcRenderer } = require('electron');
+          ipcRenderer.send('ui-mode-changed', mode);
+        } catch (e) {
+          console.error('Failed to notify main process of UI mode change', e);
+        }
+      }
+      
       return mode;
     });
 
@@ -513,12 +540,22 @@ const ExplainerApp: React.FC = () => {
           setCode(data.code);
         }
 
+        // Handle restoreExplanation flag
+        const shouldRestoreExplanation = data && data.restoreExplanation === true;
+        
         // Initialize with code and explanation if we have them
         if (
           explanationContentRef.current &&
           explanationContentRef.current.trim()
         ) {
-          console.log('Setting messages with explanation');
+          console.log('Setting messages with explanation' + (shouldRestoreExplanation ? ' (restore mode)' : ''));
+          
+          // If this is a restore operation, mark the explanation as complete immediately
+          if (shouldRestoreExplanation) {
+            setIsLoading(false);
+            setIsComplete(true);
+          }
+          
           setMessages([
             {
               role: 'system',
@@ -554,27 +591,42 @@ const ExplainerApp: React.FC = () => {
         break;
 
       case ExplainerUIMode.PURE_CHAT:
-        // Clear code and explanation, initialize with welcome message
-        setCode('');
-        setExplanation('');
-        console.log('Setting welcome message for PURE_CHAT mode');
-        setMessages([
-          {
-            role: 'assistant',
-            content:
-              "Hello! I'm Claude, an AI assistant. How can I help you with your code today?",
-          },
-        ]);
+        // Performance optimization: Don't clear state that's already empty
+        if (codeRef.current) setCode('');
+        if (explanationContentRef.current) setExplanation('');
+        
+        // Only set welcome message if there are no messages or if messages are different
+        if (messagesRef.current.length === 0 || 
+            messagesRef.current.length > 1 || 
+            messagesRef.current[0].role !== 'assistant' ||
+            !messagesRef.current[0].content.includes("Hello! I'm Claude")) {
+          
+          console.log('Setting welcome message for PURE_CHAT mode');
+          // Use a simple welcome message to avoid unnecessary rendering
+          setMessages([
+            {
+              role: 'assistant',
+              content:
+                "Hello! I'm Claude, an AI assistant. How can I help you with your code today?",
+            },
+          ]);
+        }
         break;
     }
 
-    // Ensure chat messages are scrolled to bottom after state updates
-    setTimeout(() => {
-      if (chatMessagesRef.current) {
-        chatMessagesRef.current.scrollTop =
-          chatMessagesRef.current.scrollHeight;
-      }
-    }, 100);
+    // Optimize scroll behavior based on UI mode
+    // Use a shorter timeout for PURE_CHAT mode for better responsiveness
+    const scrollTimeout = mode === ExplainerUIMode.PURE_CHAT ? 10 : 100;
+    
+    // For PURE_CHAT mode with just welcome message, we can skip scrolling
+    if (!(mode === ExplainerUIMode.PURE_CHAT && messagesRef.current.length <= 1)) {
+      setTimeout(() => {
+        if (chatMessagesRef.current) {
+          chatMessagesRef.current.scrollTop =
+            chatMessagesRef.current.scrollHeight;
+        }
+      }, scrollTimeout);
+    }
   };
 
   // Handler for detected language from code blocks
@@ -804,95 +856,109 @@ const ExplainerApp: React.FC = () => {
     setShowChat((prev) => !prev);
   };
 
-  // Render the markdown content
-  const renderMarkdown = (content: string) => {
-    return (
-      <ReactMarkdown
-        children={content}
-        remarkPlugins={[remarkGfm]}
-        components={{
-          code({ node, inline, className, children, ...props }) {
-            const match = /language-(\w+)/.exec(className || '');
-            return !inline && match ? (
-              <SyntaxHighlighter
-                language={match[1]}
-                style={vscDarkPlus as any}
-                PreTag="div"
-                {...props}
-              >
-                {String(children).replace(/\n$/, '')}
-              </SyntaxHighlighter>
-            ) : (
-              <code className={className} {...props}>
+  // Optimized markdown rendering with memoization for performance
+  const renderMarkdown = React.useMemo(() => {
+    const renderer = (content: string) => {
+      // Fast path for simple welcome message in PURE_CHAT mode
+      if (content === "Hello! I'm Claude, an AI assistant. How can I help you with your code today?") {
+        return (
+          <p style={{ marginTop: '0.5em', marginBottom: '0.5em' }}>
+            {content}
+          </p>
+        );
+      }
+      
+      // Regular markdown rendering for other content
+      return (
+        <ReactMarkdown
+          children={content}
+          remarkPlugins={[remarkGfm]}
+          components={{
+            code({ node, inline, className, children, ...props }) {
+              const match = /language-(\w+)/.exec(className || '');
+              return !inline && match ? (
+                <SyntaxHighlighter
+                  language={match[1]}
+                  style={vscDarkPlus as any}
+                  PreTag="div"
+                  {...props}
+                >
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+              ) : (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            },
+            // Style other markdown elements
+            p: ({ children }) => (
+              <p style={{ marginTop: '0.5em', marginBottom: '0.5em' }}>
                 {children}
-              </code>
-            );
-          },
-          // Style other markdown elements
-          p: ({ children }) => (
-            <p style={{ marginTop: '0.5em', marginBottom: '0.5em' }}>
-              {children}
-            </p>
-          ),
-          ul: ({ children }) => (
-            <ul style={{ paddingLeft: '20px' }}>{children}</ul>
-          ),
-          ol: ({ children }) => (
-            <ol style={{ paddingLeft: '20px' }}>{children}</ol>
-          ),
-          li: ({ children }) => (
-            <li style={{ margin: '0.2em 0' }}>{children}</li>
-          ),
-          h1: ({ children }) => (
-            <h1
-              style={{
-                fontSize: '1.5em',
-                marginTop: '0.8em',
-                marginBottom: '0.5em',
-              }}
-            >
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2
-              style={{
-                fontSize: '1.3em',
-                marginTop: '0.8em',
-                marginBottom: '0.5em',
-              }}
-            >
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3
-              style={{
-                fontSize: '1.1em',
-                marginTop: '0.8em',
-                marginBottom: '0.5em',
-              }}
-            >
-              {children}
-            </h3>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote
-              style={{
-                borderLeft: '4px solid #444',
-                paddingLeft: '10px',
-                margin: '0.5em 0',
-              }}
-            >
-              {children}
-            </blockquote>
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    );
-  };
+              </p>
+            ),
+            ul: ({ children }) => (
+              <ul style={{ paddingLeft: '20px' }}>{children}</ul>
+            ),
+            ol: ({ children }) => (
+              <ol style={{ paddingLeft: '20px' }}>{children}</ol>
+            ),
+            li: ({ children }) => (
+              <li style={{ margin: '0.2em 0' }}>{children}</li>
+            ),
+            h1: ({ children }) => (
+              <h1
+                style={{
+                  fontSize: '1.5em',
+                  marginTop: '0.8em',
+                  marginBottom: '0.5em',
+                }}
+              >
+                {children}
+              </h1>
+            ),
+            h2: ({ children }) => (
+              <h2
+                style={{
+                  fontSize: '1.3em',
+                  marginTop: '0.8em',
+                  marginBottom: '0.5em',
+                }}
+              >
+                {children}
+              </h2>
+            ),
+            h3: ({ children }) => (
+              <h3
+                style={{
+                  fontSize: '1.1em',
+                  marginTop: '0.8em',
+                  marginBottom: '0.5em',
+                }}
+              >
+                {children}
+              </h3>
+            ),
+            blockquote: ({ children }) => (
+              <blockquote
+                style={{
+                  borderLeft: '4px solid #444',
+                  paddingLeft: '10px',
+                  margin: '0.5em 0',
+                }}
+              >
+                {children}
+              </blockquote>
+            ),
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      );
+    };
+    
+    return renderer;
+  }, []);
 
   // Calculate content height based on whether chat is visible
   const getCodeSectionStyle = () => {
@@ -957,91 +1023,8 @@ const ExplainerApp: React.FC = () => {
           ref={explanationRef}
         >
           <div style={styles.explanation}>
-            <ReactMarkdown
-              // Remove the LANGUAGE: line from display
-              children={explanation.replace(/^LANGUAGE:\s*\w+\s*\n*/i, '')}
-              remarkPlugins={[remarkGfm]}
-              components={{
-                code({ node, inline, className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || '');
-                  return !inline && match ? (
-                    <SyntaxHighlighter
-                      language={match[1]}
-                      style={vscDarkPlus as any}
-                      PreTag="div"
-                      {...props}
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
-                  );
-                },
-                // Style other markdown elements
-                p: ({ children }) => (
-                  <p style={{ marginTop: '0.5em', marginBottom: '0.5em' }}>
-                    {children}
-                  </p>
-                ),
-                ul: ({ children }) => (
-                  <ul style={{ paddingLeft: '20px' }}>{children}</ul>
-                ),
-                ol: ({ children }) => (
-                  <ol style={{ paddingLeft: '20px' }}>{children}</ol>
-                ),
-                li: ({ children }) => (
-                  <li style={{ margin: '0.2em 0' }}>{children}</li>
-                ),
-                h1: ({ children }) => (
-                  <h1
-                    style={{
-                      fontSize: '1.5em',
-                      marginTop: '0.8em',
-                      marginBottom: '0.5em',
-                    }}
-                  >
-                    {children}
-                  </h1>
-                ),
-                h2: ({ children }) => (
-                  <h2
-                    style={{
-                      fontSize: '1.3em',
-                      marginTop: '0.8em',
-                      marginBottom: '0.5em',
-                    }}
-                  >
-                    {children}
-                  </h2>
-                ),
-                h3: ({ children }) => (
-                  <h3
-                    style={{
-                      fontSize: '1.1em',
-                      marginTop: '0.8em',
-                      marginBottom: '0.5em',
-                    }}
-                  >
-                    {children}
-                  </h3>
-                ),
-                blockquote: ({ children }) => (
-                  <blockquote
-                    style={{
-                      borderLeft: '4px solid #444',
-                      paddingLeft: '10px',
-                      margin: '0.5em 0',
-                    }}
-                  >
-                    {children}
-                  </blockquote>
-                ),
-              }}
-            >
-              {explanation}
-            </ReactMarkdown>
+            {/* Use the memoized renderer function for SPLIT mode too */}
+            {renderMarkdown(explanation.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''))}
 
             {isLoading && (
               <div style={styles.loading}>
@@ -1105,6 +1088,7 @@ const ExplainerApp: React.FC = () => {
                         </div>
                       )
                     ) : (
+                      // Invoke the memoized render function with message content
                       renderMarkdown(msg.content)
                     )}
                   </div>

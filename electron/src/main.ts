@@ -82,6 +82,18 @@ ipcMain.on('send-chat-message', (event, message, messageHistory) => {
   }
 });
 
+// Handle UI mode changes to track the current mode
+ipcMain.on('ui-mode-changed', (event, mode) => {
+  lastUIMode = mode;
+  console.log('UI mode changed to:', mode);
+});
+
+// Handle explanation completion status
+ipcMain.on('explanation-completed', (event, completed) => {
+  lastExplanationCompleted = completed;
+  console.log('Explanation completed status:', completed);
+});
+
 const hideWindow = () => {
   mainWindow.hide();
 };
@@ -109,6 +121,7 @@ const createCodeExplainerWindow = (): BrowserWindow => {
   const { width, height } = primaryDisplay.workAreaSize;
 
   // Create window with 800x600 size positioned at the center of the screen
+  // Performance optimizations added
   explainerWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -116,19 +129,25 @@ const createCodeExplainerWindow = (): BrowserWindow => {
     y: Math.round(height / 2 - 300),
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: true, // Always enable DevTools for debugging
+      devTools: false, // Always enable DevTools for debugging
       nodeIntegration: false,
       contextIsolation: true,
+      // Performance optimizations
+      backgroundThrottling: false, // Prevents throttling when window is in background
+      spellcheck: false, // Disable spellcheck for better performance
+      enableBlinkFeatures: 'CompositorThreadedScrollbarScrolling', // Use threaded scrolling
     },
-    show: true,
+    show: true, // Show immediately for better perceived performance
     frame: true,
     fullscreenable: false,
     resizable: true,
     // Solid background
-    backgroundColor: '#2d2d2d',
+    backgroundColor: '#2d2d2d', // Pre-paint with background color
     opacity: 1.0,
     // Always on top to ensure visibility
     alwaysOnTop: true,
+    // Performance optimization
+    paintWhenInitiallyHidden: true, // Paint even when initially hidden
   });
 
   // Load the explainer renderer
@@ -183,7 +202,7 @@ const createSettingsWindow = (
     y: Math.round(height / 2 - 300),
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: true,
+      devTools: false,
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -221,7 +240,7 @@ const createWindow = (): BrowserWindow => {
     width: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: true, //isDebug,
+      devTools: false, //isDebug,
     },
 
     // hide window by default
@@ -306,7 +325,7 @@ app.on('activate', () => {
 ipcMain.on('invoke-vscode', (event, path, option) => {
   if (isDebug) {
     console.log('invoke', { /*event,*/ path });
-    tray.tray.setTitle(`XWin(${path ? path[path.length - 1] : 'n'})`);
+    tray.tray.setTitle(`CodeV(${path ? path[path.length - 1] : 'n'})`);
   }
 
   if (!existsSync(path)) {
@@ -454,6 +473,10 @@ let userSettings = {
 
 // Track the last explained code to detect changes
 let lastExplainedCode = '';
+// Track the last used UI mode to restore it when reopening
+let lastUIMode = ExplainerUIMode.PURE_CHAT;
+// Track whether an explanation was completed for the current code
+let lastExplanationCompleted = false;
 
 // Handle the request to open Code Explainer window
 ipcMain.on('open-code-explainer', (event, code) => {
@@ -584,6 +607,64 @@ const trayToggleEvtHandler = async () => {
   if (isDebug) {
     console.log('when ready');
   }
+  
+  // Pre-initialize explainerWindow for faster first open
+  // This is done after mainWindow is created, but before showing it
+  // so that initial startup isn't slowed down
+  setTimeout(() => {
+    // Create explainer window but keep it hidden
+    explainerWindow = createCodeExplainerWindow();
+    explainerWindow.hide(); // Ensure it's hidden
+    
+    // Preload PURE_CHAT mode for faster response
+    if (explainerWindow.webContents.isLoadingMainFrame()) {
+      explainerWindow.webContents.once('did-finish-load', () => {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        console.log('Pre-initialized explainer window with PURE_CHAT mode');
+      });
+    } else {
+      explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      console.log('Pre-initialized explainer window with PURE_CHAT mode');
+    }
+  }, 1000); // Delay by 1 second to not interfere with main window initialization
+  
+  // Add window closed event handler to explainer window to recreate it when closed
+  // This ensures the next opening will still be fast
+  const setupExplainerWindowRebuild = () => {
+    if (explainerWindow && !explainerWindow.isDestroyed()) {
+      // Remove any previous listeners to avoid duplicates
+      explainerWindow.removeAllListeners('closed');
+      
+      // Add new closed listener
+      explainerWindow.on('closed', () => {
+        console.log('Explainer window was closed, scheduling recreation');
+        // Schedule recreation after a short delay
+        setTimeout(() => {
+          if (!explainerWindow || explainerWindow.isDestroyed()) {
+            console.log('Recreating explainer window after close');
+            explainerWindow = createCodeExplainerWindow();
+            explainerWindow.hide();
+            setupExplainerWindowRebuild(); // Setup the listener again for the new window
+            
+            // Set PURE_CHAT mode as default for the recreated window
+            if (explainerWindow.webContents.isLoadingMainFrame()) {
+              explainerWindow.webContents.once('did-finish-load', () => {
+                explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+              });
+            } else {
+              explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+            }
+          }
+        }, 500);
+      });
+      
+      console.log('Set up explainer window rebuild on close');
+    }
+  };
+  
+  // Call this after the initial window is created
+  setTimeout(setupExplainerWindowRebuild, 2000);
+  
   DBManager.initPath();
   // console.log({
   //   node: process?.env?.NODE_ENV,
@@ -653,17 +734,179 @@ const trayToggleEvtHandler = async () => {
       showWindow();
     }
   });
+  
+  // Register shortcut for Pure Chat Mode (Ctrl+Cmd+C)
+  globalShortcut.register('Command+Control+C', () => {
+    if (isDebug) {
+      console.log('Pure Chat shortcut triggered (Cmd+Ctrl+C)');
+    }
+    
+    // Check if explainer window already exists
+    if (explainerWindow && !explainerWindow.isDestroyed()) {
+      // If window is visible, check its current mode
+      if (explainerWindow.isVisible()) {
+        // For now, just hide the window if it's visible (simplified toggle behavior)
+        explainerWindow.hide();
+        return;
+      } else {
+        // Performance optimization: Show window immediately before setting mode
+        // This improves perceived performance as the window appears faster
+        explainerWindow.show();
+        
+        // Use setTimeout with 0ms to ensure show() completes first
+        setTimeout(() => {
+          explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        }, 0);
+        return;
+      }
+    }
+    
+    // If we reach here, we need to create a new window
+    // Set show:true in createCodeExplainerWindow to show window immediately
+    explainerWindow = createCodeExplainerWindow();
+    
+    // Set position immediately to ensure window appears in the right place
+    const position = getWindowPosition();
+    explainerWindow.setPosition(position.x, position.y, false);
+    
+    // Set UI mode after a minimal delay to ensure window is visible first
+    if (explainerWindow.webContents.isLoadingMainFrame()) {
+      explainerWindow.webContents.once('did-finish-load', () => {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      });
+    } else {
+      // Immediate mode set is better for performance
+      explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+    }
+    
+    // Focus window to bring it to front
+    explainerWindow.focus();
+  });
 
   // Register shortcut for Code Explainer (Ctrl+Cmd+E)
   globalShortcut.register('Command+Control+E', () => {
     if (isDebug) {
-      console.log('Code Explainer shortcut triggered');
+      console.log('Code Explainer shortcut triggered (Cmd+Ctrl+E)');
     }
 
-    const originalClipboard = clipboard.readText().trim();
+    // Simplified approach: directly read clipboard content
+    const clipboardContent = clipboard.readText().trim();
+    
+    // Check if clipboard has content
+    if (clipboardContent.length > 0) {
+      if (isDebug) {
+        console.log('Clipboard has content, length:', clipboardContent.length);
+      }
+      
+      // Check if code changed from last time
+      const codeChanged = clipboardContent !== lastExplainedCode;
+      
+      // If window exists and is visible and code hasn't changed, hide it
+      if (explainerWindow && !explainerWindow.isDestroyed() && 
+          explainerWindow.isVisible() && !codeChanged) {
+        if (isDebug) {
+          console.log('Window visible with same content - hiding window');
+        }
+        explainerWindow.hide();
+        return;
+      }
+      
+      // Store the current clipboard content for tracking changes
+      lastExplainedCode = clipboardContent;
+      
+      // Create window if needed, otherwise use existing one
+      if (!explainerWindow || explainerWindow.isDestroyed()) {
+        explainerWindow = createCodeExplainerWindow();
+      }
+      
+      const processCode = () => {
+        // Show the window if not visible
+        if (!explainerWindow.isVisible()) {
+          showExplainerWindow();
+        }
+        
+        // Send code to explain
+        explainerWindow.webContents.send('code-to-explain', clipboardContent);
+        
+        // Set UI mode based on clipboard content and last explanation state
+        // If we had an explanation for this code previously and are reopening, try to restore it
+        if (clipboardContent === lastExplainedCode && lastExplanationCompleted && 
+            lastUIMode === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
+          console.log('Restoring CHAT_WITH_EXPLANATION mode with existing explanation');
+          explainerWindow.webContents.send(
+            'set-ui-mode',
+            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            { 
+              code: clipboardContent,
+              restoreExplanation: true 
+            }
+          );
+          
+          // Still request explanation in case we need to regenerate it
+          // The renderer will handle showing the cached explanation if available
+          anthropicService.explainCode(clipboardContent, explainerWindow);
+        } else {
+          // Otherwise, use CHAT_WITH_EXPLANATION mode and request a new explanation
+          explainerWindow.webContents.send(
+            'set-ui-mode',
+            ExplainerUIMode.CHAT_WITH_EXPLANATION,
+            { code: clipboardContent }
+          );
+          
+          // Request explanation
+          anthropicService.explainCode(clipboardContent, explainerWindow);
+          
+          // Reset explanation completed flag
+          lastExplanationCompleted = false;
+        }
+      };
+      
+      // Handle window loading state
+      if (explainerWindow.webContents.isLoadingMainFrame()) {
+        explainerWindow.webContents.once('did-finish-load', processCode);
+      } else {
+        processCode();
+      }
+    } else {
+      // No content in clipboard - open pure chat interface
+      if (isDebug) {
+        console.log('No content in clipboard, opening pure chat interface');
+      }
+      
+      // If window exists and is visible in PURE_CHAT mode, hide it
+      // Since we can't directly know if it's in PURE_CHAT mode, we'll just hide it if empty clipboard
+      if (explainerWindow && !explainerWindow.isDestroyed() && explainerWindow.isVisible()) {
+        if (isDebug) {
+          console.log('Window visible with empty clipboard - hiding window');
+        }
+        explainerWindow.hide();
+        return;
+      }
+      
+      // Create or show explainer window
+      if (!explainerWindow || explainerWindow.isDestroyed()) {
+        explainerWindow = createCodeExplainerWindow();
+      }
+      
+      // Set UI mode to PURE_CHAT
+      if (explainerWindow.webContents.isLoadingMainFrame()) {
+        explainerWindow.webContents.once('did-finish-load', () => {
+          explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        });
+      } else {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      }
+      
+      // Show the window
+      showExplainerWindow();
+    }
+    
+    // End of the new implementation
+  });
 
-    // Get selected text using native Swift tool to simulate Cmd+C
-    const getSelectedText = async () => {
+  // The following is the old implementation, kept for reference
+  /* 
+  const getSelectedText = async () => {
       const path = require('path');
       const fs = require('fs');
 
@@ -813,7 +1056,7 @@ const trayToggleEvtHandler = async () => {
             );
           });
         } else {
-          /** TODO: sometimes this would not show the new window */
+          // TODO: sometimes this would not show the new window 
           console.log(
             "explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);",
           );
@@ -833,9 +1076,7 @@ const trayToggleEvtHandler = async () => {
         }
 
         // If explainer window already exists and is visible, hide it
-        /** TODO: this has one edge case
-         * if the opened window is the pure chat window, we should not hide it
-         */
+        // TODO: this has one edge case: if the opened window is the pure chat window, we should not hide it         
         if (
           explainerWindow &&
           !explainerWindow.isDestroyed() &&
@@ -968,8 +1209,9 @@ const trayToggleEvtHandler = async () => {
         processCode();
       }
     });
-  });
+  });  */
 })();
+
 
 // use lsof -i:55688 to check server process
 // ref:
