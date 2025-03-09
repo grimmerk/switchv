@@ -38,9 +38,9 @@ model User {
   workingFolder String?
 }
 
-model ExplainerSettings {
+model AIAssistantSettings {
   id                Int      @id @default(autoincrement())
-  customPrompt      String? // Custom prompt template for code explanation
+  customPrompt      String? // Custom prompt template for ai_assistant
   apiKey            String? // User's Anthropic API key (optional, will use env if not set)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

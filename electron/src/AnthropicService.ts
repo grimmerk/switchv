@@ -3,9 +3,9 @@ import * as dotenv from 'dotenv';
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
 import {
-  DEFAULT_EXPLAINER_PROMPT,
+  DEFAULT_AI_ASSISTANT_PROMPT,
   processPromptTemplate,
-} from './explainer-prompt';
+} from './ai-assistant-prompt';
 import { isDebug } from './utility';
 
 // Load environment variables from .env file
@@ -40,7 +40,7 @@ export class AnthropicService {
   // Load settings from database
   private async loadSettings(): Promise<void> {
     try {
-      const response = await fetch(`${this.SERVER_URL}/explainer-settings`);
+      const response = await fetch(`${this.SERVER_URL}/ai-assistant-settings`);
       if (response.ok) {
         const settings = await response.json();
 
@@ -63,7 +63,7 @@ export class AnthropicService {
         }
       }
     } catch (error) {
-      console.error('Failed to load explainer settings:', error);
+      console.error('Failed to load ai assistant settings:', error);
     }
   }
 
@@ -126,11 +126,7 @@ export class AnthropicService {
       window.webContents.send('explanation-start');
 
       // Get the prompt template to use
-      const promptTemplate = this.customPrompt ?? DEFAULT_EXPLAINER_PROMPT;
-
-      // console.log(
-      //   `promptTemplate-this.customPrompt:${this.customPrompt};DEFAULT_EXPLAINER_PROMPT:${DEFAULT_EXPLAINER_PROMPT};promptTemplate:${promptTemplate}`,
-      // );
+      const promptTemplate = this.customPrompt ?? DEFAULT_AI_ASSISTANT_PROMPT;
 
       // If prompt template is empty, don't send a request to LLM - user just wants to use the chat interface
       if (promptTemplate.trim() === '') {
@@ -277,7 +273,7 @@ export class AnthropicService {
   }
 
   /**
-   * Handle chat messages in the Code Explainer by sending them to Claude API
+   * Handle chat messages in the AI Assistant by sending them to Claude API
    * @param message The user's chat message
    * @param window The BrowserWindow to send updates to
    * @param messageHistory The current message history from the UI

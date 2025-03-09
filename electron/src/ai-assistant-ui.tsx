@@ -683,29 +683,6 @@ const AIAssistantApp: React.FC = () => {
     }
   };
 
-  // Handler for opening chat interface with code already selected
-  const handleOpenChatInterfaceWithCode = (
-    _event: any,
-    receivedCode: string,
-  ) => {
-    // Keep the code reference (don't clear it)
-    if (receivedCode && receivedCode.trim().length > 0) {
-      setCode(receivedCode);
-    }
-
-    // Show chat interface
-    setShowChat(true);
-
-    // Initialize with the code as the first user message
-    const initialMessages: Message[] = [
-      {
-        role: 'user',
-        content: receivedCode,
-      },
-    ];
-    setMessages(initialMessages);
-  };
-
   // Set up listeners for all the events (once only)
   useEffect(() => {
     // Store all event handlers to remove them on cleanup
@@ -726,8 +703,6 @@ const AIAssistantApp: React.FC = () => {
       'explanation-complete': handleInsightComplete,
       'explanation-error': handleInsightError,
       'skip-explanation': handleSkipInsight,
-      'open-chat-interface': handleOpenChatInterface,
-      'open-chat-interface-with-code': handleOpenChatInterfaceWithCode,
     };
 
     // Register all listeners if API is available
@@ -769,13 +744,6 @@ const AIAssistantApp: React.FC = () => {
       // UI mode control
       if ((window as any).electronAPI.onSetUIMode) {
         (window as any).electronAPI.onSetUIMode(handleSetUIMode);
-      }
-
-      // Legacy chat interface event listeners - keeping for backward compatibility
-      if ((window as any).electronAPI.onOpenChatInterface) {
-        (window as any).electronAPI.onOpenChatInterface(
-          handleOpenChatInterface,
-        );
       }
     } else {
       console.error('electronAPI not available');

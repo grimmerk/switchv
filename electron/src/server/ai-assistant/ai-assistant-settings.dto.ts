@@ -1,6 +1,6 @@
 import { IsOptional, IsString } from 'class-validator';
 
-export class ExplainerSettingsDto {
+export class AIAssistantSettingsDto {
   @IsOptional()
   @IsString()
   customPrompt?: string;
@@ -14,7 +14,7 @@ export class ExplainerSettingsDto {
   leftClickBehavior?: string;
 }
 
-export class ExplainerSettingsResponseDto {
+export class AIAssistantSettingsResponseDto {
   id: number;
   customPrompt?: string;
   apiKey?: string;

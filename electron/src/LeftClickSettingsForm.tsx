@@ -102,7 +102,7 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({
   const fetchSettings = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${SERVER_URL}/explainer-settings`);
+      const response = await fetch(`${SERVER_URL}/ai-assistant-settings`);
 
       if (response.ok) {
         const settings = await response.json();
@@ -131,7 +131,7 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({
     try {
       setStatus(null);
 
-      const response = await fetch(`${SERVER_URL}/explainer-settings`, {
+      const response = await fetch(`${SERVER_URL}/ai-assistant-settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

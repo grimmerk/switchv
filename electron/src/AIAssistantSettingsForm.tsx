@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { isDebug } from './utility';
 
-import { DEFAULT_EXPLAINER_PROMPT } from './explainer-prompt';
+import { DEFAULT_AI_ASSISTANT_PROMPT } from './ai-assistant-prompt';
 
-// Default prompt to show in form is imported from explainer-prompt.ts
+// Default prompt to show in form is imported from ai-assistant-prompt.ts
 
 const styles = {
   container: {
@@ -123,16 +123,16 @@ const AIAssistantSettingsForm: React.FC<AIAssistantSettingsFormProps> = ({
   const fetchSettings = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${SERVER_URL}/explainer-settings`);
+      const response = await fetch(`${SERVER_URL}/ai-assistant-settings`);
 
       if (response.ok) {
         const settings = await response.json();
         if (settings) {
-          setCustomPrompt(settings.customPrompt ?? DEFAULT_EXPLAINER_PROMPT);
+          setCustomPrompt(settings.customPrompt ?? DEFAULT_AI_ASSISTANT_PROMPT);
           setApiKey(settings.apiKey || '');
           setLeftClickBehavior(settings.leftClickBehavior || 'switcher_window');
         } else {
-          setCustomPrompt(DEFAULT_EXPLAINER_PROMPT);
+          setCustomPrompt(DEFAULT_AI_ASSISTANT_PROMPT);
         }
       } else {
         throw new Error('Failed to fetch settings');
@@ -145,7 +145,7 @@ const AIAssistantSettingsForm: React.FC<AIAssistantSettingsFormProps> = ({
         message: 'Failed to load settings. Please try again.',
         type: 'error',
       });
-      setCustomPrompt(DEFAULT_EXPLAINER_PROMPT);
+      setCustomPrompt(DEFAULT_AI_ASSISTANT_PROMPT);
     } finally {
       setIsLoading(false);
     }
@@ -157,7 +157,7 @@ const AIAssistantSettingsForm: React.FC<AIAssistantSettingsFormProps> = ({
     try {
       setStatus(null);
 
-      const response = await fetch(`${SERVER_URL}/explainer-settings`, {
+      const response = await fetch(`${SERVER_URL}/ai-assistant-settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ const AIAssistantSettingsForm: React.FC<AIAssistantSettingsFormProps> = ({
   };
 
   const handleReset = () => {
-    setCustomPrompt(DEFAULT_EXPLAINER_PROMPT);
+    setCustomPrompt(DEFAULT_AI_ASSISTANT_PROMPT);
     setStatus(null);
   };
 
@@ -227,7 +227,7 @@ const AIAssistantSettingsForm: React.FC<AIAssistantSettingsFormProps> = ({
             >
               Note: If the prompt template is empty, the app will immediately
               open in chat mode with your selected code, without generating an
-              explanation. This is useful for directly asking questions about
+              AI insight. This is useful for directly asking questions about
               your code.
             </span>
           </div>

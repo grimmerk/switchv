@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { ExplainerSettings } from '@prisma/client';
+import { AIAssistantSettings } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import { ExplainerSettingsDto } from './explainer-settings.dto';
+import { AIAssistantSettingsDto } from './ai-assistant-settings.dto';
 
 @Injectable()
-export class ExplainerSettingsService {
+export class AIAssistantSettingsService {
   constructor(private prisma: PrismaService) {}
 
-  async getSettings(): Promise<ExplainerSettings> {
+  async getSettings(): Promise<AIAssistantSettings> {
     // Get first record or create default if none exists
-    let settings = await this.prisma.explainerSettings.findFirst();
+    let settings = await this.prisma.aIAssistantSettings.findFirst();
 
     if (!settings) {
-      settings = await this.prisma.explainerSettings.create({
+      settings = await this.prisma.aIAssistantSettings.create({
         data: {
           leftClickBehavior: 'switcher_window',
         },
@@ -22,10 +22,12 @@ export class ExplainerSettingsService {
     return settings;
   }
 
-  async updateSettings(data: ExplainerSettingsDto): Promise<ExplainerSettings> {
+  async updateSettings(
+    data: AIAssistantSettingsDto,
+  ): Promise<AIAssistantSettings> {
     let settings = await this.getSettings();
 
-    return this.prisma.explainerSettings.update({
+    return this.prisma.aIAssistantSettings.update({
       where: { id: settings.id },
       data: {
         customPrompt:

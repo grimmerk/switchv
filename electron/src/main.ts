@@ -522,7 +522,7 @@ const loadUserSettings = async () => {
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
       const response = await fetch(
-        'http://localhost:55688/explainer-settings',
+        'http://localhost:55688/ai-assistant-settings',
         {
           signal: controller.signal,
         },
