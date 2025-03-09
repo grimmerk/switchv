@@ -109,6 +109,7 @@ const createCodeExplainerWindow = (): BrowserWindow => {
   const { width, height } = primaryDisplay.workAreaSize;
 
   // Create window with 800x600 size positioned at the center of the screen
+  // Performance optimizations added
   explainerWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -119,16 +120,22 @@ const createCodeExplainerWindow = (): BrowserWindow => {
       devTools: true, // Always enable DevTools for debugging
       nodeIntegration: false,
       contextIsolation: true,
+      // Performance optimizations
+      backgroundThrottling: false, // Prevents throttling when window is in background
+      spellcheck: false, // Disable spellcheck for better performance
+      enableBlinkFeatures: 'CompositorThreadedScrollbarScrolling', // Use threaded scrolling
     },
-    show: true,
+    show: true, // Show immediately for better perceived performance
     frame: true,
     fullscreenable: false,
     resizable: true,
     // Solid background
-    backgroundColor: '#2d2d2d',
+    backgroundColor: '#2d2d2d', // Pre-paint with background color
     opacity: 1.0,
     // Always on top to ensure visibility
     alwaysOnTop: true,
+    // Performance optimization
+    paintWhenInitiallyHidden: true, // Paint even when initially hidden
   });
 
   // Load the explainer renderer
@@ -584,6 +591,27 @@ const trayToggleEvtHandler = async () => {
   if (isDebug) {
     console.log('when ready');
   }
+  
+  // Pre-initialize explainerWindow for faster first open
+  // This is done after mainWindow is created, but before showing it
+  // so that initial startup isn't slowed down
+  setTimeout(() => {
+    // Create explainer window but keep it hidden
+    explainerWindow = createCodeExplainerWindow();
+    explainerWindow.hide(); // Ensure it's hidden
+    
+    // Preload PURE_CHAT mode for faster response
+    if (explainerWindow.webContents.isLoadingMainFrame()) {
+      explainerWindow.webContents.once('did-finish-load', () => {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        console.log('Pre-initialized explainer window with PURE_CHAT mode');
+      });
+    } else {
+      explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      console.log('Pre-initialized explainer window with PURE_CHAT mode');
+    }
+  }, 1000); // Delay by 1 second to not interfere with main window initialization
+  
   DBManager.initPath();
   // console.log({
   //   node: process?.env?.NODE_ENV,
@@ -664,47 +692,42 @@ const trayToggleEvtHandler = async () => {
     if (explainerWindow && !explainerWindow.isDestroyed()) {
       // If window is visible, check its current mode
       if (explainerWindow.isVisible()) {
-        // Try to get current UI mode from the renderer
-        // But for now, we'll have a simpler approach - toggle visibility if it's PURE_CHAT
-        // or switch to PURE_CHAT if it's in a different mode
-        
-        // Check if we have clipboard content that could be explained
-        const clipboardContent = clipboard.readText().trim();
-        const hasClipboardContent = clipboardContent.length > 0;
-        
-        // For now, let's take a simpler approach:
-        // - If we're already in PURE_CHAT mode and it's visible, hide it
-        // - If we're in another mode, switch to PURE_CHAT mode
-        
-        // NOTE: We don't have a direct way to know the current mode from main process
-        // Let's toggle the window if it's already visible
-        // TODO: In the future, we might want to track the current mode in the main process
-        
         // For now, just hide the window if it's visible (simplified toggle behavior)
         explainerWindow.hide();
         return;
       } else {
-        // Window exists but is hidden, show it and set mode to PURE_CHAT
+        // Performance optimization: Show window immediately before setting mode
+        // This improves perceived performance as the window appears faster
         explainerWindow.show();
-        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        
+        // Use setTimeout with 0ms to ensure show() completes first
+        setTimeout(() => {
+          explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        }, 0);
         return;
       }
     }
     
     // If we reach here, we need to create a new window
+    // Set show:true in createCodeExplainerWindow to show window immediately
     explainerWindow = createCodeExplainerWindow();
     
-    // Set UI mode to PURE_CHAT
+    // Set position immediately to ensure window appears in the right place
+    const position = getWindowPosition();
+    explainerWindow.setPosition(position.x, position.y, false);
+    
+    // Set UI mode after a minimal delay to ensure window is visible first
     if (explainerWindow.webContents.isLoadingMainFrame()) {
       explainerWindow.webContents.once('did-finish-load', () => {
         explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
       });
     } else {
+      // Immediate mode set is better for performance
       explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
     }
     
-    // Show the window
-    showExplainerWindow();
+    // Focus window to bring it to front
+    explainerWindow.focus();
   });
 
   // Register shortcut for Code Explainer (Ctrl+Cmd+E)
