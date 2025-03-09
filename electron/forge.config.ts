@@ -60,8 +60,8 @@ const config: ForgeConfig = {
         config: rendererConfig,
         entryPoints: [
           {
-            html: './src/index.html',
-            js: './src/renderer.ts',
+            html: './src/switcher.html',
+            js: './src/switcher-renderer.ts',
             name: 'switcher_window',
             preload: {
               js: './src/preload.ts',
