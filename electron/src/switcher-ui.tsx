@@ -1,9 +1,40 @@
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
+import * as ReactDOM from 'react-dom/client';
 import Highlighter from 'react-highlight-words';
 import Select, { components, OptionProps } from 'react-select';
 import { HoverButton } from './HoverButton';
 import PopupDefaultExample from './popup';
 import { isDebug } from './utility';
+
+// Global styles for the switcher UI (moved from index.css)
+const globalStyles = `
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+      Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  #switcher-root {
+    height: 100vh;
+    width: 100vw;
+    padding: 0;
+    margin: 0;
+  }
+`;
+
+// Apply global styles
+const styleElement = document.createElement('style');
+styleElement.innerHTML = globalStyles;
+document.head.appendChild(styleElement);
 
 function invokeVSCode(path: string, optionPress = false) {
   // press option for VSCode -r --reuse-window
@@ -568,3 +599,11 @@ function SwitcherApp() {
 }
 
 export default SwitcherApp;
+
+// Initialize the app
+document.addEventListener('DOMContentLoaded', () => {
+  const root = ReactDOM.createRoot(document.getElementById('switcher-root'));
+  root.render(<SwitcherApp />);
+
+  console.log('SwitcherApp rendered');
+});
