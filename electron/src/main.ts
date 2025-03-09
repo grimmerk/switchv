@@ -653,17 +653,104 @@ const trayToggleEvtHandler = async () => {
       showWindow();
     }
   });
+  
+  // Register shortcut for Pure Chat Mode (Ctrl+Cmd+C)
+  globalShortcut.register('Command+Control+C', () => {
+    if (isDebug) {
+      console.log('Pure Chat shortcut triggered (Cmd+Ctrl+C)');
+    }
+    
+    // Create or show the explainer window
+    explainerWindow = createCodeExplainerWindow();
+    
+    // Set UI mode to PURE_CHAT
+    if (explainerWindow.webContents.isLoadingMainFrame()) {
+      explainerWindow.webContents.once('did-finish-load', () => {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      });
+    } else {
+      explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+    }
+    
+    // Show the window
+    showExplainerWindow();
+  });
 
   // Register shortcut for Code Explainer (Ctrl+Cmd+E)
   globalShortcut.register('Command+Control+E', () => {
     if (isDebug) {
-      console.log('Code Explainer shortcut triggered');
+      console.log('Code Explainer shortcut triggered (Cmd+Ctrl+E)');
     }
 
-    const originalClipboard = clipboard.readText().trim();
+    // Simplified approach: directly read clipboard content
+    const clipboardContent = clipboard.readText().trim();
+    
+    // Check if clipboard has content
+    if (clipboardContent.length > 0) {
+      if (isDebug) {
+        console.log('Clipboard has content, length:', clipboardContent.length);
+      }
+      
+      // Store the current clipboard content for tracking changes
+      lastExplainedCode = clipboardContent;
+      
+      // Create/show explainer window and process the code
+      explainerWindow = createCodeExplainerWindow();
+      
+      const processCode = () => {
+        // Show the window if not visible
+        if (!explainerWindow.isVisible()) {
+          showExplainerWindow();
+        }
+        
+        // Send code to explain
+        explainerWindow.webContents.send('code-to-explain', clipboardContent);
+        
+        // Set UI mode to CHAT_WITH_EXPLANATION
+        explainerWindow.webContents.send(
+          'set-ui-mode',
+          ExplainerUIMode.CHAT_WITH_EXPLANATION,
+          { code: clipboardContent }
+        );
+        
+        // Request explanation
+        anthropicService.explainCode(clipboardContent, explainerWindow);
+      };
+      
+      // Handle window loading state
+      if (explainerWindow.webContents.isLoadingMainFrame()) {
+        explainerWindow.webContents.once('did-finish-load', processCode);
+      } else {
+        processCode();
+      }
+    } else {
+      // No content in clipboard - open pure chat interface
+      if (isDebug) {
+        console.log('No content in clipboard, opening pure chat interface');
+      }
+      
+      // Create or show explainer window
+      explainerWindow = createCodeExplainerWindow();
+      
+      // Set UI mode to PURE_CHAT
+      if (explainerWindow.webContents.isLoadingMainFrame()) {
+        explainerWindow.webContents.once('did-finish-load', () => {
+          explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        });
+      } else {
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+      }
+      
+      // Show the window
+      showExplainerWindow();
+    }
+    
+    // End of the new implementation
+  });
 
-    // Get selected text using native Swift tool to simulate Cmd+C
-    const getSelectedText = async () => {
+  // The following is the old implementation, kept for reference
+  /* 
+  const getSelectedText = async () => {
       const path = require('path');
       const fs = require('fs');
 
@@ -813,7 +900,7 @@ const trayToggleEvtHandler = async () => {
             );
           });
         } else {
-          /** TODO: sometimes this would not show the new window */
+          // TODO: sometimes this would not show the new window 
           console.log(
             "explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);",
           );
@@ -833,9 +920,7 @@ const trayToggleEvtHandler = async () => {
         }
 
         // If explainer window already exists and is visible, hide it
-        /** TODO: this has one edge case
-         * if the opened window is the pure chat window, we should not hide it
-         */
+        // TODO: this has one edge case: if the opened window is the pure chat window, we should not hide it         
         if (
           explainerWindow &&
           !explainerWindow.isDestroyed() &&
@@ -968,8 +1053,9 @@ const trayToggleEvtHandler = async () => {
         processCode();
       }
     });
-  });
+  });  */
 })();
+
 
 // use lsof -i:55688 to check server process
 // ref:
