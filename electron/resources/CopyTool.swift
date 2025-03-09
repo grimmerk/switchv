@@ -89,7 +89,321 @@ func getApplicationElement(pid: pid_t) -> AXUIElement {
     return AXUIElementCreateApplication(pid)
 }
 
+// Chrome-specific selection handling
+func handleChromeSelection(_ appElement: AXUIElement) -> String {
+    print("DEBUG: Handling Chrome selection")
+    
+    // Get the focused window
+    var focusedWindow: AnyObject?
+    let focusedWinResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXFocusedWindowAttribute as CFString,
+        &focusedWindow
+    )
+    
+    if focusedWinResult != .success {
+        // Try main window instead
+        var mainWindow: AnyObject?
+        let mainWinResult = AXUIElementCopyAttributeValue(
+            appElement,
+            kAXMainWindowAttribute as CFString,
+            &mainWindow
+        )
+        
+        if mainWinResult == .success {
+            focusedWindow = mainWindow
+        }
+    }
+    
+    guard let window = focusedWindow else {
+        return ""
+    }
+    
+    // Look specifically for text with AXSelectedTextAttribute
+    var selectedText = findExplicitChromeSelection(window as! AXUIElement)
+    if !selectedText.isEmpty {
+        return selectedText
+    }
+    
+    print("DEBUG: No explicit Chrome selection found")
+    return ""
+}
+
+// Find explicit Chrome selections
+func findExplicitChromeSelection(_ element: AXUIElement) -> String {
+    // Check for direct selection
+    var selectedText: AnyObject?
+    let result = AXUIElementCopyAttributeValue(
+        element,
+        kAXSelectedTextAttribute as CFString,
+        &selectedText
+    )
+    
+    if result == .success, let text = selectedText as? String, !text.isEmpty {
+        print("DEBUG: Found explicit Chrome selection")
+        return text
+    }
+    
+    // Check children but ONLY look for explicit selections
+    var children: AnyObject?
+    let childResult = AXUIElementCopyAttributeValue(
+        element,
+        kAXChildrenAttribute as CFString,
+        &children
+    )
+    
+    if childResult == .success, let childArray = children as? [AXUIElement] {
+        for child in childArray {
+            let childSelection = findExplicitChromeSelection(child)
+            if !childSelection.isEmpty {
+                return childSelection
+            }
+        }
+    }
+    
+    return ""
+}
+
+// Terminal-specific selection handling
+func handleTerminalSelection(_ appElement: AXUIElement) -> String {
+    print("DEBUG: Handling Terminal selection")
+    
+    // Get the focused element and check its value
+    var focusedElement: AnyObject?
+    let focusedResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXFocusedUIElementAttribute as CFString,
+        &focusedElement
+    )
+    
+    if focusedResult == .success {
+        let element = focusedElement as! AXUIElement
+        // Check role
+        var role: AnyObject?
+        _ = AXUIElementCopyAttributeValue(
+            element,
+            kAXRoleAttribute as CFString,
+            &role
+        )
+        
+        let roleStr = role as? String ?? "unknown"
+        
+        // First try getting explicit selection
+        var selectedText: AnyObject?
+        let selResult = AXUIElementCopyAttributeValue(
+            element,
+            kAXSelectedTextAttribute as CFString,
+            &selectedText
+        )
+        
+        if selResult == .success, let text = selectedText as? String, !text.isEmpty {
+            print("DEBUG: Found explicit Terminal selection")
+            return text
+        }
+        
+        // If no explicit selection, check if there's value content
+        if roleStr == "AXTextArea" {
+            var value: AnyObject?
+            let valueResult = AXUIElementCopyAttributeValue(
+                element,
+                kAXValueAttribute as CFString,
+                &value
+            )
+            
+            if valueResult == .success, let text = value as? String, !text.isEmpty {
+                // Check if content looks like Terminal command line or output
+                if text.count < 1000 {
+                    // Filter out common terminal prompts and status indicators
+                    if text == "⌥⌘1" || text == "⌥⌘3" || text == "⌥⌘2" || text.contains("$") || text.contains("%") {
+                        print("DEBUG: Filtered out terminal prompt/status")
+                        return "NO_SELECTION" // Return NO_SELECTION directly instead of FILTERED_OUT
+                    }
+                    
+                    // If content is small enough and doesn't look like a prompt, it might be a selection
+                    print("DEBUG: Found potential Terminal selection: \(text)")
+                    return text
+                }
+            }
+        }
+    }
+    
+    // If here, check for explicit selection throughout
+    let result = getStrictSelectedText(appElement)
+    if !result.isEmpty {
+        return result
+    }
+    
+    return ""
+}
+
+// Messenger-specific selection handling
+func handleMessengerSelection(_ appElement: AXUIElement) -> String {
+    print("DEBUG: Handling Messenger selection")
+    
+    // First try to get any explicit selection
+    var explicitly_selected = ""
+    
+    // Try focused element
+    var focusedElement: AnyObject?
+    let focusedResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXFocusedUIElementAttribute as CFString,
+        &focusedElement
+    )
+    
+    if focusedResult == .success {
+        let element = focusedElement as! AXUIElement
+        var selectedText: AnyObject?
+        let selResult = AXUIElementCopyAttributeValue(
+            element,
+            kAXSelectedTextAttribute as CFString,
+            &selectedText
+        )
+        
+        if selResult == .success, let text = selectedText as? String, !text.isEmpty {
+            explicitly_selected = text
+        }
+    }
+    
+    // If we found an explicit selection, use it
+    if !explicitly_selected.isEmpty {
+        return explicitly_selected
+    }
+    
+    // Now let's search for text elements carefully, but filter out UI elements
+    var mainWindow: AnyObject?
+    let mainWinResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXMainWindowAttribute as CFString,
+        &mainWindow
+    )
+    
+    if mainWinResult == .success {
+        let window = mainWindow as! AXUIElement
+        // Function to recursively check for text but filter UI labels
+        func findMessengerText(_ element: AXUIElement, depth: Int = 0) -> String {
+            if depth > 3 { // Limit recursion
+                return ""
+            }
+            
+            // Check role
+            var role: AnyObject?
+            _ = AXUIElementCopyAttributeValue(
+                element,
+                kAXRoleAttribute as CFString,
+                &role
+            )
+            
+            let roleStr = role as? String ?? "unknown"
+            
+            // Check for value
+            var value: AnyObject?
+            let valueResult = AXUIElementCopyAttributeValue(
+                element,
+                kAXValueAttribute as CFString,
+                &value
+            )
+            
+            if valueResult == .success, let text = value as? String, !text.isEmpty {
+                // Filter out UI element texts
+                if text == "Chats" || text.contains("Messages") || text.count < 3 {
+                    return ""
+                }
+                
+                // Check if this looks like a legitimate message
+                if text.count > 5 && text.count < 1000 {
+                    print("DEBUG: Found Messenger text: \(text)")
+                    return text
+                }
+            }
+            
+            // Check children
+            var children: AnyObject?
+            let childResult = AXUIElementCopyAttributeValue(
+                element,
+                kAXChildrenAttribute as CFString,
+                &children
+            )
+            
+            if childResult == .success, let childArray = children as? [AXUIElement] {
+                for child in childArray {
+                    let childText = findMessengerText(child, depth: depth + 1)
+                    if !childText.isEmpty {
+                        return childText
+                    }
+                }
+            }
+            
+            return ""
+        }
+        
+        let messengerText = findMessengerText(window)
+        if !messengerText.isEmpty {
+            return messengerText
+        }
+    }
+    
+    // If we get here, check for any selected static text as a last resort
+    let staticResult = findStaticTextContent(appElement)
+    
+    // Filter out UI elements
+    if staticResult == "Chats" {
+        return "NO_SELECTION"  // Return NO_SELECTION directly instead of FILTERED_OUT
+    }
+    
+    return staticResult
+}
+
+// Helper function to find static text content
+func findStaticTextContent(_ element: AXUIElement) -> String {
+    var children: AnyObject?
+    let childResult = AXUIElementCopyAttributeValue(
+        element,
+        kAXChildrenAttribute as CFString,
+        &children
+    )
+    
+    if childResult == .success, let childArray = children as? [AXUIElement] {
+        for child in childArray {
+            // Check role
+            var role: AnyObject?
+            _ = AXUIElementCopyAttributeValue(
+                child,
+                kAXRoleAttribute as CFString,
+                &role
+            )
+            
+            let roleStr = role as? String ?? "unknown"
+            
+            if roleStr == "AXStaticText" {
+                var value: AnyObject?
+                let valueResult = AXUIElementCopyAttributeValue(
+                    child,
+                    kAXValueAttribute as CFString,
+                    &value
+                )
+                
+                if valueResult == .success, let text = value as? String, !text.isEmpty {
+                    // Only return reasonably sized content
+                    if text.count > 5 && text.count < 1000 {
+                        return text
+                    }
+                }
+            }
+            
+            // Recursively check children
+            let childContent = findStaticTextContent(child)
+            if !childContent.isEmpty {
+                return childContent
+            }
+        }
+    }
+    
+    return ""
+}
+
 // Get selected text directly using Accessibility API
+// Focus only on active window and explicit selection
 func getSelectedTextDirectly() -> String {
     print("DEBUG: Starting getSelectedTextDirectly")
     
@@ -103,14 +417,50 @@ func getSelectedTextDirectly() -> String {
     let appElement = getApplicationElement(pid: frontApp.pid)
     print("DEBUG: Got application element for \(frontApp.name)")
     
-    // First, check for special case applications
-    if frontApp.name.contains("Code") || frontApp.name.contains("Visual Studio Code") {
+    // Special handling for different applications
+    
+    // Chrome - seems to often have issues with selection detection
+    if frontApp.name.contains("Chrome") {
+        print("DEBUG: Chrome detected, using special Chrome handling")
+        let chromeResult = handleChromeSelection(appElement)
+        if !chromeResult.isEmpty {
+            return chromeResult
+        }
+        // If we reached here, no selection in Chrome
+        return "NO_SELECTION"
+    }
+    
+    // Terminal - filter out specific terminal outputs that shouldn't be treated as selections
+    if frontApp.name.contains("Terminal") || frontApp.name == "iTerm2" {
+        print("DEBUG: Terminal app detected, using special handling")
+        let terminalResult = handleTerminalSelection(appElement)
+        // Since we now return NO_SELECTION directly for filtered prompts
+        if !terminalResult.isEmpty {
+            return terminalResult
+        }
+    }
+    
+    // Messenger - filter out UI elements that shouldn't be treated as selections
+    if frontApp.name.contains("Messenger") {
+        print("DEBUG: Messenger app detected, using special handling")
+        let messengerResult = handleMessengerSelection(appElement)
+        // We now return NO_SELECTION directly within the handler
+        if !messengerResult.isEmpty {
+            return messengerResult
+        }
+    }
+    
+    // VS Code or Electron
+    if frontApp.name.contains("Code") || frontApp.name.contains("Visual Studio Code") || frontApp.name == "Electron" {
+        // For VS Code, we need special handling to detect real selections
+        print("DEBUG: VS Code detected, using special handling")
         let vscodeResult = findSelectionInVSCode(appElement)
         if !vscodeResult.isEmpty {
             return vscodeResult
         }
     }
     
+    // Notion
     if frontApp.name == "Notion" {
         let notionResult = findSelectionInNotion(appElement)
         if !notionResult.isEmpty {
@@ -118,6 +468,7 @@ func getSelectedTextDirectly() -> String {
         }
     }
     
+    // Slack
     if frontApp.name == "Slack" {
         // For Slack, we might use a similar approach as Notion
         let slackResult = findSelectionInNotion(appElement) // reuse the same function for now
@@ -126,116 +477,24 @@ func getSelectedTextDirectly() -> String {
         }
     }
     
-    // Standard approach for most applications
-    // Try to get focused element from application
-    var focusedElement: AnyObject?
-    var focusedResult = AXUIElementCopyAttributeValue(
-        appElement,
-        kAXFocusedUIElementAttribute as CFString,
-        &focusedElement
-    )
-    
-    print("DEBUG: App focused element result: \(focusedResult)")
-    
-    // If we couldn't get focused element from app, try system-wide as fallback
-    if focusedResult != .success {
-        print("DEBUG: Falling back to system-wide element")
-        let systemWideElement = AXUIElementCreateSystemWide()
-        
-        focusedResult = AXUIElementCopyAttributeValue(
-            systemWideElement,
-            kAXFocusedUIElementAttribute as CFString,
-            &focusedElement
-        )
-        
-        print("DEBUG: System-wide focused element result: \(focusedResult)")
+    // Use our strict selection approach that only checks active window and focused elements
+    print("DEBUG: Using strict selection detection focusing on active window")
+    let strictResult = getStrictSelectedText(appElement)
+    if !strictResult.isEmpty {
+        return strictResult
     }
     
-    // If we got a focused element, check it for selection
-    if focusedResult == .success {
-        print("DEBUG: Found focused element, checking for selection")
-        
-        // First try to get selected text directly
-        var selectedText: AnyObject?
-        let result = AXUIElementCopyAttributeValue(
-            focusedElement as! AXUIElement,
-            kAXSelectedTextAttribute as CFString,
-            &selectedText
-        )
-        
-        if result == .success, let text = selectedText as? String, !text.isEmpty {
-            print("DEBUG: Found selected text in focused element")
-            return text
-        }
-        
-        // Otherwise check the element recursively
-        let focusedSelection = findSelectionInElement(focusedElement as! AXUIElement)
-        if !focusedSelection.isEmpty && focusedSelection != "NO_SELECTION" {
-            return focusedSelection
-        }
-    }
-    
-    // If we still couldn't get a selection, try alternative approaches
-    print("DEBUG: No selection in focused element, trying app-wide search")
-    
-    // Try to directly get the selected text from the application
-    var appSelectedText: AnyObject?
-    let appSelectedResult = AXUIElementCopyAttributeValue(
-        appElement,
-        kAXSelectedTextAttribute as CFString,
-        &appSelectedText
-    )
-    
-    print("DEBUG: App selected text result: \(appSelectedResult)")
-    if appSelectedResult == .success, let text = appSelectedText as? String, !text.isEmpty {
-        print("DEBUG: Found selected text directly from application")
-        return text
-    }
-    
-    // Try to get main window and search from there
-    var mainWindow: AnyObject?
-    let windowResult = AXUIElementCopyAttributeValue(
-        appElement,
-        kAXMainWindowAttribute as CFString, 
-        &mainWindow
-    )
-    
-    print("DEBUG: Main window result: \(windowResult)")
-    if windowResult == .success {
-        print("DEBUG: Searching for selection in main window")
-        let selectedText = findSelectionInElement(mainWindow as! AXUIElement)
-        if !selectedText.isEmpty && selectedText != "NO_SELECTION" {
-            return selectedText
-        }
-    }
-    
-    // If all else fails, try to get all windows and search each one
-    var windows: AnyObject?
-    let windowsResult = AXUIElementCopyAttributeValue(
-        appElement,
-        kAXWindowsAttribute as CFString,
-        &windows
-    )
-    
-    print("DEBUG: Windows result: \(windowsResult)")
-    if windowsResult == .success, let windowArray = windows as? [AXUIElement] {
-        print("DEBUG: Found \(windowArray.count) windows")
-        
-        for window in windowArray {
-            let selectedText = findSelectionInElement(window)
-            if !selectedText.isEmpty && selectedText != "NO_SELECTION" {
-                return selectedText
-            }
-        }
-    }
-    
-    print("DEBUG: Could not find selection in any window")
+    print("DEBUG: No selection found with strict criteria")
     return "NO_SELECTION"
 }
 
 // Function to find selection in VS Code
 func findSelectionInVSCode(_ appElement: AXUIElement) -> String {
     print("DEBUG: Using VS Code specific selection finding")
+    
+    // Flag to track if we've found a "cursor is on line but no selection" case
+    var foundLineWithCursor = false
+    var lineWithCursorText = ""
     
     // Try to get focused element first - often the editor with selection
     var focusedElement: AnyObject?
@@ -290,10 +549,11 @@ func findSelectionInVSCode(_ appElement: AXUIElement) -> String {
                 &selectedRange
             )
             
-            if rangeResult == .success, let range = selectedRange as? CFRange, range.length > 0 {
+            if rangeResult == .success, let range = selectedRange as? CFRange {
                 print("DEBUG: VS Code selection range - location: \(range.location), length: \(range.length)")
                 
-                if range.location >= 0 && fullText.count >= range.location + range.length {
+                if range.length > 0 && range.location >= 0 && fullText.count >= range.location + range.length {
+                    // This is a real selection with non-zero length
                     let startIndex = fullText.index(fullText.startIndex, offsetBy: range.location)
                     let endIndex = fullText.index(startIndex, offsetBy: range.length)
                     let extractedText = String(fullText[startIndex..<endIndex])
@@ -301,6 +561,42 @@ func findSelectionInVSCode(_ appElement: AXUIElement) -> String {
                     if !extractedText.isEmpty {
                         print("DEBUG: Extracted VS Code text using range: \(extractedText)")
                         return extractedText
+                    }
+                } else if range.length == 0 {
+                    // This is just a cursor position (length 0), 
+                    // We'll extract the current line for reference, but won't return it yet
+                    // We need to find the start and end of the current line
+                    
+                    // First, find the beginning of the line (previous newline or start of text)
+                    var lineStart = range.location
+                    while lineStart > 0 {
+                        let index = fullText.index(fullText.startIndex, offsetBy: lineStart - 1)
+                        if fullText[index] == "\n" {
+                            break // Found the previous newline
+                        }
+                        lineStart -= 1
+                    }
+                    
+                    // Then, find the end of the line (next newline or end of text)
+                    var lineEnd = range.location
+                    while lineEnd < fullText.count {
+                        let index = fullText.index(fullText.startIndex, offsetBy: lineEnd)
+                        if fullText[index] == "\n" {
+                            break // Found the next newline
+                        }
+                        lineEnd += 1
+                    }
+                    
+                    // Extract the current line
+                    let startIndex = fullText.index(fullText.startIndex, offsetBy: lineStart)
+                    let endIndex = fullText.index(fullText.startIndex, offsetBy: lineEnd)
+                    let currentLine = String(fullText[startIndex..<endIndex])
+                    
+                    if !currentLine.isEmpty {
+                        print("DEBUG: Found current line in VS Code: \(currentLine)")
+                        // Remember this, but don't return it yet - we're looking for a real selection
+                        foundLineWithCursor = true
+                        lineWithCursorText = currentLine
                     }
                 }
             }
@@ -432,6 +728,15 @@ func findSelectionInVSCode(_ appElement: AXUIElement) -> String {
         if !mainWindowText.isEmpty {
             return mainWindowText
         }
+    }
+    
+    // Last resort: If we found that the cursor was on a line but there's no actual selection,
+    // we don't want to return the whole line because that's not what the user intended to select.
+    // VS Code will copy the whole line when you press Cmd+C with no selection, but that's not what
+    // we want for our tool.
+    if foundLineWithCursor {
+        print("DEBUG: Found cursor on line but no actual selection")
+        return "NO_SELECTION" // Return "NO_SELECTION" instead of the line content
     }
     
     return ""
@@ -566,7 +871,310 @@ func findElementsByRole(_ element: AXUIElement, role: String) -> [AXUIElement] {
     return result
 }
 
-// Function to check an element for selected text
+// Function to get selected text with strict criteria
+func getStrictSelectedText(_ appElement: AXUIElement) -> String {
+    // Get the active window
+    var activeWindow: AXUIElement? = nil
+    
+    // First try to get the focused window
+    var focusedWin: AnyObject?
+    let focusedWinResult = AXUIElementCopyAttributeValue(
+        appElement,
+        kAXFocusedWindowAttribute as CFString,
+        &focusedWin
+    )
+    
+    if focusedWinResult == .success, let win = focusedWin {
+        activeWindow = win as! AXUIElement // Force cast as AXUIElement
+        print("DEBUG: Found focused window")
+    } else {
+        // Fallback to main window if focused window isn't available
+        var mainWin: AnyObject?
+        let mainWinResult = AXUIElementCopyAttributeValue(
+            appElement,
+            kAXMainWindowAttribute as CFString, 
+            &mainWin
+        )
+        
+        if mainWinResult == .success, let win = mainWin {
+            activeWindow = win as! AXUIElement // Force cast as AXUIElement
+            print("DEBUG: Using main window")
+        }
+    }
+    
+    // If no active window found, try to get the focused element directly
+    if activeWindow == nil {
+        var focusedElement: AnyObject?
+        let focusedResult = AXUIElementCopyAttributeValue(
+            appElement,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedElement
+        )
+        
+        if focusedResult == .success, let focused = focusedElement {
+            print("DEBUG: Found focused element, looking for selection")
+            let selectedText = findStrictSelectionInElement(focused as! AXUIElement)
+            if !selectedText.isEmpty {
+                return selectedText
+            }
+        }
+        
+        // Try system-wide focus as a last resort
+        let systemWideElement = AXUIElementCreateSystemWide()
+        let systemFocusedResult = AXUIElementCopyAttributeValue(
+            systemWideElement,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedElement
+        )
+        
+        if systemFocusedResult == .success, let focused = focusedElement {
+            print("DEBUG: Found system-wide focused element, looking for selection")
+            let selectedText = findStrictSelectionInElement(focused as! AXUIElement)
+            if !selectedText.isEmpty {
+                return selectedText
+            }
+        }
+        
+        return "NO_SELECTION"
+    }
+    
+    // If we have an active window, search for selection within it
+    guard let window = activeWindow else {
+        return "NO_SELECTION"
+    }
+    
+    // Look for focused element within the window
+    var focusedElement: AnyObject?
+    let focusedResult = AXUIElementCopyAttributeValue(
+        window,
+        kAXFocusedUIElementAttribute as CFString,
+        &focusedElement
+    )
+    
+    if focusedResult == .success, let focused = focusedElement {
+        print("DEBUG: Found focused element within window, looking for selection")
+        let selectedText = findStrictSelectionInElement(focused as! AXUIElement)
+        if !selectedText.isEmpty {
+            return selectedText
+        }
+    }
+    
+    // Search the window more broadly, but still strictly
+    let windowSelection = findStrictSelectionInElement(window)
+    if !windowSelection.isEmpty {
+        return windowSelection
+    }
+    
+    return "NO_SELECTION"
+}
+
+// This is a modified version that still works with common apps
+func findStrictSelectionInElement(_ element: AXUIElement) -> String {
+    // Try to get selected text attribute directly
+    var selectedText: AnyObject?
+    let result = AXUIElementCopyAttributeValue(
+        element,
+        kAXSelectedTextAttribute as CFString,
+        &selectedText
+    )
+    
+    if result == .success, let text = selectedText as? String, !text.isEmpty {
+        print("DEBUG: Found selected text attribute")
+        return text
+    }
+    
+    // Get element role for better debugging and special handling
+    var role: AnyObject?
+    let roleResult = AXUIElementCopyAttributeValue(
+        element,
+        kAXRoleAttribute as CFString,
+        &role
+    )
+    
+    let roleStr = role as? String ?? "unknown"
+    print("DEBUG: Element role: \(roleStr)")
+    
+    // Try value + selected range approach
+    var value: AnyObject?
+    let valueResult = AXUIElementCopyAttributeValue(
+        element,
+        kAXValueAttribute as CFString,
+        &value
+    )
+    
+    var selectedRange: AnyObject?
+    let rangeResult = AXUIElementCopyAttributeValue(
+        element,
+        kAXSelectedTextRangeAttribute as CFString,
+        &selectedRange
+    )
+    
+    if valueResult == .success && rangeResult == .success,
+       let fullText = value as? String,
+       let range = selectedRange as? CFRange,
+       range.length > 0 { // IMPORTANT: Only consider non-zero ranges
+        
+        if range.location >= 0 && fullText.count >= range.location + range.length {
+            let startIndex = fullText.index(fullText.startIndex, offsetBy: range.location)
+            let endIndex = fullText.index(startIndex, offsetBy: range.length)
+            let extractedText = String(fullText[startIndex..<endIndex])
+            
+            if !extractedText.isEmpty {
+                print("DEBUG: Extracted text using range")
+                return extractedText
+            }
+        }
+    }
+    
+    // Special case for common text elements in active window
+    // Some apps like Terminal, Safari, etc. don't properly report selections
+    if (roleStr.contains("Text") || roleStr == "AXTextArea" || roleStr == "AXTextField") && 
+       valueResult == .success && 
+       selectedRange == nil {
+        
+        // This is a special case for Terminal, Safari, etc.
+        if let fullText = value as? String, !fullText.isEmpty {
+            // Check if there are any signs this might be a selection
+            // For Terminal, it often just contains the selected text
+            if fullText.count < 1000 { // Reasonable limit for text selections
+                print("DEBUG: Found potential selection in \(roleStr), length: \(fullText.count)")
+                return fullText
+            }
+        }
+    }
+    
+    // Try the focused element - quite often this is where the selection is
+    var focusedElement: AnyObject?
+    let focusedResult = AXUIElementCopyAttributeValue(
+        element, 
+        kAXFocusedUIElementAttribute as CFString,
+        &focusedElement
+    )
+    
+    if focusedResult == .success, let focused = focusedElement {
+        print("DEBUG: Found focused subelement")
+        let focusedText = findStrictSelectionInElement(focused as! AXUIElement)
+        if !focusedText.isEmpty {
+            return focusedText
+        }
+    }
+    
+    // Now try direct children, but don't go too deep
+    var children: AnyObject?
+    let childResult = AXUIElementCopyAttributeValue(
+        element,
+        kAXChildrenAttribute as CFString,
+        &children
+    )
+    
+    if childResult == .success, let childArray = children as? [AXUIElement] {
+        print("DEBUG: Found \(childArray.count) children")
+        
+        for child in childArray {
+            // Check for direct selection on each child
+            var childSelectedText: AnyObject?
+            let childSelResult = AXUIElementCopyAttributeValue(
+                child,
+                kAXSelectedTextAttribute as CFString,
+                &childSelectedText
+            )
+            
+            if childSelResult == .success, let text = childSelectedText as? String, !text.isEmpty {
+                print("DEBUG: Found selected text in child")
+                return text
+            }
+            
+            // Check role of child
+            var childRole: AnyObject?
+            let childRoleResult = AXUIElementCopyAttributeValue(
+                child,
+                kAXRoleAttribute as CFString,
+                &childRole
+            )
+            
+            let childRoleStr = childRole as? String ?? "unknown"
+            
+            // Special case for static text elements in common apps
+            if childRoleStr == "AXStaticText" {
+                var childValue: AnyObject?
+                let childValueResult = AXUIElementCopyAttributeValue(
+                    child,
+                    kAXValueAttribute as CFString,
+                    &childValue
+                )
+                
+                if childValueResult == .success, let text = childValue as? String, !text.isEmpty {
+                    if text.count < 1000 { // Reasonable size for a selection
+                        print("DEBUG: Found potential selection in static text: \(text)")
+                        return text
+                    }
+                }
+            }
+            
+            // Check for selection range
+            var childValue: AnyObject?
+            let childValueResult = AXUIElementCopyAttributeValue(
+                child,
+                kAXValueAttribute as CFString,
+                &childValue
+            )
+            
+            var childRange: AnyObject?
+            let childRangeResult = AXUIElementCopyAttributeValue(
+                child,
+                kAXSelectedTextRangeAttribute as CFString,
+                &childRange
+            )
+            
+            if childValueResult == .success && childRangeResult == .success,
+               let fullText = childValue as? String,
+               let range = childRange as? CFRange,
+               range.length > 0 {
+                
+                if range.location >= 0 && fullText.count >= range.location + range.length {
+                    let startIndex = fullText.index(fullText.startIndex, offsetBy: range.location)
+                    let endIndex = fullText.index(startIndex, offsetBy: range.length)
+                    let extractedText = String(fullText[startIndex..<endIndex])
+                    
+                    if !extractedText.isEmpty {
+                        print("DEBUG: Extracted text from child using range")
+                        return extractedText
+                    }
+                }
+            }
+            
+            // For AXTextArea elements, try one level deeper, but no more
+            if childRoleStr == "AXTextArea" || childRoleStr.contains("Text") {
+                var grandchildren: AnyObject?
+                let grandchildResult = AXUIElementCopyAttributeValue(
+                    child,
+                    kAXChildrenAttribute as CFString,
+                    &grandchildren
+                )
+                
+                if grandchildResult == .success, let gcArray = grandchildren as? [AXUIElement] {
+                    for grandchild in gcArray {
+                        var gcSelectedText: AnyObject?
+                        let gcSelResult = AXUIElementCopyAttributeValue(
+                            grandchild,
+                            kAXSelectedTextAttribute as CFString,
+                            &gcSelectedText
+                        )
+                        
+                        if gcSelResult == .success, let text = gcSelectedText as? String, !text.isEmpty {
+                            print("DEBUG: Found selected text in grandchild")
+                            return text
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return ""
+}
+
+// Function to check an element for selected text (LEGACY FUNCTION - kept for compatibility)
 func findSelectionInElement(_ element: AXUIElement) -> String {
     print("DEBUG: Checking element for selection")
     
@@ -666,7 +1274,8 @@ func findSelectionInChildren(_ element: AXUIElement) -> String {
     if let roleStr = role as? String {
         print("DEBUG: Element role: \(roleStr)")
         
-        // Text fields, text areas, etc. often have these roles
+        // Only check for selected text, don't return the entire content
+        // We previously returned the entire text content, which was causing false positives
         if roleStr.contains("Text") || roleStr == "AXTextArea" || roleStr == "AXTextField" {
             var value: AnyObject?
             let valueResult = AXUIElementCopyAttributeValue(
@@ -675,9 +1284,33 @@ func findSelectionInChildren(_ element: AXUIElement) -> String {
                 &value
             )
             
+            // Only log the text content for debugging, but don't return it
             if valueResult == .success, let text = value as? String, !text.isEmpty {
-                print("DEBUG: Found text in \(roleStr)")
-                return text
+                print("DEBUG: Found text content in \(roleStr), length: \(text.count)")
+                
+                // Check if there's any indication this is actually selected text
+                var selectedRange: AnyObject?
+                let rangeResult = AXUIElementCopyAttributeValue(
+                    element,
+                    kAXSelectedTextRangeAttribute as CFString,
+                    &selectedRange
+                )
+                
+                // Only return text if we have a valid selection range
+                if rangeResult == .success, let range = selectedRange as? CFRange, range.length > 0 {
+                    if range.location >= 0 && text.count >= range.location + range.length {
+                        let startIndex = text.index(text.startIndex, offsetBy: range.location)
+                        let endIndex = text.index(startIndex, offsetBy: range.length)
+                        let extractedText = String(text[startIndex..<endIndex])
+                        
+                        if !extractedText.isEmpty {
+                            print("DEBUG: Extracted selected portion of text")
+                            return extractedText
+                        }
+                    }
+                }
+                
+                // If we don't have a valid selection range, don't return the content
             }
         }
     }
@@ -798,12 +1431,14 @@ func deepScanForText(element: AXUIElement, maxDepth: Int) -> String {
     let roleStr = role as? String ?? "unknown"
     print("DEBUG: Deep scan - element role: \(roleStr)")
     
-    // If this is an editor or text related
+    // If this is an editor or text related, we DON'T want to return the whole text content
+    // Just log for debugging
     if roleStr.contains("Text") || roleStr.contains("Editor") {
         if valueResult == .success, let fullText = value as? String, !fullText.isEmpty {
             print("DEBUG: Deep scan found text in \(roleStr)")
-            // We usually don't want to return the full text, but for debugging print content size
+            // We usually don't want to return the full text, just log content size
             print("DEBUG: Text content size: \(fullText.count)")
+            // Don't return the whole text - that would be incorrect
         }
     }
     
@@ -877,7 +1512,7 @@ func main() {
         return
     }
     
-    // Get selected text directly using Accessibility API
+    // Get selected text directly using Accessibility API with new stricter approach
     let selectedText = getSelectedTextDirectly()
     
     // If we got text, return it

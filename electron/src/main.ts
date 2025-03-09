@@ -719,14 +719,35 @@ const trayToggleEvtHandler = async () => {
             // Get text from clipboard
             const newClipboard = clipboard.readText();
             
-            // If clipboard changed, we got a selection
+            // If clipboard changed, we got a selection - but need to check if it's just a whole line without actual selection
             if (newClipboard !== originalClipboard && newClipboard.trim().length > 0) {
-              console.log('Successfully got VS Code selection via clipboard, length:', newClipboard.trim().length);
+              console.log('Got VS Code selection via clipboard, length:', newClipboard.trim().length);
+              
+              // Check if this might be a "whole line" copy without actual selection
+              // VS Code copies the whole line when there's just a cursor (no actual selection)
+              // We can detect this by checking if the text ends with a newline and doesn't contain any other newlines
+              const trimmedText = newClipboard.trim();
+              
+              // Check if text looks like a single line that was copied without selection
+              // This is a heuristic that works in most cases - if text has only one line and ends with a newline
+              const lines = newClipboard.split('\n');
+              const isSingleLine = lines.length <= 2 && (lines.length === 1 || lines[1] === '');
+              const isVSCodeLineEnd = newClipboard.endsWith('\n') || newClipboard.endsWith('\r\n');
+              
+              if (isVSCodeLineEnd && isSingleLine) {
+                console.log('Detected VS Code whole-line copy without selection - treating as NO_SELECTION');
+                
+                // Restore original clipboard
+                clipboard.writeText(originalClipboard);
+                
+                // Return empty string to indicate no selection
+                return '';
+              }
               
               // Restore original clipboard
               clipboard.writeText(originalClipboard);
               
-              return newClipboard.trim();
+              return trimmedText;
             } else {
               // Restore original clipboard
               clipboard.writeText(originalClipboard);
