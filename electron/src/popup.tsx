@@ -11,12 +11,12 @@ const THEME = {
   text: {
     primary: '#E9E9E9',
     secondary: '#A0A0A0',
-    folder: '#6A9955'
+    folder: '#6A9955',
   },
   button: {
     primary: '#00BCD4',
-    warning: '#e05252'
-  }
+    warning: '#e05252',
+  },
 };
 
 const contentStyles = css({
@@ -25,7 +25,7 @@ const contentStyles = css({
   backgroundColor: '#252525',
   borderRadius: '6px',
   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-  border: '1px solid #3a3a3a'
+  border: '1px solid #3a3a3a',
 });
 
 // Custom button styles
@@ -41,8 +41,8 @@ const buttonStyles = {
     transition: 'background-color 0.2s',
     fontWeight: 500,
     '&:hover': {
-      backgroundColor: '#0097a7'
-    }
+      backgroundColor: '#0097a7',
+    },
   },
   warning: {
     backgroundColor: THEME.button.warning,
@@ -55,8 +55,8 @@ const buttonStyles = {
     transition: 'background-color 0.2s',
     fontWeight: 500,
     '&:hover': {
-      backgroundColor: '#c63737'
-    }
+      backgroundColor: '#c63737',
+    },
   },
   menu: {
     backgroundColor: 'transparent',
@@ -69,9 +69,9 @@ const buttonStyles = {
     transition: 'all 0.2s',
     '&:hover': {
       borderColor: THEME.primary,
-      color: THEME.primary
-    }
-  }
+      color: THEME.primary,
+    },
+  },
 };
 
 const PopupDefaultExample = ({
@@ -91,125 +91,153 @@ const PopupDefaultExample = ({
       onClose={() => setIsOpen(false)}
       placement="bottom-end"
       content={(props) => (
-        <div style={{
-          width: 500,
-          backgroundColor: '#252525',
-          borderRadius: '6px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-          border: '1px solid #3a3a3a',
-          overflow: 'hidden' // Ensure no content overflows
-        }}>
+        <div
+          style={{
+            width: 500,
+            backgroundColor: '#252525',
+            borderRadius: '6px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            border: '1px solid #3a3a3a',
+            overflow: 'hidden', // Ensure no content overflows
+          }}
+        >
           {/* Header */}
-          <div style={{
-            fontSize: '20px',
-            fontWeight: 'bold',
-            color: '#ffffff',
-            textAlign: 'center',
-            padding: '15px 0',
-            backgroundColor: '#1e1e1e',
-            borderBottom: '1px solid #333'
-          }}>
+          <div
+            style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: '#ffffff',
+              textAlign: 'center',
+              padding: '15px 0',
+              backgroundColor: '#1e1e1e',
+              borderBottom: '1px solid #333',
+            }}
+          >
             Settings
           </div>
 
           {/* Working Directory Section */}
-          <div style={{
-            padding: '20px'
-          }}>
-            <div style={{ 
-              fontSize: '18px', 
-              fontWeight: 'bold',
-              color: '#ffffff',
-              marginBottom: '15px'
-            }}>
+          <div
+            style={{
+              padding: '20px',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#ffffff',
+                marginBottom: '15px',
+              }}
+            >
               Working Directory
             </div>
-            
-            <div style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              backgroundColor: '#1e1e1e',
-              padding: '12px 15px',
-              borderRadius: '4px',
-              border: '1px solid #333',
-              marginBottom: '20px'
-            }}>
-              <div style={{ 
-                marginRight: '10px',
-                fontSize: '18px',
-                color: THEME.text.folder
-              }}>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: '#1e1e1e',
+                padding: '12px 15px',
+                borderRadius: '4px',
+                border: '1px solid #333',
+                marginBottom: '20px',
+              }}
+            >
+              <div
+                style={{
+                  marginRight: '10px',
+                  fontSize: '18px',
+                  color: THEME.text.folder,
+                }}
+              >
                 📂
               </div>
-              <div style={{ 
-                color: '#d0d0d0', 
-                fontSize: '15px',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                flex: 1
-              }}>
+              <div
+                style={{
+                  color: '#d0d0d0',
+                  fontSize: '15px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  flex: 1,
+                }}
+              >
                 {workingFolderPath || 'No working folder selected'}
               </div>
             </div>
-            
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center'
-            }}>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
               <Button
                 appearance="primary"
                 onClick={() => {
                   openFolderSelector();
                 }}
-                style={{ 
+                style={{
                   backgroundColor: THEME.primary,
                   color: 'white',
                   fontSize: '16px',
                   padding: '10px 20px',
                   minWidth: '180px',
                   borderRadius: '4px',
-                  border: 'none'
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: '1',
                 }}
               >
                 Change Folder
               </Button>
             </div>
           </div>
-          
+
           {/* App Info and Quit Section */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            backgroundColor: '#1e1e1e',
-            padding: '15px 20px',
-            borderTop: '1px solid #333'
-          }}>
-            <div style={{ 
-              fontSize: '15px',
-              fontWeight: '500',
-              color: '#888'
-            }}>
-              SwitchV v1.0
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#1e1e1e',
+              padding: '15px 20px',
+              borderTop: '1px solid #333',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '15px',
+                fontWeight: '500',
+                color: '#888',
+              }}
+            >
+              CodeV v1.0
             </div>
-            
+
             <Button
               appearance="warning"
               onClick={() => {
                 closeAppClick();
               }}
-              style={{ 
+              style={{
                 backgroundColor: '#d9534f',
                 color: 'white',
                 fontSize: '15px',
                 fontWeight: 'bold',
                 padding: '8px 20px',
                 borderRadius: '4px',
-                border: 'none'
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: '1',
               }}
             >
-              {'[> Quit SwitchV'}
+              {'[> Quit CodeV'}
             </Button>
           </div>
         </div>
@@ -217,7 +245,6 @@ const PopupDefaultExample = ({
       trigger={(triggerProps) => (
         <Button
           {...triggerProps}
-          iconBefore={<span>⚙️</span>}
           appearance="primary"
           isSelected={isOpen}
           onClick={() => {
@@ -226,7 +253,7 @@ const PopupDefaultExample = ({
             }
             setIsOpen(!isOpen);
           }}
-          style={{ 
+          style={{
             backgroundColor: isOpen ? THEME.primary : '#444',
             border: 'none',
             fontSize: '14px',
@@ -234,7 +261,10 @@ const PopupDefaultExample = ({
             color: '#ffffff',
             padding: '6px 12px',
             borderRadius: '4px',
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            lineHeight: '1',
           }}
         >
           Settings

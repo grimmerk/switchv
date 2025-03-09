@@ -35,29 +35,40 @@ export class TrayGenerator {
   };
 
   rightClickMenu = () => {
+    const settingsItems = [
+      {
+        label: 'AI Assistant Settings',
+        click: () => {
+          this.openCodeExplainerSettings();
+        },
+      },
+      {
+        label: 'API Key Settings',
+        click: () => {
+          this.openApiKeySettings();
+        },
+      },
+      {
+        label: 'Left-Click Behavior',
+        click: () => {
+          this.openLeftClickSettings();
+        },
+      },
+    ];
+
     const menu: any = [
       {
         label: 'Settings',
+        submenu: settingsItems,
+      },
+      { type: 'separator' },
+      {
+        label: 'Keyboard Shortcuts',
         submenu: [
-          {
-            label: 'Code Explainer Settings',
-            click: () => {
-              this.openCodeExplainerSettings();
-            }
-          },
-          {
-            label: 'API Key Settings',
-            click: () => {
-              this.openApiKeySettings();
-            }
-          },
-          {
-            label: 'Left-Click Behavior',
-            click: () => {
-              this.openLeftClickSettings();
-            }
-          }
-        ]
+          { label: 'Cmd+Ctrl+R: Open Main Window', enabled: false },
+          { label: 'Cmd+Ctrl+E: Explain Code/Open Chat', enabled: false },
+          { label: 'Cmd+Ctrl+C: Open Pure Chat', enabled: false },
+        ],
       },
       { type: 'separator' },
       {
@@ -65,6 +76,7 @@ export class TrayGenerator {
         accelerator: 'Command+Q',
       },
     ];
+
     this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
   };
 

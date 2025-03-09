@@ -84,9 +84,15 @@ interface LeftClickSettingsFormProps {
 
 const SERVER_URL = 'http://localhost:55688';
 
-const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({ onClose }) => {
-  const [leftClickBehavior, setLeftClickBehavior] = useState<string>('main_window');
-  const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({
+  onClose,
+}) => {
+  const [leftClickBehavior, setLeftClickBehavior] =
+    useState<string>('main_window');
+  const [status, setStatus] = useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -97,7 +103,7 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({ onClose }
     try {
       setIsLoading(true);
       const response = await fetch(`${SERVER_URL}/explainer-settings`);
-      
+
       if (response.ok) {
         const settings = await response.json();
         if (settings) {
@@ -121,10 +127,10 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({ onClose }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setStatus(null);
-      
+
       const response = await fetch(`${SERVER_URL}/explainer-settings`, {
         method: 'POST',
         headers: {
@@ -134,7 +140,7 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({ onClose }
           leftClickBehavior,
         }),
       });
-      
+
       if (response.ok) {
         setStatus({
           message: 'Settings saved successfully!',
@@ -165,7 +171,7 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({ onClose }
   return (
     <div style={styles.container}>
       <div style={styles.title}>Left-Click Behavior Settings</div>
-      
+
       <form style={styles.form} onSubmit={handleSubmit}>
         <div style={styles.radioGroup}>
           <label style={styles.radioOption}>
@@ -176,12 +182,15 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({ onClose }
               checked={leftClickBehavior === 'main_window'}
               onChange={() => setLeftClickBehavior('main_window')}
             />
-            <span style={styles.radioLabel}>Open Main Window</span>
+            <span style={styles.radioLabel}>
+              Open CodeV Quick Switcher Window
+            </span>
           </label>
           <div style={styles.description}>
-            The traditional behavior: clicking the menu bar icon opens the main SwitchV window.
+            The traditional behavior: clicking the menu bar icon opens the CodeV
+            Quick Switcher Window.
           </div>
-          
+
           <label style={styles.radioOption}>
             <input
               type="radio"
@@ -190,13 +199,14 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({ onClose }
               checked={leftClickBehavior === 'code_explainer'}
               onChange={() => setLeftClickBehavior('code_explainer')}
             />
-            <span style={styles.radioLabel}>Open Code Explainer</span>
+            <span style={styles.radioLabel}>Open AI Assistant Insight</span>
           </label>
           <div style={styles.description}>
-            Left-clicking the menu bar icon will open the Code Explainer with the current clipboard content.
-            You can still access the main window with the hotkey Cmd+Ctrl+R.
+            Left-clicking the menu bar icon will open the AI Assistant with the
+            current clipboard content. You can still access the main window with
+            the hotkey Cmd+Ctrl+R.
           </div>
-          
+
           <label style={styles.radioOption}>
             <input
               type="radio"
@@ -205,33 +215,35 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({ onClose }
               checked={leftClickBehavior === 'pure_chat'}
               onChange={() => setLeftClickBehavior('pure_chat')}
             />
-            <span style={styles.radioLabel}>Open Pure Chat</span>
+            <span style={styles.radioLabel}>Open AI Assistant Smart Chat</span>
           </label>
           <div style={styles.description}>
-            Left-clicking the menu bar icon will open the Chat interface directly without code.
-            This provides the fastest access to chat with Claude. You can still access the
-            main window with Cmd+Ctrl+R and explain code with Cmd+Ctrl+E.
+            Left-clicking the menu bar icon will open the Smart Chat interface
+            directly without code. This provides the fastest access to chat with
+            Claude. You can still access the CodeV Quick Switcher window with
+            Cmd+Ctrl+R and AI Assistant Insight with Cmd+Ctrl+E.
           </div>
         </div>
-        
+
         <div style={styles.buttonContainer}>
           <button
             type="button"
             onClick={onClose}
-            style={{ ...styles.button, backgroundColor: '#6c757d', marginRight: '10px' }}
+            style={{
+              ...styles.button,
+              backgroundColor: '#6c757d',
+              marginRight: '10px',
+            }}
           >
             Cancel
           </button>
-          
-          <button
-            type="submit"
-            style={styles.button}
-          >
+
+          <button type="submit" style={styles.button}>
             Save Settings
           </button>
         </div>
       </form>
-      
+
       {status && (
         <div
           style={{

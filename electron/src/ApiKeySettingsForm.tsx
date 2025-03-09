@@ -90,7 +90,10 @@ const SERVER_URL = 'http://localhost:55688';
 
 const ApiKeySettingsForm: React.FC<ApiKeySettingsFormProps> = ({ onClose }) => {
   const [apiKey, setApiKey] = useState<string>('');
-  const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [status, setStatus] = useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [defaultApiKey, setDefaultApiKey] = useState<string>('');
 
@@ -102,12 +105,12 @@ const ApiKeySettingsForm: React.FC<ApiKeySettingsFormProps> = ({ onClose }) => {
     try {
       setIsLoading(true);
       const response = await fetch(`${SERVER_URL}/explainer-settings`);
-      
+
       if (response.ok) {
         const settings = await response.json();
         if (settings) {
           setApiKey(settings.apiKey || '');
-          
+
           // Also fetch default API key from environment for display
           try {
             const envResponse = await fetch(`${SERVER_URL}/app/env-api-key`);
@@ -139,10 +142,10 @@ const ApiKeySettingsForm: React.FC<ApiKeySettingsFormProps> = ({ onClose }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setStatus(null);
-      
+
       const response = await fetch(`${SERVER_URL}/explainer-settings`, {
         method: 'POST',
         headers: {
@@ -152,7 +155,7 @@ const ApiKeySettingsForm: React.FC<ApiKeySettingsFormProps> = ({ onClose }) => {
           apiKey,
         }),
       });
-      
+
       if (response.ok) {
         setStatus({
           message: 'API Key saved successfully!',
@@ -188,7 +191,7 @@ const ApiKeySettingsForm: React.FC<ApiKeySettingsFormProps> = ({ onClose }) => {
   return (
     <div style={styles.container}>
       <div style={styles.title}>API Key Settings</div>
-      
+
       <form style={styles.form} onSubmit={handleSubmit}>
         <label style={styles.label}>
           Your Anthropic API Key:
@@ -200,12 +203,12 @@ const ApiKeySettingsForm: React.FC<ApiKeySettingsFormProps> = ({ onClose }) => {
             placeholder="Enter your Anthropic API key..."
           />
           <div style={styles.infoText}>
-            {defaultApiKey 
-              ? 'A default API key is already configured in the environment. Your custom key will override it if provided.' 
-              : 'No default API key was found. You must provide your own API key to use the Code Explainer.'}
+            {defaultApiKey
+              ? 'A default API key is already configured in the environment. Your custom key will override it if provided.'
+              : 'No default API key was found. You must provide your own API key to use the AI Assistant.'}
           </div>
         </label>
-        
+
         <div style={styles.buttonContainer}>
           <button
             type="button"
@@ -214,26 +217,27 @@ const ApiKeySettingsForm: React.FC<ApiKeySettingsFormProps> = ({ onClose }) => {
           >
             Clear
           </button>
-          
+
           <div>
             <button
               type="button"
               onClick={onClose}
-              style={{ ...styles.button, backgroundColor: '#6c757d', marginRight: '10px' }}
+              style={{
+                ...styles.button,
+                backgroundColor: '#6c757d',
+                marginRight: '10px',
+              }}
             >
               Cancel
             </button>
-            
-            <button
-              type="submit"
-              style={styles.button}
-            >
+
+            <button type="submit" style={styles.button}>
               Save API Key
             </button>
           </div>
         </div>
       </form>
-      
+
       {status && (
         <div
           style={{
