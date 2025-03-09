@@ -660,7 +660,38 @@ const trayToggleEvtHandler = async () => {
       console.log('Pure Chat shortcut triggered (Cmd+Ctrl+C)');
     }
     
-    // Create or show the explainer window
+    // Check if explainer window already exists
+    if (explainerWindow && !explainerWindow.isDestroyed()) {
+      // If window is visible, check its current mode
+      if (explainerWindow.isVisible()) {
+        // Try to get current UI mode from the renderer
+        // But for now, we'll have a simpler approach - toggle visibility if it's PURE_CHAT
+        // or switch to PURE_CHAT if it's in a different mode
+        
+        // Check if we have clipboard content that could be explained
+        const clipboardContent = clipboard.readText().trim();
+        const hasClipboardContent = clipboardContent.length > 0;
+        
+        // For now, let's take a simpler approach:
+        // - If we're already in PURE_CHAT mode and it's visible, hide it
+        // - If we're in another mode, switch to PURE_CHAT mode
+        
+        // NOTE: We don't have a direct way to know the current mode from main process
+        // Let's toggle the window if it's already visible
+        // TODO: In the future, we might want to track the current mode in the main process
+        
+        // For now, just hide the window if it's visible (simplified toggle behavior)
+        explainerWindow.hide();
+        return;
+      } else {
+        // Window exists but is hidden, show it and set mode to PURE_CHAT
+        explainerWindow.show();
+        explainerWindow.webContents.send('set-ui-mode', ExplainerUIMode.PURE_CHAT);
+        return;
+      }
+    }
+    
+    // If we reach here, we need to create a new window
     explainerWindow = createCodeExplainerWindow();
     
     // Set UI mode to PURE_CHAT
@@ -691,11 +722,26 @@ const trayToggleEvtHandler = async () => {
         console.log('Clipboard has content, length:', clipboardContent.length);
       }
       
+      // Check if code changed from last time
+      const codeChanged = clipboardContent !== lastExplainedCode;
+      
+      // If window exists and is visible and code hasn't changed, hide it
+      if (explainerWindow && !explainerWindow.isDestroyed() && 
+          explainerWindow.isVisible() && !codeChanged) {
+        if (isDebug) {
+          console.log('Window visible with same content - hiding window');
+        }
+        explainerWindow.hide();
+        return;
+      }
+      
       // Store the current clipboard content for tracking changes
       lastExplainedCode = clipboardContent;
       
-      // Create/show explainer window and process the code
-      explainerWindow = createCodeExplainerWindow();
+      // Create window if needed, otherwise use existing one
+      if (!explainerWindow || explainerWindow.isDestroyed()) {
+        explainerWindow = createCodeExplainerWindow();
+      }
       
       const processCode = () => {
         // Show the window if not visible
@@ -729,8 +775,20 @@ const trayToggleEvtHandler = async () => {
         console.log('No content in clipboard, opening pure chat interface');
       }
       
+      // If window exists and is visible in PURE_CHAT mode, hide it
+      // Since we can't directly know if it's in PURE_CHAT mode, we'll just hide it if empty clipboard
+      if (explainerWindow && !explainerWindow.isDestroyed() && explainerWindow.isVisible()) {
+        if (isDebug) {
+          console.log('Window visible with empty clipboard - hiding window');
+        }
+        explainerWindow.hide();
+        return;
+      }
+      
       // Create or show explainer window
-      explainerWindow = createCodeExplainerWindow();
+      if (!explainerWindow || explainerWindow.isDestroyed()) {
+        explainerWindow = createCodeExplainerWindow();
+      }
       
       // Set UI mode to PURE_CHAT
       if (explainerWindow.webContents.isLoadingMainFrame()) {
