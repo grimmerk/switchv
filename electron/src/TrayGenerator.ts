@@ -39,7 +39,7 @@ export class TrayGenerator {
       {
         label: 'AI Assistant Settings',
         click: () => {
-          this.openCodeExplainerSettings();
+          this.openAIAssistantSettings();
         },
       },
       {
@@ -80,10 +80,10 @@ export class TrayGenerator {
     this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
   };
 
-  openCodeExplainerSettings = () => {
+  openAIAssistantSettings = () => {
     // Send IPC event to open the settings window
     const { ipcMain } = require('electron');
-    ipcMain.emit('open-explainer-settings');
+    ipcMain.emit('open-ai-assistant-settings');
   };
 
   openApiKeySettings = () => {

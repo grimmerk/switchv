@@ -30,7 +30,7 @@ export const rendererConfig: Configuration = {
   },
   // Multiple entrypoints for different HTML pages
   entry: {
-    main_window: './src/index.tsx',
+    switcher_window: './src/index.tsx',
     ai_assistant: './src/ai-assistant-renderer.ts',
     settings: './src/SettingsWindow.tsx',
   },

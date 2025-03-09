@@ -777,12 +777,6 @@ const AIAssistantApp: React.FC = () => {
           handleOpenChatInterface,
         );
       }
-
-      if ((window as any).electronAPI.onOpenChatInterfaceWithCode) {
-        (window as any).electronAPI.onOpenChatInterfaceWithCode(
-          handleOpenChatInterfaceWithCode,
-        );
-      }
     } else {
       console.error('electronAPI not available');
     }
