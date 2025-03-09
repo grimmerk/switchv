@@ -237,7 +237,7 @@ const PopupDefaultExample = ({
                 lineHeight: '1',
               }}
             >
-              {'[> Quit SwitchV'}
+              {'[> Quit CodeV'}
             </Button>
           </div>
         </div>

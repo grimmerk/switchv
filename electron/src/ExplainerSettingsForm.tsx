@@ -203,7 +203,7 @@ const ExplainerSettingsForm: React.FC<ExplainerSettingsFormProps> = ({
 
   return (
     <div style={styles.container}>
-      <div style={styles.title}>Code Explainer Settings</div>
+      <div style={styles.title}>AI Assistant Settings</div>
 
       <form style={styles.form} onSubmit={handleSubmit}>
         <label style={styles.label}>

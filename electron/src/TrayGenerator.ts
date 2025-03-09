@@ -37,7 +37,7 @@ export class TrayGenerator {
   rightClickMenu = () => {
     const settingsItems = [
       {
-        label: 'Code Explainer Settings',
+        label: 'AI Assistant Settings',
         click: () => {
           this.openCodeExplainerSettings();
         },

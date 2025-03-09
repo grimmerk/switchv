@@ -309,7 +309,6 @@ const ExplainerApp: React.FC = () => {
     }
   }, [messages, isLoading]);
 
-
   // Define all event handlers outside of useEffect to avoid closure issues
 
   // 1. * handleCodeToExplain (update code)
@@ -404,9 +403,12 @@ const ExplainerApp: React.FC = () => {
   const handleExplanationComplete = () => {
     setIsLoading(false);
     setIsComplete(true);
-    
+
     // Notify main process that explanation is complete
-    if ((window as any).electronAPI && (window as any).electronAPI.notifyExplanationCompleted) {
+    if (
+      (window as any).electronAPI &&
+      (window as any).electronAPI.notifyExplanationCompleted
+    ) {
       (window as any).electronAPI.notifyExplanationCompleted(true);
     } else {
       // Fallback if API not available
@@ -414,7 +416,10 @@ const ExplainerApp: React.FC = () => {
         const { ipcRenderer } = require('electron');
         ipcRenderer.send('explanation-completed', true);
       } catch (e) {
-        console.error('Failed to notify main process of explanation completion', e);
+        console.error(
+          'Failed to notify main process of explanation completion',
+          e,
+        );
       }
     }
 
@@ -482,9 +487,12 @@ const ExplainerApp: React.FC = () => {
       /** NOTE: this is needed to update it soon,
        * otherwise handleExplanationStart may read old value since updating take some time */
       uiModeRef.current = mode;
-      
+
       // Notify main process of mode change
-      if ((window as any).electronAPI && (window as any).electronAPI.notifyUIMode) {
+      if (
+        (window as any).electronAPI &&
+        (window as any).electronAPI.notifyUIMode
+      ) {
         (window as any).electronAPI.notifyUIMode(mode);
       } else {
         // Fallback if API not available
@@ -495,7 +503,7 @@ const ExplainerApp: React.FC = () => {
           console.error('Failed to notify main process of UI mode change', e);
         }
       }
-      
+
       return mode;
     });
 
@@ -515,8 +523,9 @@ const ExplainerApp: React.FC = () => {
         }
 
         // Handle restoreExplanation flag
-        const shouldRestoreExplanation = data && data.restoreExplanation === true;
-        
+        const shouldRestoreExplanation =
+          data && data.restoreExplanation === true;
+
         // Initialize with code and explanation if we have them
         if (
           explanationContentRef.current &&
@@ -527,7 +536,7 @@ const ExplainerApp: React.FC = () => {
             setIsLoading(false);
             setIsComplete(true);
           }
-          
+
           setMessages([
             {
               role: 'system',
@@ -560,13 +569,14 @@ const ExplainerApp: React.FC = () => {
         // Performance optimization: Don't clear state that's already empty
         if (codeRef.current) setCode('');
         if (explanationContentRef.current) setExplanation('');
-        
+
         // Only set welcome message if there are no messages or if messages are different
-        if (messagesRef.current.length === 0 || 
-            messagesRef.current.length > 1 || 
-            messagesRef.current[0].role !== 'assistant' ||
-            !messagesRef.current[0].content.includes("Hello! I'm Claude")) {
-          
+        if (
+          messagesRef.current.length === 0 ||
+          messagesRef.current.length > 1 ||
+          messagesRef.current[0].role !== 'assistant' ||
+          !messagesRef.current[0].content.includes("Hello! I'm Claude")
+        ) {
           // Use a simple welcome message to avoid unnecessary rendering
           setMessages([
             {
@@ -582,9 +592,11 @@ const ExplainerApp: React.FC = () => {
     // Optimize scroll behavior based on UI mode
     // Use a shorter timeout for PURE_CHAT mode for better responsiveness
     const scrollTimeout = mode === ExplainerUIMode.PURE_CHAT ? 10 : 100;
-    
+
     // For PURE_CHAT mode with just welcome message, we can skip scrolling
-    if (!(mode === ExplainerUIMode.PURE_CHAT && messagesRef.current.length <= 1)) {
+    if (
+      !(mode === ExplainerUIMode.PURE_CHAT && messagesRef.current.length <= 1)
+    ) {
       setTimeout(() => {
         if (chatMessagesRef.current) {
           chatMessagesRef.current.scrollTop =
@@ -817,14 +829,15 @@ const ExplainerApp: React.FC = () => {
   const renderMarkdown = React.useMemo(() => {
     const renderer = (content: string) => {
       // Fast path for simple welcome message in PURE_CHAT mode
-      if (content === "Hello! I'm Claude, an AI assistant. How can I help you with your code today?") {
+      if (
+        content ===
+        "Hello! I'm Claude, an AI assistant. How can I help you with your code today?"
+      ) {
         return (
-          <p style={{ marginTop: '0.5em', marginBottom: '0.5em' }}>
-            {content}
-          </p>
+          <p style={{ marginTop: '0.5em', marginBottom: '0.5em' }}>{content}</p>
         );
       }
-      
+
       // Regular markdown rendering for other content
       return (
         <ReactMarkdown
@@ -913,7 +926,7 @@ const ExplainerApp: React.FC = () => {
         </ReactMarkdown>
       );
     };
-    
+
     return renderer;
   }, []);
 
@@ -926,11 +939,21 @@ const ExplainerApp: React.FC = () => {
     return showChat ? { maxHeight: '30%' } : { flex: 1 }; // Use flex: 1 to take remaining space when in split mode
   };
 
+  let title = '';
+  if (uiMode === ExplainerUIMode.EXPLANATION_SPLIT) {
+    title = 'Insight in Spilt view';
+  } else if (uiMode === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
+    title = 'Insight with Chat';
+  } else if (uiMode === ExplainerUIMode.CHAT_WITH_CODE) {
+    title = 'Insight with Chat';
+  } else if (uiMode === ExplainerUIMode.PURE_CHAT) {
+    title = 'Smart Chat';
+  }
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>Code Explainer</h2>
+        <h2 style={styles.title}>{title}</h2>
         <div>
           {/* Hide Split View toggle button in PURE_CHAT mode */}
           {uiMode !== ExplainerUIMode.PURE_CHAT && (
@@ -938,7 +961,9 @@ const ExplainerApp: React.FC = () => {
               style={{ ...styles.closeButton, marginRight: '5px' }}
               onClick={toggleUIMode}
               title={
-                uiMode !== ExplainerUIMode.EXPLANATION_SPLIT ? 'Show Split View' : 'Show Chat'
+                uiMode !== ExplainerUIMode.EXPLANATION_SPLIT
+                  ? 'Show Split View'
+                  : 'Show Chat'
               }
             >
               {uiMode !== ExplainerUIMode.EXPLANATION_SPLIT ? '↑' : '↓'}
@@ -951,20 +976,24 @@ const ExplainerApp: React.FC = () => {
       </div>
 
       {uiMode === ExplainerUIMode.EXPLANATION_SPLIT && (
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          height: 'calc(100vh - 60px)', // Full height minus header
-          overflow: 'hidden'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: 'calc(100vh - 60px)', // Full height minus header
+            overflow: 'hidden',
+          }}
+        >
           {/* Code section */}
-          <div style={{ 
-            ...styles.codeSection, 
-            height: 'auto',
-            maxHeight: '40%', 
-            minHeight: '100px',
-            flexShrink: 0
-          }}>
+          <div
+            style={{
+              ...styles.codeSection,
+              height: 'auto',
+              maxHeight: '40%',
+              minHeight: '100px',
+              flexShrink: 0,
+            }}
+          >
             <SyntaxHighlighter
               language={inputLanguage}
               style={vscDarkPlus as any}
@@ -987,19 +1016,21 @@ const ExplainerApp: React.FC = () => {
 
           {/* Explanation section - Takes all remaining space */}
           <div
-            style={{ 
-              ...styles.explanationSection, 
-              flex: 1,            // Take all remaining space
+            style={{
+              ...styles.explanationSection,
+              flex: 1, // Take all remaining space
               overflow: 'auto',
-              display: 'flex',    // Use flex layout
-              flexDirection: 'column', 
-              minHeight: '60%'    // At least 60% of the space
+              display: 'flex', // Use flex layout
+              flexDirection: 'column',
+              minHeight: '60%', // At least 60% of the space
             }}
             ref={explanationRef}
           >
             <div style={styles.explanation}>
               {/* Use the memoized renderer function for EXPLANATION_SPLIT mode too */}
-              {renderMarkdown(explanation.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''))}
+              {renderMarkdown(
+                explanation.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''),
+              )}
 
               {isLoading && (
                 <div style={styles.loading}>
