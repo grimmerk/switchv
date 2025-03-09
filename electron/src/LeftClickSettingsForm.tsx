@@ -88,7 +88,7 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({
   onClose,
 }) => {
   const [leftClickBehavior, setLeftClickBehavior] =
-    useState<string>('main_window');
+    useState<string>('switcher_window');
   const [status, setStatus] = useState<{
     message: string;
     type: 'success' | 'error';
@@ -102,12 +102,12 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({
   const fetchSettings = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${SERVER_URL}/explainer-settings`);
+      const response = await fetch(`${SERVER_URL}/ai-assistant-settings`);
 
       if (response.ok) {
         const settings = await response.json();
         if (settings) {
-          setLeftClickBehavior(settings.leftClickBehavior || 'main_window');
+          setLeftClickBehavior(settings.leftClickBehavior || 'switcher_window');
         }
       } else {
         throw new Error('Failed to fetch settings');
@@ -131,7 +131,7 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({
     try {
       setStatus(null);
 
-      const response = await fetch(`${SERVER_URL}/explainer-settings`, {
+      const response = await fetch(`${SERVER_URL}/ai-assistant-settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,9 +178,9 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({
             <input
               type="radio"
               name="leftClickBehavior"
-              value="main_window"
-              checked={leftClickBehavior === 'main_window'}
-              onChange={() => setLeftClickBehavior('main_window')}
+              value="switcher_window"
+              checked={leftClickBehavior === 'switcher_window'}
+              onChange={() => setLeftClickBehavior('switcher_window')}
             />
             <span style={styles.radioLabel}>
               Open CodeV Quick Switcher Window
@@ -195,9 +195,9 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({
             <input
               type="radio"
               name="leftClickBehavior"
-              value="code_explainer"
-              checked={leftClickBehavior === 'code_explainer'}
-              onChange={() => setLeftClickBehavior('code_explainer')}
+              value="ai_assistant"
+              checked={leftClickBehavior === 'ai_assistant'}
+              onChange={() => setLeftClickBehavior('ai_assistant')}
             />
             <span style={styles.radioLabel}>Open AI Assistant Insight</span>
           </label>

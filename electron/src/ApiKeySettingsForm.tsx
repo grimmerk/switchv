@@ -104,7 +104,7 @@ const ApiKeySettingsForm: React.FC<ApiKeySettingsFormProps> = ({ onClose }) => {
   const fetchSettings = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${SERVER_URL}/explainer-settings`);
+      const response = await fetch(`${SERVER_URL}/ai-assistant-settings`);
 
       if (response.ok) {
         const settings = await response.json();
@@ -146,7 +146,7 @@ const ApiKeySettingsForm: React.FC<ApiKeySettingsFormProps> = ({ onClose }) => {
     try {
       setStatus(null);
 
-      const response = await fetch(`${SERVER_URL}/explainer-settings`, {
+      const response = await fetch(`${SERVER_URL}/ai-assistant-settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

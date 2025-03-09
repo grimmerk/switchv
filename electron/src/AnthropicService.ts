@@ -3,9 +3,9 @@ import * as dotenv from 'dotenv';
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
 import {
-  DEFAULT_EXPLAINER_PROMPT,
+  DEFAULT_AI_ASSISTANT_PROMPT,
   processPromptTemplate,
-} from './explainer-prompt';
+} from './ai-assistant-prompt';
 import { isDebug } from './utility';
 
 // Load environment variables from .env file
@@ -16,10 +16,10 @@ export class AnthropicService {
   private anthropic: Anthropic;
   private apiKey: string;
   private customPrompt: string | null = null;
-  private codeExplanationCache: Map<
+  private codeInsightCache: Map<
     string,
-    { explanation: string; prompt: string }
-  > = new Map(); // Cache for explanations with prompt used
+    { insight: string; prompt: string }
+  > = new Map(); // Cache for insight with prompt used
   private SERVER_URL = 'http://localhost:55688';
 
   constructor() {
@@ -40,7 +40,7 @@ export class AnthropicService {
   // Load settings from database
   private async loadSettings(): Promise<void> {
     try {
-      const response = await fetch(`${this.SERVER_URL}/explainer-settings`);
+      const response = await fetch(`${this.SERVER_URL}/ai-assistant-settings`);
       if (response.ok) {
         const settings = await response.json();
 
@@ -63,25 +63,25 @@ export class AnthropicService {
         }
       }
     } catch (error) {
-      console.error('Failed to load explainer settings:', error);
+      console.error('Failed to load ai assistant settings:', error);
     }
   }
 
   // Clear the cache if it gets too large
   private manageCacheSize(): void {
     const MAX_CACHE_SIZE = 50; // Maximum number of entries
-    if (this.codeExplanationCache.size > MAX_CACHE_SIZE) {
+    if (this.codeInsightCache.size > MAX_CACHE_SIZE) {
       // Convert to array and keep only the most recent entries
-      const entries = Array.from(this.codeExplanationCache.entries());
-      this.codeExplanationCache = new Map(entries.slice(-MAX_CACHE_SIZE / 2)); // Keep half
+      const entries = Array.from(this.codeInsightCache.entries());
+      this.codeInsightCache = new Map(entries.slice(-MAX_CACHE_SIZE / 2)); // Keep half
     }
   }
 
   // Clear all cache entries - useful when prompt template changes significantly
   public clearCache(): void {
-    this.codeExplanationCache.clear();
+    this.codeInsightCache.clear();
     if (isDebug) {
-      console.log('Explanation cache cleared');
+      console.log('Insight cache cleared');
     }
   }
 
@@ -109,7 +109,7 @@ export class AnthropicService {
 
     if (!this.anthropic) {
       window.webContents.send(
-        'explanation-error',
+        'ai-assistant-insight-error',
         'Anthropic client not initialized - API key missing',
       );
       return;
@@ -122,23 +122,19 @@ export class AnthropicService {
         return;
       }
 
-      // Start with empty explanation - this will reset the UI
-      window.webContents.send('explanation-start');
+      // Start with empty insight - this will reset the UI
+      window.webContents.send('ai-assistant-insight-start');
 
       // Get the prompt template to use
-      const promptTemplate = this.customPrompt ?? DEFAULT_EXPLAINER_PROMPT;
-
-      // console.log(
-      //   `promptTemplate-this.customPrompt:${this.customPrompt};DEFAULT_EXPLAINER_PROMPT:${DEFAULT_EXPLAINER_PROMPT};promptTemplate:${promptTemplate}`,
-      // );
+      const promptTemplate = this.customPrompt ?? DEFAULT_AI_ASSISTANT_PROMPT;
 
       // If prompt template is empty, don't send a request to LLM - user just wants to use the chat interface
       if (promptTemplate.trim() === '') {
         if (isDebug) {
-          console.log('Custom prompt is empty - skipping explanation request');
+          console.log('Custom prompt is empty - skipping insight request');
         }
-        // Send skip-explanation event with the code
-        window.webContents.send('skip-explanation', {
+        // Send skip-ai-assistant-insight event with the code
+        window.webContents.send('skip-ai-assistant-insight', {
           reason: 'Custom prompt template is empty',
           code,
         });
@@ -150,11 +146,11 @@ export class AnthropicService {
 
       // Check if we have this code in cache with the same prompt
       const cacheKey = code;
-      const cachedItem = this.codeExplanationCache.get(cacheKey);
+      const cachedItem = this.codeInsightCache.get(cacheKey);
 
       if (cachedItem && cachedItem.prompt === promptTemplate) {
         if (isDebug) {
-          console.log('Using cached explanation for code');
+          console.log('Using cached insight for code');
           if (cachedItem.language) {
             console.log(
               'Using cached language detection:',
@@ -163,27 +159,27 @@ export class AnthropicService {
           }
         }
 
-        // Send the cached explanation
-        const cachedExplanation = cachedItem.explanation;
+        // Send the cached insight
+        const cachedInsight = cachedItem.insight;
 
         // If we have cached language info, send it immediately
         if (cachedItem.language) {
           window.webContents.send('detected-language', cachedItem.language);
         }
 
-        // Send the entire explanation at once instead of chunking
+        // Send the entire insight at once instead of chunking
         // This avoids potential duplication issues with chunking
-        window.webContents.send('explanation-chunk', cachedExplanation);
+        window.webContents.send('ai-assistant-insight-chunk', cachedInsight);
 
         // Signal completion with language info
-        window.webContents.send('explanation-complete', {
+        window.webContents.send('ai-assistant-insight-complete', {
           language: cachedItem.language,
         });
         return;
       }
 
-      // Accumulate the full explanation to save in cache
-      let fullExplanation = '';
+      // Accumulate the full insight to save in cache
+      let fullInsight = ''
 
       // Create a streaming message
       const stream = await this.anthropic.messages.create({
@@ -209,7 +205,7 @@ export class AnthropicService {
           // console.debug('debugging delta:', chunk.delta.text);
 
           // Accumulate for cache
-          fullExplanation += chunk.delta.text;
+          fullInsight += chunk.delta.text;
 
           // Accumulate text to detect language from first code block
           if (!foundFirstCodeBlock) {
@@ -234,21 +230,21 @@ export class AnthropicService {
 
           // Send each chunk to the renderer process - but only if it's not empty
           if (chunk.delta.text.trim().length > 0) {
-            window.webContents.send('explanation-chunk', chunk.delta.text);
+            window.webContents.send('ai-assistant-insight-chunk', chunk.delta.text);
           }
         }
       }
 
-      // console.debug('debugging final fullExplanation:', fullExplanation);
+      // console.debug('debugging final fullInsight:', fullInsight);
 
-      // After streaming is complete, send the full explanation again
-      // This ensures we have a clean, non-duplicated explanation in the UI
-      window.webContents.send('explanation-chunk', fullExplanation);
+      // After streaming is complete, send the full insight again
+      // This ensures we have a clean, non-duplicated insight in the UI
+      window.webContents.send('ai-assistant-insight-chunk', fullInsight);
 
       if (isDebug) {
         console.log(
-          'fullExplanation:',
-          fullExplanation.substring(0, 200) + '...',
+          'fullInsight:',
+          fullInsight.substring(0, 200) + '...',
         );
         if (detectedLanguage) {
           console.log('Detected language from code blocks:', detectedLanguage);
@@ -256,28 +252,28 @@ export class AnthropicService {
       }
 
       // Store in cache with the prompt used
-      this.codeExplanationCache.set(code, {
-        explanation: fullExplanation,
+      this.codeInsightCache.set(code, {
+        insight: fullInsight,
         prompt: promptTemplate,
         language: detectedLanguage,
       });
       this.manageCacheSize();
 
       // Signal completion with detected language (if any)
-      window.webContents.send('explanation-complete', {
+      window.webContents.send('ai-assistant-insight-complete', {
         language: detectedLanguage,
       });
     } catch (error) {
       console.error('Error explaining code:', error);
       window.webContents.send(
-        'explanation-error',
-        this.apiKey ? 'Error generating explanation' : 'API key is missing',
+        'ai-assistant-insight-error',
+        this.apiKey ? 'Error generating insight' : 'API key is missing',
       );
     }
   }
 
   /**
-   * Handle chat messages in the Code Explainer by sending them to Claude API
+   * Handle chat messages in the AI Assistant by sending them to Claude API
    * @param message The user's chat message
    * @param window The BrowserWindow to send updates to
    * @param messageHistory The current message history from the UI

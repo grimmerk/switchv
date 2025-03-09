@@ -62,15 +62,15 @@ const config: ForgeConfig = {
           {
             html: './src/index.html',
             js: './src/renderer.ts',
-            name: 'main_window',
+            name: 'switcher_window',
             preload: {
               js: './src/preload.ts',
             },
           },
           {
-            html: './src/explainer.html',
-            js: './src/explainer-renderer.ts',
-            name: 'explainer_window',
+            html: './src/ai-assistant.html',
+            js: './src/ai-assistant-renderer.ts',
+            name: 'ai_assistant_window',
             preload: {
               js: './src/preload.ts',
             },

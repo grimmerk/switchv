@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import ExplainerSettingsForm from './ExplainerSettingsForm';
+import React, { useState } from 'react';
+import * as ReactDOM from 'react-dom/client';
+import AIAssistantSettingsForm from './AIAssistantSettingsForm';
 import ApiKeySettingsForm from './ApiKeySettingsForm';
 import LeftClickSettingsForm from './LeftClickSettingsForm';
-import * as ReactDOM from 'react-dom/client';
 
 enum SettingsType {
-  EXPLAINER = 'explainer',
+  AI_ASSISTANT_SETTING = 'ai_assistant_setting',
   API_KEY = 'apiKey',
   LEFT_CLICK = 'leftClick',
 }
@@ -29,10 +29,11 @@ interface SettingsWindowProps {
   initialSettingsType?: SettingsType;
 }
 
-const SettingsWindow: React.FC<SettingsWindowProps> = ({ 
-  initialSettingsType = SettingsType.EXPLAINER 
+const SettingsWindow: React.FC<SettingsWindowProps> = ({
+  initialSettingsType = SettingsType.AI_ASSISTANT_SETTING,
 }) => {
-  const [activeSettings, setActiveSettings] = useState<SettingsType>(initialSettingsType);
+  const [activeSettings, setActiveSettings] =
+    useState<SettingsType>(initialSettingsType);
 
   const closeWindow = () => {
     window.close();
@@ -40,8 +41,8 @@ const SettingsWindow: React.FC<SettingsWindowProps> = ({
 
   const renderSettingsForm = () => {
     switch (activeSettings) {
-      case SettingsType.EXPLAINER:
-        return <ExplainerSettingsForm onClose={closeWindow} />;
+      case SettingsType.AI_ASSISTANT_SETTING:
+        return <AIAssistantSettingsForm onClose={closeWindow} />;
       case SettingsType.API_KEY:
         return <ApiKeySettingsForm onClose={closeWindow} />;
       case SettingsType.LEFT_CLICK:
@@ -51,36 +52,40 @@ const SettingsWindow: React.FC<SettingsWindowProps> = ({
     }
   };
 
-  return (
-    <div style={styles.container}>
-      {renderSettingsForm()}
-    </div>
-  );
+  return <div style={styles.container}>{renderSettingsForm()}</div>;
 };
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   // Try to get the settings type from URL parameters
   const urlParams = new URLSearchParams(window.location.search);
-  const settingsType = urlParams.get('type') as SettingsType || SettingsType.EXPLAINER;
-  
+  const settingsType =
+    (urlParams.get('type') as SettingsType) ||
+    SettingsType.AI_ASSISTANT_SETTING;
+
   const root = ReactDOM.createRoot(document.getElementById('settings-root'));
   root.render(<SettingsWindow initialSettingsType={settingsType} />);
-  
+
   // Listen for IPC events to switch between settings types
-  (window as any).electronAPI.onOpenExplainerSettings(() => {
+  (window as any).electronAPI.onOpenAIAssistantSettings(() => {
     const root = ReactDOM.createRoot(document.getElementById('settings-root'));
-    root.render(<SettingsWindow initialSettingsType={SettingsType.EXPLAINER} />);
+    root.render(
+      <SettingsWindow
+        initialSettingsType={SettingsType.AI_ASSISTANT_SETTING}
+      />,
+    );
   });
-  
+
   (window as any).electronAPI.onOpenApiKeySettings(() => {
     const root = ReactDOM.createRoot(document.getElementById('settings-root'));
     root.render(<SettingsWindow initialSettingsType={SettingsType.API_KEY} />);
   });
-  
+
   (window as any).electronAPI.onOpenLeftClickSettings(() => {
     const root = ReactDOM.createRoot(document.getElementById('settings-root'));
-    root.render(<SettingsWindow initialSettingsType={SettingsType.LEFT_CLICK} />);
+    root.render(
+      <SettingsWindow initialSettingsType={SettingsType.LEFT_CLICK} />,
+    );
   });
 });
 

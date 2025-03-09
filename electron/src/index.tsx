@@ -1,13 +1,13 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import App from './App';
 import './index.css';
+import SwitcherApp from './switcher-ui';
 
 // Simple main window component - just renders the App
 const RootComponent: React.FC = () => {
   return (
     <div className="app-container">
-      <App />
+      <SwitcherApp />
     </div>
   );
 };

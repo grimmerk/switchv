@@ -14,7 +14,7 @@ body {
   50% { opacity: 0; }
 }
 
-.explainer-container {
+.ai-assistant-container {
   display: flex;
   flex-direction: column;
   height: 100vh;

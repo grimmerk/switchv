@@ -105,7 +105,7 @@ const retryFetchXwinData = async (): Promise<any[]> => {
 
 const OPTION_KEY = 18;
 
-// Brand color theme - Based on SwitchV app icon's turquoise color
+// Brand color theme - Based on CodeV app icon's turquoise color
 const THEME = {
   primary: '#00BCD4',      // Turquoise, main brand color
   text: {
@@ -251,7 +251,7 @@ const OptionUI: FC<OptionProps<SelectInputOptionInterface>> = (
 
 /** Caution it will be invoked twice due to <React.StrictMode> !! */
 let loadTimes = 0;
-function App() {
+function SwitcherApp() {
   const optionPress = useRef(false);
 
   const ref = useRef(null);
@@ -465,7 +465,7 @@ function App() {
           }}>
             📂
           </span>
-          VS Code Projects
+          CodeV Quick Switcher
         </div>
         <PopupDefaultExample workingFolderPath={workingFolderPath} />
       </div>
@@ -486,7 +486,7 @@ function App() {
         value={selectedOptions}
         openMenuOnFocus={true}
         placeholder="Search projects..."
-        classNamePrefix="switchv-select"
+        classNamePrefix="codev-select"
         onKeyDown={(evt) => {
           // here first, then handleKeyDown
           if (evt.key == 'Escape') {
@@ -567,4 +567,4 @@ function App() {
   );
 }
 
-export default App;
+export default SwitcherApp;

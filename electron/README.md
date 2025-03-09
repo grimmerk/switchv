@@ -1,8 +1,8 @@
 # CodeV Electron App
 
-## Code Explainer Feature
+## Code AI Assistant Feature
 
-CodeV now includes a Code Explainer feature powered by Anthropic's Claude AI. This feature allows you to get detailed explanations of code snippets with a simple keyboard shortcut.
+CodeV now includes a Code AI Assistant feature powered by Anthropic's Claude AI. This feature allows you to get detailed explanations of code snippets with a simple keyboard shortcut.
 
 ### Setup
 
@@ -31,18 +31,18 @@ CodeV now includes a Code Explainer feature powered by Anthropic's Claude AI. Th
 
 3. Press `Cmd+C` to copy the selected code to your clipboard.
 
-4. Press `Ctrl+Cmd+E` to open the Code Explainer window, which will:
+4. Press `Ctrl+Cmd+E` to open the Code AI Assistant window, which will:
 
    - Create a floating window with the code from your clipboard
    - Generate an explanation using Anthropic Claude
 
 5. The window will display your code and start generating an explanation.
 
-> Note: For a smooth demonstration workflow, make sure to copy your code to the clipboard before triggering the Code Explainer with Ctrl+Cmd+E.
+> Note: For a smooth demonstration workflow, make sure to copy your code to the clipboard before triggering the Code AI Assistant with Ctrl+Cmd+E.
 
 ### How It Works
 
-- The Code Explainer uses Claude API to generate explanations.
+- The Code AI Assistant uses Claude API to generate explanations.
 - The API request is made from the main Electron process (not the renderer) for security.
 - Explanations are streamed in real-time for a better user experience.
 - The UI is a semi-transparent floating window that can be closed when not needed.
@@ -58,4 +58,4 @@ CodeV now includes a Code Explainer feature powered by Anthropic's Claude AI. Th
 
 - API keys are loaded from `.env` using dotenv
 - The main API communication is in `AnthropicService.ts`
-- The UI component is in `CodeExplainer.tsx`
+- The UI component is in `CodeAI Assistant.tsx`

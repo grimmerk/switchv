@@ -14,11 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   searchWorkingFolder: (path: string) =>
     ipcRenderer.send('search-working-folder', path),
 
-  // Code Explainer APIs
-  /** @deprecated */
-  openCodeExplainer: (code: string) =>
-    ipcRenderer.send('open-code-explainer', code),
-
   onFolderSelected: (callback: any) =>
     ipcRenderer.on('folder-selected', callback),
 
@@ -27,29 +22,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onFocusWindow: (callback: any) => ipcRenderer.on('window-focus', callback),
   onXWinNotFound: (callback: any) => ipcRenderer.on('xwin-not-found', callback),
 
-  // Listen for code to explain in the explainer window
-  onCodeToExplain: (callback: any) =>
-    ipcRenderer.on('code-to-explain', callback),
+  // Listen for code to explain in the ai assistant window
+  onCodeToGenerateInsight: (callback: any) =>
+    ipcRenderer.on('code-to-generate-insight', callback),
 
   // Streaming explanation events
-  onExplanationStart: (callback: any) =>
-    ipcRenderer.on('explanation-start', callback),
-  onExplanationChunk: (callback: any) =>
-    ipcRenderer.on('explanation-chunk', callback),
-  onExplanationComplete: (callback: any) =>
-    ipcRenderer.on('explanation-complete', callback),
-  onExplanationError: (callback: any) =>
-    ipcRenderer.on('explanation-error', callback),
+  onAIAssistantInsightStart: (callback: any) =>
+    ipcRenderer.on('ai-assistant-insight-start', callback),
+  onAIAssistantInsightChunk: (callback: any) =>
+    ipcRenderer.on('ai-assistant-insight-chunk', callback),
+  onAIAssistantInsightComplete: (callback: any) =>
+    ipcRenderer.on('ai-assistant-insight-complete', callback),
+  onAIAssistantInsightError: (callback: any) =>
+    ipcRenderer.on('ai-assistant-insight-error', callback),
   onDetectedLanguage: (callback: any) =>
     ipcRenderer.on('detected-language', callback),
-  onSkipExplanation: (callback: any) =>
-    ipcRenderer.on('skip-explanation', callback),
+  onSkipInsight: (callback: any) =>
+    ipcRenderer.on('skip-ai-assistant-insight', callback),
 
   // UI mode control
+  notifyAIAssistantInsightCompleted: (completed: boolean) =>
+    ipcRenderer.send('ai-assistant-insight-completed', completed),
   onSetUIMode: (callback: any) => ipcRenderer.on('set-ui-mode', callback),
   notifyUIMode: (mode: string) => ipcRenderer.send('ui-mode-changed', mode),
-  notifyExplanationCompleted: (completed: boolean) => 
-    ipcRenderer.send('explanation-completed', completed),
 
   // Chat-related events and methods
   sendChatMessage: (message: string, messageHistory: any[]) =>
@@ -64,15 +59,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onChatResponseError: (callback: any) =>
     ipcRenderer.on('chat-response-error', callback),
 
-  // Legacy events - keeping for backward compatibility
-  onOpenChatInterface: (callback: any) =>
-    ipcRenderer.on('open-chat-interface', callback),
-  onOpenChatInterfaceWithCode: (callback: any) =>
-    ipcRenderer.on('open-chat-interface-with-code', callback),
-
   // Settings windows events
-  onOpenExplainerSettings: (callback: any) =>
-    ipcRenderer.on('open-explainer-settings', callback),
+  onOpenAIAssistantSettings: (callback: any) =>
+    ipcRenderer.on('open-ai-assistant-settings', callback),
   onOpenApiKeySettings: (callback: any) =>
     ipcRenderer.on('open-api-key-settings', callback),
   onOpenLeftClickSettings: (callback: any) =>

@@ -12,17 +12,17 @@ export const isMasStr = isMAS() ? 'mas' : 'nonMas';
 // https://blog.logrocket.com/building-a-menu-bar-application-with-electron-and-react/
 export class TrayGenerator {
   tray: Tray;
-  mainWindow: BrowserWindow;
+  attachedWindow: BrowserWindow;
   onTrayClickCallback: any;
   title: string;
 
   constructor(
-    mainWindow: BrowserWindow,
+    attachedWindow: BrowserWindow,
     title: string,
     onTrayClickCallback: any,
   ) {
     this.tray = null;
-    this.mainWindow = mainWindow;
+    this.attachedWindow = attachedWindow;
     this.onTrayClickCallback = onTrayClickCallback;
 
     this.createTray(title);
@@ -39,7 +39,7 @@ export class TrayGenerator {
       {
         label: 'AI Assistant Settings',
         click: () => {
-          this.openCodeExplainerSettings();
+          this.openAIAssistantSettings();
         },
       },
       {
@@ -80,10 +80,10 @@ export class TrayGenerator {
     this.tray.popUpContextMenu(Menu.buildFromTemplate(menu));
   };
 
-  openCodeExplainerSettings = () => {
+  openAIAssistantSettings = () => {
     // Send IPC event to open the settings window
     const { ipcMain } = require('electron');
-    ipcMain.emit('open-explainer-settings');
+    ipcMain.emit('open-ai-assistant-settings');
   };
 
   openApiKeySettings = () => {

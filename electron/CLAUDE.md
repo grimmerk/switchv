@@ -122,7 +122,7 @@ We've implemented several optimizations to improve window opening speed and user
 
 4. **Scroll Optimization Note**:
 
-- Current condition: `(!(mode === ExplainerUIMode.PURE_CHAT && messagesRef.current.length <= 1))`
+- Current condition: `(!(mode === AIAssistantUIMode.SMART_CHAT && messagesRef.current.length <= 1))`
 - This skips scrolling for PURE_CHAT with just welcome message
 - No chat history implemented yet, but code is future-proofed for when it's added
 
@@ -153,5 +153,5 @@ We've implemented several optimizations to improve window opening speed and user
 
 10. **Future Features**:
 
-- Save explanation/chat history
+- Save insight/chat history (as explainer and explanation have been renamed to AI assistant and insight)
 - Add Markdown/syntax highlighting in input UI

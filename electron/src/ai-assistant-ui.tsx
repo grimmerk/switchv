@@ -1,9 +1,9 @@
 /**
- * explainer-ui.tsx
+ * ai-assistant-ui.tsx
  *
- * This component provides an enhanced version of the Code Explainer interface with:
+ * This component provides an enhanced version of the AI Assistant interface with:
  * 1. Advanced markdown rendering for Claude's responses (including code blocks)
- * 2. Better styling and layout for the explanation part
+ * 2. Better styling and layout for the insight part
  * 3. Chat interface for continued conversation with Claude
  */
 
@@ -15,9 +15,9 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { detectLanguage } from './language-detector';
-import { ExplainerUIMode } from './utility';
+import { AIAssistantUIMode } from './utility';
 
-// Styles for the Code Explainer UI
+// Styles for the AI Assistant UI
 const styles = {
   container: {
     display: 'flex',
@@ -61,14 +61,14 @@ const styles = {
     backgroundColor: '#3a3a3a',
     margin: '0 15px',
   },
-  explanationSection: {
+  insightSection: {
     padding: '15px',
     flex: 1, // Takes all available space
     height: 'calc(100% - 120px)', // Specifically add height calculation to use all remaining space
     overflow: 'auto',
     position: 'relative' as 'relative',
   },
-  explanation: {
+  insight: {
     margin: 0,
     lineHeight: '1.5',
     color: '#f8f8f2',
@@ -240,22 +240,22 @@ interface Message {
   content: string;
 }
 
-const ExplainerApp: React.FC = () => {
+const AIAssistantApp: React.FC = () => {
   const [code, setCode] = useState<string>('');
   const codeRef = useRef(code);
   useEffect(() => {
     codeRef.current = code;
   }, [code]);
 
-  const [explanation, setExplanation] = useState<string>('');
-  const explanationContentRef = useRef(explanation);
+  const [insight, setInsight] = useState<string>('');
+  const insightContentRef = useRef(insight);
   useEffect(() => {
-    explanationContentRef.current = explanation;
-  }, [explanation]);
+    insightContentRef.current = insight;
+  }, [insight]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isComplete, setIsComplete] = useState<boolean>(false);
-  const explanationRef = useRef<HTMLDivElement>(null);
+  const insightRef = useRef<HTMLDivElement>(null);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -269,8 +269,8 @@ const ExplainerApp: React.FC = () => {
   const [inputValue, setInputValue] = useState<string>('');
 
   // UI mode state - controls what view is shown
-  const [uiMode, setUIMode] = useState<ExplainerUIMode>(
-    ExplainerUIMode.CHAT_WITH_EXPLANATION,
+  const [uiMode, setUIMode] = useState<AIAssistantUIMode>(
+    AIAssistantUIMode.INSIGHT_CHAT,
   );
   const uiModeRef = useRef(uiMode);
   useEffect(() => {
@@ -311,13 +311,13 @@ const ExplainerApp: React.FC = () => {
 
   // Define all event handlers outside of useEffect to avoid closure issues
 
-  // 1. * handleCodeToExplain (update code)
-  // 2. handleExplanationStart (code -> messages )
+  // 1. * handleCodeToGenerateInsight (update code)
+  // 2. handleInsightStart (code -> messages )
   // 3. handleSetUIMode (code -> messages) which would set the code into messages again
   // Handler for receiving code
-  const handleCodeToExplain = (_event: any, receivedCode: string) => {
+  const handleCodeToGenerateInsight = (_event: any, receivedCode: string) => {
     console.log(
-      'Received code to explain, length:',
+      'Received code to generate insight, length:',
       receivedCode?.length || 0,
       receivedCode,
     );
@@ -327,44 +327,44 @@ const ExplainerApp: React.FC = () => {
     // depending on the UI mode we're switching to
   };
 
-  // Handler for explanation start
-  const handleExplanationStart = () => {
-    // Clear the explanation state completely
-    setExplanation('');
+  // Handler for insight start
+  const handleInsightStart = () => {
+    // Clear the insight state completely
+    setInsight('');
     setIsLoading(true);
     setIsComplete(false);
 
-    // Do not reset messages here for CHAT_WITH_EXPLANATION mode
-    // Store code message in CHAT_WITH_EXPLANATION mode instead of clearing
+    // Do not reset messages here for INSIGHT_CHAT mode
+    // Store code message in INSIGHT_CHAT mode instead of clearing
     if (
-      uiModeRef.current === ExplainerUIMode.CHAT_WITH_EXPLANATION &&
+      uiModeRef.current === AIAssistantUIMode.INSIGHT_CHAT &&
       codeRef.current
     ) {
       setMessages([{ role: 'user', content: codeRef.current }]);
-    } else if (uiModeRef.current === ExplainerUIMode.EXPLANATION_SPLIT) {
-      // Only reset messages in EXPLANATION_SPLIT mode
+    } else if (uiModeRef.current === AIAssistantUIMode.INSIGHT_SPLIT) {
+      // Only reset messages in INSIGHT_SPLIT mode
       setMessages([]);
     }
     setShowChat(false);
   };
 
-  // Handler for explanation chunks
-  const handleExplanationChunk = (_event: any, chunk: string) => {
-    // If chunk is very large (full explanation), just set it directly
-    // Otherwise append to existing explanation
+  // Handler for insight chunks
+  const handleInsightChunk = (_event: any, chunk: string) => {
+    // If chunk is very large (full insight), just set it directly
+    // Otherwise append to existing insight
     if (chunk.length > 1000) {
-      setExplanation(chunk);
+      setInsight(chunk);
     } else {
-      setExplanation((prev) => prev + chunk);
+      setInsight((prev) => prev + chunk);
     }
 
     // Auto-scroll in split mode
-    if (explanationRef.current) {
-      explanationRef.current.scrollTop = explanationRef.current.scrollHeight;
+    if (insightRef.current) {
+      insightRef.current.scrollTop = insightRef.current.scrollHeight;
     }
 
-    // In CHAT_WITH_EXPLANATION mode, update the assistant message if we have one
-    if (uiModeRef.current === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
+    // In INSIGHT_CHAT mode, update the assistant message if we have one
+    if (uiModeRef.current === AIAssistantUIMode.INSIGHT_CHAT) {
       // Find if we already have an assistant message
       const assistantMessageIndex = messagesRef.current.findIndex(
         (msg) => msg.role === 'assistant',
@@ -373,7 +373,7 @@ const ExplainerApp: React.FC = () => {
       if (assistantMessageIndex >= 0) {
         // Update existing assistant message
         const updatedMessages = [...messagesRef.current];
-        // If it's a full explanation, replace
+        // If it's a full insight, replace
         if (chunk.length > 1000) {
           updatedMessages[assistantMessageIndex].content = chunk;
         } else {
@@ -399,44 +399,41 @@ const ExplainerApp: React.FC = () => {
     }
   };
 
-  // Handler for explanation complete
-  const handleExplanationComplete = () => {
+  // Handler for insight complete
+  const handleInsightComplete = () => {
     setIsLoading(false);
     setIsComplete(true);
 
-    // Notify main process that explanation is complete
+    // Notify main process that insight is complete
     if (
       (window as any).electronAPI &&
-      (window as any).electronAPI.notifyExplanationCompleted
+      (window as any).electronAPI.notifyInsightCompleted
     ) {
-      (window as any).electronAPI.notifyExplanationCompleted(true);
+      (window as any).electronAPI.notifyInsightCompleted(true);
     } else {
       // Fallback if API not available
       try {
         const { ipcRenderer } = require('electron');
-        ipcRenderer.send('explanation-completed', true);
+        ipcRenderer.send('insight-completed', true);
       } catch (e) {
-        console.error(
-          'Failed to notify main process of explanation completion',
-          e,
-        );
+        console.error('Failed to notify main process of insight completion', e);
       }
     }
 
-    // After explanation is complete, initialize messages for chat
-    if (codeRef.current && explanationContentRef.current) {
+    // After insight is complete, initialize messages for chat
+    if (codeRef.current && insightContentRef.current) {
       const initialMessages: Message[] = [
         {
           role: 'system',
-          content: 'Initial code snippet and explanation for context',
+          content: 'Initial code snippet and insight for context',
         },
         { role: 'user', content: codeRef.current },
-        { role: 'assistant', content: explanationContentRef.current },
+        { role: 'assistant', content: insightContentRef.current },
       ];
       setMessages(initialMessages);
 
-      // If we're already in CHAT_WITH_EXPLANATION mode, make sure messages are visible
-      if (uiModeRef.current === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
+      // If we're already in INSIGHT_CHAT mode, make sure messages are visible
+      if (uiModeRef.current === AIAssistantUIMode.INSIGHT_CHAT) {
         // Ensure chat messages are scrolled to bottom
         setTimeout(() => {
           if (chatMessagesRef.current) {
@@ -448,15 +445,15 @@ const ExplainerApp: React.FC = () => {
     }
   };
 
-  // Handler for explanation errors
-  const handleExplanationError = (_event: any, error: string) => {
-    console.error('Explanation error:', error);
-    setExplanation((prev) => prev + '\n\nError: ' + error);
+  // Handler for insight errors
+  const handleInsightError = (_event: any, error: string) => {
+    console.error('Insight error:', error);
+    setInsight((prev) => prev + '\n\nError: ' + error);
     setIsLoading(false);
   };
 
-  // Handler for skipping explanation (when prompt template is empty)
-  const handleSkipExplanation = (
+  // Handler for skipping insight (when prompt template is empty)
+  const handleSkipInsight = (
     _event: any,
     data: { reason: string; code: string },
   ) => {
@@ -465,8 +462,8 @@ const ExplainerApp: React.FC = () => {
     // Get the code from the data if provided, or use current code state
     const codeToUse = data?.code || codeRef.current;
 
-    // Switch to CHAT_WITH_CODE mode (chat with code as first message, but no LLM request yet)
-    setUIMode(ExplainerUIMode.CHAT_WITH_CODE);
+    // Switch to INSIGHT_SOURCE_CHAT mode (chat with code as first message, but no LLM request yet)
+    setUIMode(AIAssistantUIMode.INSIGHT_SOURCE_CHAT);
     setShowChat(true); // For backward compatibility
 
     // Initialize chat with code as first message
@@ -479,60 +476,98 @@ const ExplainerApp: React.FC = () => {
   // Handler for explicitly setting UI mode
   const handleSetUIMode = (
     _event: any,
-    mode: ExplainerUIMode,
+    mode: AIAssistantUIMode,
     data: any = {},
   ) => {
+    let aiAssistantMode: AIAssistantUIMode;
+
+    if (typeof mode === 'string') {
+      // Handle string values (from IPC)
+      switch (mode) {
+        case AIAssistantUIMode.INSIGHT_SPLIT:
+          aiAssistantMode = AIAssistantUIMode.INSIGHT_SPLIT;
+          break;
+        case AIAssistantUIMode.INSIGHT_CHAT:
+          aiAssistantMode = AIAssistantUIMode.INSIGHT_CHAT;
+          break;
+        case AIAssistantUIMode.INSIGHT_SOURCE_CHAT:
+          aiAssistantMode = AIAssistantUIMode.INSIGHT_SOURCE_CHAT;
+          break;
+        case AIAssistantUIMode.SMART_CHAT:
+          aiAssistantMode = AIAssistantUIMode.SMART_CHAT;
+          break;
+        default:
+          // If it's already a valid AIAssistantUIMode string value
+          aiAssistantMode = mode as AIAssistantUIMode;
+      }
+    } else {
+      // Handle enum values
+      switch (mode) {
+        case AIAssistantUIMode.INSIGHT_SPLIT:
+          aiAssistantMode = AIAssistantUIMode.INSIGHT_SPLIT;
+          break;
+        case AIAssistantUIMode.INSIGHT_CHAT:
+          aiAssistantMode = AIAssistantUIMode.INSIGHT_CHAT;
+          break;
+        case AIAssistantUIMode.INSIGHT_SOURCE_CHAT:
+          aiAssistantMode = AIAssistantUIMode.INSIGHT_SOURCE_CHAT;
+          break;
+        case AIAssistantUIMode.SMART_CHAT:
+          aiAssistantMode = AIAssistantUIMode.SMART_CHAT;
+          break;
+        default:
+          // If it's already a valid AIAssistantUIMode enum value
+          aiAssistantMode = mode as AIAssistantUIMode;
+      }
+    }
+
     // Set the UI mode state
     setUIMode((oldValue) => {
       /** NOTE: this is needed to update it soon,
-       * otherwise handleExplanationStart may read old value since updating take some time */
-      uiModeRef.current = mode;
+       * otherwise handleInsightStart may read old value since updating take some time */
+      uiModeRef.current = aiAssistantMode;
 
       // Notify main process of mode change
       if (
         (window as any).electronAPI &&
         (window as any).electronAPI.notifyUIMode
       ) {
-        (window as any).electronAPI.notifyUIMode(mode);
+        (window as any).electronAPI.notifyUIMode(aiAssistantMode);
       } else {
         // Fallback if API not available
         try {
           const { ipcRenderer } = require('electron');
-          ipcRenderer.send('ui-mode-changed', mode);
+          ipcRenderer.send('ui-mode-changed', aiAssistantMode);
         } catch (e) {
           console.error('Failed to notify main process of UI mode change', e);
         }
       }
 
-      return mode;
+      return aiAssistantMode;
     });
 
     // Update backward compatibility state
-    setShowChat(mode !== ExplainerUIMode.EXPLANATION_SPLIT);
+    setShowChat(aiAssistantMode !== AIAssistantUIMode.INSIGHT_SPLIT);
 
     // Handle each mode specifically
-    switch (mode) {
-      case ExplainerUIMode.EXPLANATION_SPLIT:
+    switch (aiAssistantMode) {
+      case AIAssistantUIMode.INSIGHT_SPLIT:
         // Nothing special needed for split mode
         break;
 
-      case ExplainerUIMode.CHAT_WITH_EXPLANATION:
+      case AIAssistantUIMode.INSIGHT_CHAT:
         // If we have data with code, use it
         if (data.code) {
           setCode(data.code);
         }
 
-        // Handle restoreExplanation flag
-        const shouldRestoreExplanation =
-          data && data.restoreExplanation === true;
+        // Handle restoreInsight flag
+        const shouldRestoreInsight = data && data.restoreInsight === true;
 
-        // Initialize with code and explanation if we have them
-        if (
-          explanationContentRef.current &&
-          explanationContentRef.current.trim()
-        ) {
-          // If this is a restore operation, mark the explanation as complete immediately
-          if (shouldRestoreExplanation) {
+        // Initialize with code and insight if we have them
+        if (insightContentRef.current && insightContentRef.current.trim()) {
+          // If this is a restore operation, mark the insight as complete immediately
+          if (shouldRestoreInsight) {
             setIsLoading(false);
             setIsComplete(true);
           }
@@ -540,14 +575,14 @@ const ExplainerApp: React.FC = () => {
           setMessages([
             {
               role: 'system',
-              content: 'Initial code snippet and explanation for context',
+              content: 'Initial code snippet and insight for context',
             },
             /** current, it should only be code, but adding "data.code ||" for future edge case  */
             { role: 'user', content: data.code || codeRef.current },
-            { role: 'assistant', content: explanationContentRef.current },
+            { role: 'assistant', content: insightContentRef.current },
           ]);
         }
-        // Otherwise just set the code as the first message and wait for explanation
+        // Otherwise just set the code as the first message and wait for insight
         else if (data.code || codeRef.current) {
           setMessages([
             { role: 'user', content: data.code || codeRef.current },
@@ -555,7 +590,7 @@ const ExplainerApp: React.FC = () => {
         }
         break;
 
-      case ExplainerUIMode.CHAT_WITH_CODE:
+      case AIAssistantUIMode.INSIGHT_SOURCE_CHAT:
         // Initialize with just the code
         if (data && data.code) {
           setCode(data.code);
@@ -565,10 +600,10 @@ const ExplainerApp: React.FC = () => {
         }
         break;
 
-      case ExplainerUIMode.PURE_CHAT:
+      case AIAssistantUIMode.SMART_CHAT:
         // Performance optimization: Don't clear state that's already empty
         if (codeRef.current) setCode('');
-        if (explanationContentRef.current) setExplanation('');
+        if (insightContentRef.current) setInsight('');
 
         // Only set welcome message if there are no messages or if messages are different
         if (
@@ -590,12 +625,16 @@ const ExplainerApp: React.FC = () => {
     }
 
     // Optimize scroll behavior based on UI mode
-    // Use a shorter timeout for PURE_CHAT mode for better responsiveness
-    const scrollTimeout = mode === ExplainerUIMode.PURE_CHAT ? 10 : 100;
+    // Use a shorter timeout for SMART_CHAT mode for better responsiveness
+    const scrollTimeout =
+      aiAssistantMode === AIAssistantUIMode.SMART_CHAT ? 10 : 100;
 
-    // For PURE_CHAT mode with just welcome message, we can skip scrolling
+    // For SMART_CHAT mode with just welcome message, we can skip scrolling
     if (
-      !(mode === ExplainerUIMode.PURE_CHAT && messagesRef.current.length <= 1)
+      !(
+        aiAssistantMode === AIAssistantUIMode.SMART_CHAT &&
+        messagesRef.current.length <= 1
+      )
     ) {
       setTimeout(() => {
         if (chatMessagesRef.current) {
@@ -626,9 +665,9 @@ const ExplainerApp: React.FC = () => {
 
   // Handler for directly opening chat interface (without code)
   const handleOpenChatInterface = () => {
-    // Clear any existing code/explanation
+    // Clear any existing code/insight
     setCode('');
-    setExplanation('');
+    setInsight('');
     // Show chat interface
     setShowChat(true);
 
@@ -644,57 +683,56 @@ const ExplainerApp: React.FC = () => {
     }
   };
 
-  // Handler for opening chat interface with code already selected
-  const handleOpenChatInterfaceWithCode = (
-    _event: any,
-    receivedCode: string,
-  ) => {
-    // Keep the code reference (don't clear it)
-    if (receivedCode && receivedCode.trim().length > 0) {
-      setCode(receivedCode);
-    }
-
-    // Show chat interface
-    setShowChat(true);
-
-    // Initialize with the code as the first user message
-    const initialMessages: Message[] = [
-      {
-        role: 'user',
-        content: receivedCode,
-      },
-    ];
-    setMessages(initialMessages);
-  };
-
   // Set up listeners for all the events (once only)
   useEffect(() => {
     // Store all event handlers to remove them on cleanup
     const handlers = {
-      'code-to-explain': handleCodeToExplain,
-      'explanation-start': handleExplanationStart,
-      'explanation-chunk': handleExplanationChunk,
-      'explanation-complete': handleExplanationComplete,
-      'explanation-error': handleExplanationError,
-      'skip-explanation': handleSkipExplanation,
+      'code-to-generate-insight': handleCodeToGenerateInsight,
+      'insight-start': handleInsightStart,
+      'insight-chunk': handleInsightChunk,
+      'insight-complete': handleInsightComplete,
+      'insight-error': handleInsightError,
+      'skip-insight': handleSkipInsight,
       'detected-language': handleDetectedLanguage,
       'chat-response': handleChatResponse,
       'set-ui-mode': handleSetUIMode,
       // Legacy handlers - keeping for backward compatibility
-      'open-chat-interface': handleOpenChatInterface,
-      'open-chat-interface-with-code': handleOpenChatInterfaceWithCode,
+      'ai-assistant-insight-start': handleInsightStart,
+      'ai-assistant-insight-chunk': handleInsightChunk,
+      'ai-assistant-insight-complete': handleInsightComplete,
+      'ai-assistant-insight-error': handleInsightError,
+      'skip-ai-assistant-insight': handleSkipInsight,
     };
 
     // Register all listeners if API is available
     if ((window as any).electronAPI) {
-      (window as any).electronAPI.onCodeToExplain(handleCodeToExplain);
-      (window as any).electronAPI.onExplanationStart(handleExplanationStart);
-      (window as any).electronAPI.onExplanationChunk(handleExplanationChunk);
-      (window as any).electronAPI.onExplanationComplete(
-        handleExplanationComplete,
-      );
-      (window as any).electronAPI.onExplanationError(handleExplanationError);
-      (window as any).electronAPI.onSkipExplanation(handleSkipExplanation);
+      // New event names
+      if ((window as any).electronAPI.onCodeToGenerateInsight) {
+        (window as any).electronAPI.onCodeToGenerateInsight(handleCodeToGenerateInsight);
+      }
+      if ((window as any).electronAPI.onInsightStart) {
+        (window as any).electronAPI.onInsightStart(handleInsightStart);
+      }
+      if ((window as any).electronAPI.onInsightChunk) {
+        (window as any).electronAPI.onInsightChunk(handleInsightChunk);
+      }
+      if ((window as any).electronAPI.onInsightComplete) {
+        (window as any).electronAPI.onInsightComplete(handleInsightComplete);
+      }
+      if ((window as any).electronAPI.onInsightError) {
+        (window as any).electronAPI.onInsightError(handleInsightError);
+      }
+      if ((window as any).electronAPI.onSkipInsight) {
+        (window as any).electronAPI.onSkipInsight(handleSkipInsight);
+      }
+
+      // Legacy event names - for backward compatibility
+      (window as any).electronAPI.onCodeToGenerateInsight(handleCodeToGenerateInsight);
+      (window as any).electronAPI.onAIAssistantInsightStart(handleInsightStart);
+      (window as any).electronAPI.onAIAssistantInsightChunk(handleInsightChunk);
+      (window as any).electronAPI.onAIAssistantInsightComplete(handleInsightComplete);
+      (window as any).electronAPI.onAIAssistantInsightError(handleInsightError);
+      (window as any).electronAPI.onSkipInsight(handleSkipInsight);
       (window as any).electronAPI.onDetectedLanguage(handleDetectedLanguage);
 
       // Chat-related event listeners
@@ -705,19 +743,6 @@ const ExplainerApp: React.FC = () => {
       // UI mode control
       if ((window as any).electronAPI.onSetUIMode) {
         (window as any).electronAPI.onSetUIMode(handleSetUIMode);
-      }
-
-      // Legacy chat interface event listeners - keeping for backward compatibility
-      if ((window as any).electronAPI.onOpenChatInterface) {
-        (window as any).electronAPI.onOpenChatInterface(
-          handleOpenChatInterface,
-        );
-      }
-
-      if ((window as any).electronAPI.onOpenChatInterfaceWithCode) {
-        (window as any).electronAPI.onOpenChatInterfaceWithCode(
-          handleOpenChatInterfaceWithCode,
-        );
       }
     } else {
       console.error('electronAPI not available');
@@ -801,24 +826,24 @@ const ExplainerApp: React.FC = () => {
 
   // Toggle between UI modes
   const toggleUIMode = () => {
-    // If in split mode, switch to chat with explanation
-    if (uiMode === ExplainerUIMode.EXPLANATION_SPLIT) {
-      // If we have an explanation, switch to CHAT_WITH_EXPLANATION
-      if (explanation && explanation.trim()) {
-        handleSetUIMode(null, ExplainerUIMode.CHAT_WITH_EXPLANATION);
+    // If in split mode, switch to chat with insight
+    if (uiMode === AIAssistantUIMode.INSIGHT_SPLIT) {
+      // If we have an insight, switch to INSIGHT_CHAT
+      if (insight && insight.trim()) {
+        handleSetUIMode(null, AIAssistantUIMode.INSIGHT_CHAT);
       }
-      // If we have code but no explanation, switch to CHAT_WITH_CODE
+      // If we have code but no insight, switch to INSIGHT_SOURCE_CHAT
       else if (code && code.trim()) {
-        handleSetUIMode(null, ExplainerUIMode.CHAT_WITH_CODE, { code });
+        handleSetUIMode(null, AIAssistantUIMode.INSIGHT_SOURCE_CHAT, { code });
       }
-      // Otherwise switch to PURE_CHAT
+      // Otherwise switch to SMART_CHAT
       else {
-        handleSetUIMode(null, ExplainerUIMode.PURE_CHAT);
+        handleSetUIMode(null, AIAssistantUIMode.SMART_CHAT);
       }
     }
     // Otherwise switch back to split mode
     else {
-      handleSetUIMode(null, ExplainerUIMode.EXPLANATION_SPLIT);
+      handleSetUIMode(null, AIAssistantUIMode.INSIGHT_SPLIT);
     }
 
     // For backward compatibility
@@ -828,7 +853,7 @@ const ExplainerApp: React.FC = () => {
   // Optimized markdown rendering with memoization for performance
   const renderMarkdown = React.useMemo(() => {
     const renderer = (content: string) => {
-      // Fast path for simple welcome message in PURE_CHAT mode
+      // Fast path for simple welcome message in SMART_CHAT mode
       if (
         content ===
         "Hello! I'm Claude, an AI assistant. How can I help you with your code today?"
@@ -940,13 +965,13 @@ const ExplainerApp: React.FC = () => {
   };
 
   let title = '';
-  if (uiMode === ExplainerUIMode.EXPLANATION_SPLIT) {
-    title = 'Insight in Spilt view';
-  } else if (uiMode === ExplainerUIMode.CHAT_WITH_EXPLANATION) {
+  if (uiMode === AIAssistantUIMode.INSIGHT_SPLIT) {
+    title = 'Insight in Split view';
+  } else if (uiMode === AIAssistantUIMode.INSIGHT_CHAT) {
     title = 'Insight with Chat';
-  } else if (uiMode === ExplainerUIMode.CHAT_WITH_CODE) {
+  } else if (uiMode === AIAssistantUIMode.INSIGHT_SOURCE_CHAT) {
     title = 'Insight with Chat';
-  } else if (uiMode === ExplainerUIMode.PURE_CHAT) {
+  } else if (uiMode === AIAssistantUIMode.SMART_CHAT) {
     title = 'Smart Chat';
   }
 
@@ -955,18 +980,18 @@ const ExplainerApp: React.FC = () => {
       <div style={styles.header}>
         <h2 style={styles.title}>{title}</h2>
         <div>
-          {/* Hide Split View toggle button in PURE_CHAT mode */}
-          {uiMode !== ExplainerUIMode.PURE_CHAT && (
+          {/* Hide Split View toggle button in SMART_CHAT mode */}
+          {uiMode !== AIAssistantUIMode.SMART_CHAT && (
             <button
               style={{ ...styles.closeButton, marginRight: '5px' }}
               onClick={toggleUIMode}
               title={
-                uiMode !== ExplainerUIMode.EXPLANATION_SPLIT
+                uiMode !== AIAssistantUIMode.INSIGHT_SPLIT
                   ? 'Show Split View'
                   : 'Show Chat'
               }
             >
-              {uiMode !== ExplainerUIMode.EXPLANATION_SPLIT ? '↑' : '↓'}
+              {uiMode !== AIAssistantUIMode.INSIGHT_SPLIT ? '↑' : '↓'}
             </button>
           )}
           <button style={styles.closeButton} onClick={closeWindow}>
@@ -975,7 +1000,7 @@ const ExplainerApp: React.FC = () => {
         </div>
       </div>
 
-      {uiMode === ExplainerUIMode.EXPLANATION_SPLIT && (
+      {uiMode === AIAssistantUIMode.INSIGHT_SPLIT && (
         <div
           style={{
             display: 'flex',
@@ -1014,23 +1039,21 @@ const ExplainerApp: React.FC = () => {
 
           <div style={styles.divider}></div>
 
-          {/* Explanation section - Takes all remaining space */}
+          {/* Insight section - Takes all remaining space */}
           <div
             style={{
-              ...styles.explanationSection,
+              ...styles.insightSection,
               flex: 1, // Take all remaining space
               overflow: 'auto',
               display: 'flex', // Use flex layout
               flexDirection: 'column',
               minHeight: '60%', // At least 60% of the space
             }}
-            ref={explanationRef}
+            ref={insightRef}
           >
-            <div style={styles.explanation}>
-              {/* Use the memoized renderer function for EXPLANATION_SPLIT mode too */}
-              {renderMarkdown(
-                explanation.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''),
-              )}
+            <div style={styles.insight}>
+              {/* Use the memoized renderer function for INSIGHT_SPLIT mode too */}
+              {renderMarkdown(insight.replace(/^LANGUAGE:\s*\w+\s*\n*/i, ''))}
 
               {isLoading && (
                 <div style={styles.loading}>
@@ -1044,12 +1067,12 @@ const ExplainerApp: React.FC = () => {
         </div>
       )}
 
-      {/* Chat section - completely replaces explanation section when in any chat mode */}
-      {uiMode !== ExplainerUIMode.EXPLANATION_SPLIT && (
+      {/* Chat section - completely replaces insight section when in any chat mode */}
+      {uiMode !== AIAssistantUIMode.INSIGHT_SPLIT && (
         <div style={styles.chatContainer}>
           {/* Messages display */}
           <div style={styles.chatMessages} ref={chatMessagesRef}>
-            {/* Show all messages including initial code and explanation as chat */}
+            {/* Show all messages including initial code and insight as chat */}
             {messages
               .filter((msg) => msg.role !== 'system')
               .map((msg, index) => (
@@ -1102,8 +1125,8 @@ const ExplainerApp: React.FC = () => {
                 </div>
               ))}
 
-            {/* only pure chat or chat after 1st explanation needs thinking */}
-            {isLoading && !(explanation && !isComplete) && (
+            {/* only smart chat or chat after 1st insight needs thinking */}
+            {isLoading && !(insight && !isComplete) && (
               <div
                 style={{ ...styles.messageContainer, alignItems: 'flex-start' }}
               >
@@ -1146,8 +1169,10 @@ const ExplainerApp: React.FC = () => {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-  const root = ReactDOM.createRoot(document.getElementById('explainer-root'));
-  root.render(<ExplainerApp />);
+  const root = ReactDOM.createRoot(
+    document.getElementById('ai-assistant-root'),
+  );
+  root.render(<AIAssistantApp />);
 
-  console.log('ExplainerApp rendered');
+  console.log('AIAssistantApp rendered');
 });
