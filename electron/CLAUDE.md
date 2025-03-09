@@ -134,26 +134,4 @@ We've implemented several optimizations to improve window opening speed and user
    - Save explanation/chat history
    - Add Markdown/syntax highlighting in input UI
 
-5. **Settings Window Height**:
-   - Increase height to ensure "Save" success message is visible
 
-6. **UI Improvements**:
-   - Remove Split View toggle button in PURE_CHAT mode
-   - Increase explanation UI height in SPLIT mode
-   - Improve overall visual design of VS Code project list (app.tsx)
-
-7. **Default Left Click Behavior**:
-   - Add option to set PURE_CHAT as default left click behavior
-
-8. **Startup Error**:
-   - Current error: "Failed to load explainer settings: TypeError: fetch failed"
-   - Likely due to server connection timing - needs graceful handling
-
-9. **Menu Bar Improvements**:
-   - Handle MacBook notch design by repositioning important menu items
-   - Add keyboard shortcut list to menu bar
-   - Consider alternative UI for critical settings
-
-10. **Future Features**:
-    - Save explanation/chat history
-    - Add Markdown/syntax highlighting in input UI
