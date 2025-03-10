@@ -99,11 +99,11 @@ export class AnthropicService {
   }
 
   /**
-   * Explain code using Anthropic's Claude API with streaming response
-   * @param code The code to explain
+   * Analyze code using Anthropic's Claude API with streaming response
+   * @param code The code to analyze
    * @param window The BrowserWindow to send updates to
    */
-  public async explainCode(code: string, window: BrowserWindow): Promise<void> {
+  public async analyzeCodeToGetInsight(code: string, window: BrowserWindow): Promise<void> {
     // Always reload settings to get latest prompt and API key
     await this.loadSettings();
 
@@ -264,7 +264,7 @@ export class AnthropicService {
         language: detectedLanguage,
       });
     } catch (error) {
-      console.error('Error explaining code:', error);
+      console.error('Error analyzing code:', error);
       window.webContents.send(
         'ai-assistant-insight-error',
         this.apiKey ? 'Error generating insight' : 'API key is missing',

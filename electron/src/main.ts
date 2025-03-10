@@ -479,8 +479,8 @@ let userSettings = {
   leftClickBehavior: 'switcher_window', // Default behavior
 };
 
-// Track the last explained code to detect changes
-let lastExplainedCode = '';
+// Track the last analyzed code to detect changes
+let lastAnalyzedCodeToGetInsight = '';
 // Track the last used UI mode to restore it when reopening
 let lastUIMode = AIAssistantUIMode.SMART_CHAT;
 // Track whether an insight was completed for the current code
@@ -591,7 +591,7 @@ const trayToggleEvtHandler = async () => {
 
         // Send the code and start analysis
         aiAssistantWin.webContents.send('code-to-generate-insight', selectedCode);
-        anthropicService.explainCode(selectedCode, aiAssistantWin);
+        anthropicService.analyzeCodeToGetInsight(selectedCode, aiAssistantWin);
       };
 
       // If window is still loading, wait for it to load
@@ -896,7 +896,7 @@ const trayToggleEvtHandler = async () => {
     // Check if clipboard has content
     if (clipboardContent.length > 0) {
       // Check if code changed from last time
-      const codeChanged = clipboardContent !== lastExplainedCode;
+      const codeChanged = clipboardContent !== lastAnalyzedCodeToGetInsight;
 
       // If window exists and is visible and code hasn't changed, hide it
       if (
@@ -910,7 +910,7 @@ const trayToggleEvtHandler = async () => {
       }
 
       // Store the current clipboard content for tracking changes
-      lastExplainedCode = clipboardContent;
+      lastAnalyzedCodeToGetInsight = clipboardContent;
 
       // Create window if needed, otherwise use existing one
       if (!aiAssistantWindow || aiAssistantWindow.isDestroyed()) {
@@ -923,13 +923,13 @@ const trayToggleEvtHandler = async () => {
           showAIAssistantWindow();
         }
 
-        // Send code to explain
+        // Send code to analyze
         aiAssistantWindow.webContents.send('code-to-generate-insight', clipboardContent);
 
         // Set UI mode based on clipboard content and last insight state
         // If we had an insight for this code previously and are reopening, try to restore it
         if (
-          clipboardContent === lastExplainedCode &&
+          clipboardContent === lastAnalyzedCodeToGetInsight &&
           lastInsightCompleted &&
           lastUIMode === AIAssistantUIMode.INSIGHT_CHAT
         ) {
@@ -944,7 +944,7 @@ const trayToggleEvtHandler = async () => {
 
           // Still request insight in case we need to regenerate it
           // The renderer will handle showing the cached insight if available
-          anthropicService.explainCode(clipboardContent, aiAssistantWindow);
+          anthropicService.analyzeCodeToGetInsight(clipboardContent, aiAssistantWindow);
         } else {
           // Otherwise, use INSIGHT_CHAT mode and request a new insight
           aiAssistantWindow.webContents.send(
@@ -954,7 +954,7 @@ const trayToggleEvtHandler = async () => {
           );
 
           // Request explanation
-          anthropicService.explainCode(clipboardContent, aiAssistantWindow);
+          anthropicService.analyzeCodeToGetInsight(clipboardContent, aiAssistantWindow);
 
           // Reset explanation completed flag
           lastInsightCompleted = false;

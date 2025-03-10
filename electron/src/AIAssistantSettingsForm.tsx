@@ -216,7 +216,7 @@ const AIAssistantSettingsForm: React.FC<AIAssistantSettingsFormProps> = ({
           />
           <div style={styles.infoText}>
             Use {'{selected_text}'} as a placeholder for the code or text to be
-            explained.
+            analyzed.
             <br />
             <span
               style={{

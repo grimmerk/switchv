@@ -1,6 +1,6 @@
 /**
  * Default prompt template for the AI Assistant feature
- * This prompt instructs Claude to explain code in a structured format with Markdown
+ * This prompt instructs Claude to analyze code in a structured format with Markdown
  */
 export const DEFAULT_AI_ASSISTANT_PROMPT = `Analyze the provided code and explain it in detail:
 
