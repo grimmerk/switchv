@@ -19,7 +19,7 @@ import { AIAssistantUIMode } from './utility';
 
 const aiAssistantName = 'Liho';
 
-const firstAssistantMsg = `Hi, I’m ${aiAssistantName}! 👋 How can I help you today? Feel free to ask me anything or paste your code here.`;
+const firstAssistantMsg = `Hi, I'm ${aiAssistantName}! 👋 How can I help you today? Feel free to ask me anything or paste your code here.`;
 
 // Styles for the AI Assistant UI
 const styles = {
@@ -186,6 +186,73 @@ const styles = {
     color: '#a8a8a8',
     marginBottom: '5px',
   },
+  // Conversation selection dropdown and menu styles
+  conversationSelector: {
+    display: 'flex',
+    alignItems: 'center',
+    marginRight: '10px',
+    position: 'relative' as 'relative',
+  },
+  conversationButton: {
+    backgroundColor: '#3a3a3a',
+    border: 'none',
+    borderRadius: '4px',
+    color: '#f8f8f2',
+    padding: '5px 10px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  conversationMenu: {
+    position: 'absolute' as 'absolute',
+    top: '30px',
+    right: '0',
+    backgroundColor: '#2d2d2d',
+    border: '1px solid #3a3a3a',
+    borderRadius: '4px',
+    zIndex: 100,
+    width: '280px',
+    maxHeight: '400px',
+    overflow: 'auto',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+  },
+  conversationMenuItem: {
+    padding: '8px 12px',
+    borderBottom: '1px solid #3a3a3a',
+    cursor: 'pointer',
+    fontSize: '13px',
+    transition: 'background-color 0.2s',
+    display: 'flex',
+    flexDirection: 'column' as 'column',
+  },
+  conversationMenuItemHover: {
+    backgroundColor: '#3a3a3a',
+  },
+  conversationMenuTitle: {
+    fontSize: '13px',
+    fontWeight: 'bold' as 'bold',
+    marginBottom: '3px',
+    overflow: 'hidden' as 'hidden',
+    textOverflow: 'ellipsis' as 'ellipsis',
+    whiteSpace: 'nowrap' as 'nowrap',
+  },
+  conversationMenuDate: {
+    fontSize: '11px',
+    color: '#a8a8a8',
+  },
+  conversationMenuCreate: {
+    padding: '10px 12px',
+    fontWeight: 'bold' as 'bold',
+    backgroundColor: '#424242',
+    textAlign: 'center' as 'center',
+  },
+  conversationLoading: {
+    padding: '10px 12px',
+    textAlign: 'center' as 'center',
+    color: '#a8a8a8',
+    fontSize: '13px',
+  },
 };
 
 // Use @speed-highlight/core to detect programming language
@@ -238,10 +305,24 @@ const getDefaultLanguage = (code: string): string => {
   }
 };
 
-// Define a type for the message structure
+// Define types for conversation structures
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  timestamp?: Date;
+  conversationId?: string; // Reference to parent conversation
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  createdAt: Date;
+  updatedAt: Date;
+  sourceCode?: string;
+  codeLanguage?: string;
+  isFromCode: boolean;
+  initialMode: string;
+  messages: Message[];
 }
 
 const AIAssistantApp: React.FC = () => {
@@ -271,6 +352,17 @@ const AIAssistantApp: React.FC = () => {
   }, [messages]);
 
   const [inputValue, setInputValue] = useState<string>('');
+
+  // Conversation tracking
+  const [currentConversationId, setCurrentConversationId] = useState<
+    string | null
+  >(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isConversationMenuOpen, setIsConversationMenuOpen] =
+    useState<boolean>(false);
+  const [isLoadingConversations, setIsLoadingConversations] =
+    useState<boolean>(false);
+  const conversationMenuRef = useRef<HTMLDivElement>(null);
 
   // UI mode state - controls what view is shown
   const [uiMode, setUIMode] = useState<AIAssistantUIMode>(
@@ -312,6 +404,135 @@ const AIAssistantApp: React.FC = () => {
       }, 50);
     }
   }, [messages, isLoading]);
+
+  // Function to load the most recent conversation when in SMART_CHAT mode
+  const loadLatestConversation = async (isFromCode: boolean = false) => {
+    try {
+      setIsLoadingConversations(true);
+
+      // Only load conversation if we're in the right mode
+      if (
+        uiMode !== AIAssistantUIMode.SMART_CHAT &&
+        (!isFromCode || uiMode !== AIAssistantUIMode.INSIGHT_CHAT)
+      ) {
+        setIsLoadingConversations(false);
+        return;
+      }
+
+      console.log(`Loading latest conversation (isFromCode: ${isFromCode})`);
+      const latestConversation = await (
+        window as any
+      ).electronAPI.getLatestConversation(isFromCode);
+
+      if (
+        latestConversation &&
+        latestConversation.messages &&
+        latestConversation.messages.length > 0
+      ) {
+        console.log(`Found conversation - ID: ${latestConversation.id}`);
+        console.log(`Title: ${latestConversation.title || 'Untitled'}`);
+        console.log(`Message count: ${latestConversation.messages.length}`);
+
+        // Force refresh conversations list to ensure we have the latest data
+        if (isConversationMenuOpen) {
+          loadRecentConversations();
+        }
+
+        // Set conversation data
+        setMessages(latestConversation.messages);
+        setCurrentConversationId(latestConversation.id);
+
+        // If there's a title, we can use it in the UI
+        console.log(
+          `Loaded conversation: ${latestConversation.id} - ${latestConversation.title || 'Untitled'}`,
+        );
+
+        if (isFromCode && latestConversation.sourceCode) {
+          setCode(latestConversation.sourceCode);
+
+          // If it has insight (assistant message), mark as complete
+          const hasInsight = latestConversation.messages.some(
+            (m) => m.role === 'assistant',
+          );
+          if (hasInsight) {
+            const insightMessage = latestConversation.messages.find(
+              (m) => m.role === 'assistant',
+            );
+            if (insightMessage) {
+              setInsight(insightMessage.content);
+              setIsComplete(true);
+            }
+          }
+
+          // Set the appropriate UI mode based on the initialMode
+          if (latestConversation.initialMode) {
+            // Try to restore the original mode if possible
+            try {
+              const savedMode =
+                latestConversation.initialMode as AIAssistantUIMode;
+              setUIMode(savedMode);
+            } catch (e) {
+              console.error('Could not restore UI mode from conversation:', e);
+            }
+          }
+        }
+
+        // Ensure we update the dropdown button text immediately
+        return latestConversation;
+      } else {
+        console.log('No conversation found or empty conversation');
+
+        // If no conversation found, create a default welcome message
+        if (uiMode === AIAssistantUIMode.SMART_CHAT) {
+          setMessages([
+            {
+              role: 'assistant',
+              content: firstAssistantMsg,
+            },
+          ]);
+          setCurrentConversationId(null);
+
+          // Also ensure that code and insight are cleared for a clean slate
+          setCode('');
+          setInsight('');
+          setIsComplete(false);
+        } else if (uiMode === AIAssistantUIMode.INSIGHT_CHAT && isFromCode) {
+          // For INSIGHT_CHAT mode with no previous code conversation,
+          // if we have code in the state, we should keep it and just ensure
+          // there's a message for it
+          if (code && code.trim()) {
+            setMessages([{ role: 'user', content: code }]);
+          } else {
+            // Switch to SMART_CHAT if no code is available
+            setUIMode(AIAssistantUIMode.SMART_CHAT);
+            setMessages([
+              {
+                role: 'assistant',
+                content: firstAssistantMsg,
+              },
+            ]);
+          }
+        }
+        return null;
+      }
+    } catch (error) {
+      console.error('Error loading latest conversation:', error);
+
+      // Fall back to default welcome message
+      if (uiMode === AIAssistantUIMode.SMART_CHAT) {
+        setMessages([
+          {
+            role: 'assistant',
+            content: firstAssistantMsg,
+          },
+        ]);
+        setCurrentConversationId(null);
+      }
+      return null;
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
 
   // Define all event handlers outside of useEffect to avoid closure issues
 
@@ -404,9 +625,25 @@ const AIAssistantApp: React.FC = () => {
   };
 
   // Handler for insight complete
-  const handleInsightComplete = () => {
+  const handleInsightComplete = (
+    _event: any,
+    data: { language?: string; conversationId?: string } = {},
+  ) => {
     setIsLoading(false);
     setIsComplete(true);
+
+    // If we received a conversation ID from the completion, store it
+    if (data && data.conversationId) {
+      setCurrentConversationId(data.conversationId);
+      console.log(
+        `Insight completed and saved with conversation ID: ${data.conversationId}`,
+      );
+
+      // Update our conversations list if menu is open
+      if (isConversationMenuOpen) {
+        loadRecentConversations();
+      }
+    }
 
     // Notify main process that insight is complete
     if (
@@ -485,6 +722,8 @@ const AIAssistantApp: React.FC = () => {
   ) => {
     let aiAssistantMode: AIAssistantUIMode;
 
+    console.log(`Setting UI mode to ${mode} with data:`, data);
+
     if (typeof mode === 'string') {
       // Handle string values (from IPC)
       switch (mode) {
@@ -553,6 +792,41 @@ const AIAssistantApp: React.FC = () => {
     // Update backward compatibility state
     setShowChat(aiAssistantMode !== AIAssistantUIMode.INSIGHT_SPLIT);
 
+    // Flag to determine if we should keep existing messages
+    const keepExistingMessages = data && data.keepExistingMessages === true;
+    console.log(`keepExistingMessages flag: ${keepExistingMessages}`);
+
+    // If we should keep existing messages and we have a current conversation ID or messages,
+    // don't proceed with mode-specific message initialization
+    if (
+      keepExistingMessages &&
+      (currentConversationId || messagesRef.current.length > 0)
+    ) {
+      console.log(
+        'Preserving existing messages due to keepExistingMessages flag',
+      );
+
+      // Still handle code and insight fields appropriately for the mode
+      if (aiAssistantMode === AIAssistantUIMode.SMART_CHAT) {
+        if (codeRef.current) setCode('');
+        if (insightContentRef.current) setInsight('');
+      }
+
+      // Don't modify messages, but ensure proper scrolling
+      // Optimize scroll behavior based on UI mode
+      const scrollTimeout =
+        aiAssistantMode === AIAssistantUIMode.SMART_CHAT ? 10 : 100;
+
+      setTimeout(() => {
+        if (chatMessagesRef.current) {
+          chatMessagesRef.current.scrollTop =
+            chatMessagesRef.current.scrollHeight;
+        }
+      }, scrollTimeout);
+
+      return; // Skip the rest of the function
+    }
+
     // Handle each mode specifically
     switch (aiAssistantMode) {
       case AIAssistantUIMode.INSIGHT_SPLIT:
@@ -614,14 +888,14 @@ const AIAssistantApp: React.FC = () => {
           messagesRef.current.length === 0 ||
           messagesRef.current.length > 1 ||
           messagesRef.current[0].role !== 'assistant' ||
-          !messagesRef.current[0].content.includes('Hello! I’m Liho')
+          !messagesRef.current[0].content.includes(`Hi, I'm ${aiAssistantName}`)
         ) {
+          console.log('Setting default welcome message in SMART_CHAT mode');
           // Use a simple welcome message to avoid unnecessary rendering
           setMessages([
             {
               role: 'assistant',
-              content:
-                'Hi, I’m Liho! 👋 How can I help you today? Feel free to ask me anything or paste your code here.',
+              content: firstAssistantMsg,
             },
           ]);
         }
@@ -667,6 +941,110 @@ const AIAssistantApp: React.FC = () => {
     setIsLoading(false);
   };
 
+  // Handler for conversation saved notification
+  const handleConversationSaved = (
+    _event: any,
+    data: { conversationId: string },
+  ) => {
+    if (data && data.conversationId) {
+      setCurrentConversationId(data.conversationId);
+      console.log(`Conversation saved with ID: ${data.conversationId}`);
+
+      // Refresh the conversation list if the menu is open
+      if (isConversationMenuOpen) {
+        loadRecentConversations();
+      }
+    }
+  };
+
+  // Function to switch to a specific conversation
+  const switchToConversation = async (conversationId: string) => {
+    try {
+      setIsLoadingConversations(true);
+      const conversation = await (window as any).electronAPI.getConversation(
+        conversationId,
+      );
+
+      if (conversation) {
+        // Update state with the conversation data
+        setMessages(conversation.messages);
+        setCurrentConversationId(conversation.id);
+
+        // If it's a code-based conversation, also load the code and insight
+        if (conversation.isFromCode && conversation.sourceCode) {
+          setCode(conversation.sourceCode);
+
+          // Find the insight message (first assistant message)
+          const insightMessage = conversation.messages.find(
+            (m) => m.role === 'assistant',
+          );
+          if (insightMessage) {
+            setInsight(insightMessage.content);
+            setIsComplete(true);
+          }
+
+          // Set the appropriate UI mode based on the initialMode
+          if (conversation.initialMode === AIAssistantUIMode.INSIGHT_SPLIT) {
+            setUIMode(AIAssistantUIMode.INSIGHT_SPLIT);
+          } else {
+            setUIMode(AIAssistantUIMode.INSIGHT_CHAT);
+          }
+        } else {
+          // For non-code conversations, switch to SMART_CHAT mode
+          setUIMode(AIAssistantUIMode.SMART_CHAT);
+        }
+
+        // Close the menu
+        setIsConversationMenuOpen(false);
+      }
+    } catch (error) {
+      console.error(
+        `Error switching to conversation ${conversationId}:`,
+        error,
+      );
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  // Function to start a new conversation
+  const startNewConversation = () => {
+    // Clear current conversation state
+    setCurrentConversationId(null);
+
+    if (uiMode === AIAssistantUIMode.SMART_CHAT) {
+      // For chat mode, just reset to welcome message
+      setMessages([
+        {
+          role: 'assistant',
+          content: firstAssistantMsg,
+        },
+      ]);
+    } else if (
+      uiMode === AIAssistantUIMode.INSIGHT_CHAT ||
+      uiMode === AIAssistantUIMode.INSIGHT_SOURCE_CHAT
+    ) {
+      // For insight modes with code, keep the code but remove insights/messages
+      if (code) {
+        setMessages([{ role: 'user', content: code }]);
+        setInsight('');
+        setIsComplete(false);
+      } else {
+        // If no code, switch to SMART_CHAT
+        setUIMode(AIAssistantUIMode.SMART_CHAT);
+        setMessages([
+          {
+            role: 'assistant',
+            content: firstAssistantMsg,
+          },
+        ]);
+      }
+    }
+
+    // Close the menu
+    setIsConversationMenuOpen(false);
+  };
+
   // Handler for directly opening chat interface (without code)
   const handleOpenChatInterface = () => {
     // Clear any existing code/insight
@@ -685,6 +1063,59 @@ const AIAssistantApp: React.FC = () => {
       ]);
     }
   };
+
+  // Load the latest conversation when opening the app in SMART_CHAT mode
+  useEffect(() => {
+    if (uiMode === AIAssistantUIMode.SMART_CHAT) {
+      loadLatestConversation(false);
+    } else if (uiMode === AIAssistantUIMode.INSIGHT_CHAT && !code) {
+      // If in insight chat mode but no code is set, try to load the latest code-based conversation
+      loadLatestConversation(true);
+    }
+  }, [uiMode]);
+
+  // Refresh conversations list when currentConversationId changes
+  useEffect(() => {
+    if (currentConversationId && isConversationMenuOpen) {
+      loadRecentConversations();
+    }
+  }, [currentConversationId]);
+
+  // Function to load recent conversations (for conversation menu)
+  const loadRecentConversations = async () => {
+    try {
+      setIsLoadingConversations(true);
+      const recentConversations = await (
+        window as any
+      ).electronAPI.getConversations({
+        take: 10,
+        orderBy: { updatedAt: 'desc' },
+      });
+      setConversations(recentConversations);
+    } catch (error) {
+      console.error('Error loading recent conversations:', error);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  // Handle clicks outside the conversation menu to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        conversationMenuRef.current &&
+        !conversationMenuRef.current.contains(event.target as Node) &&
+        isConversationMenuOpen
+      ) {
+        setIsConversationMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isConversationMenuOpen]);
 
   // Set up listeners for all the events (once only)
   useEffect(() => {
@@ -749,9 +1180,25 @@ const AIAssistantApp: React.FC = () => {
         (window as any).electronAPI.onChatResponse(handleChatResponse);
       }
 
+      // Handle conversation saved notifications
+      if ((window as any).electronAPI.onChatConversationSaved) {
+        (window as any).electronAPI.onChatConversationSaved(
+          handleConversationSaved,
+        );
+      }
+
       // UI mode control
       if ((window as any).electronAPI.onSetUIMode) {
         (window as any).electronAPI.onSetUIMode(handleSetUIMode);
+      }
+
+      // Add listener for loading latest conversation
+      if ((window as any).electronAPI.onLoadLatestConversation) {
+        (window as any).electronAPI.onLoadLatestConversation(() => {
+          // When this event is received, load the most recent conversation
+          // This ensures we continue where we left off when reopening chat
+          loadLatestConversation(false);
+        });
       }
     } else {
       console.error('electronAPI not available');
@@ -793,8 +1240,13 @@ const AIAssistantApp: React.FC = () => {
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
 
-    // Add user message to chat
-    const userMessage: Message = { role: 'user', content: inputValue };
+    // Add user message to chat, including conversation ID if we have one
+    const userMessage: Message = {
+      role: 'user',
+      content: inputValue,
+      conversationId: currentConversationId || undefined,
+      timestamp: new Date(),
+    };
     setMessages((prev) => [...prev, userMessage]);
 
     // Send message to main process
@@ -802,7 +1254,38 @@ const AIAssistantApp: React.FC = () => {
       (window as any).electronAPI &&
       (window as any).electronAPI.sendChatMessage
     ) {
-      (window as any).electronAPI.sendChatMessage(inputValue, messages);
+      // Prepare full message history with proper metadata
+      let messageHistory = [...messages];
+
+      // If we have a conversation ID, add it to a system message for context
+      if (currentConversationId) {
+        messageHistory = [
+          {
+            role: 'system',
+            content: 'conversation context',
+            conversationId: currentConversationId,
+          },
+          ...messageHistory,
+        ];
+      }
+
+      // Add current UI mode for proper conversation saving
+      const additionalContext = {
+        uiMode: uiModeRef.current,
+        conversationId: currentConversationId,
+        sourceCode:
+          uiModeRef.current === AIAssistantUIMode.INSIGHT_CHAT ||
+          uiModeRef.current === AIAssistantUIMode.INSIGHT_SOURCE_CHAT ||
+          uiModeRef.current === AIAssistantUIMode.INSIGHT_SPLIT
+            ? codeRef.current
+            : undefined,
+      };
+
+      (window as any).electronAPI.sendChatMessage(
+        inputValue,
+        messageHistory,
+        additionalContext,
+      );
       setIsLoading(true);
     } else {
       console.error('sendChatMessage not available');
@@ -985,7 +1468,80 @@ const AIAssistantApp: React.FC = () => {
     <div style={styles.container}>
       <div style={styles.header}>
         <h2 style={styles.title}>{title}</h2>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {/* Conversation selector dropdown */}
+          {(uiMode === AIAssistantUIMode.SMART_CHAT ||
+            uiMode === AIAssistantUIMode.INSIGHT_CHAT) && (
+            <div style={styles.conversationSelector}>
+              <button
+                style={styles.conversationButton}
+                onClick={() => {
+                  if (!isConversationMenuOpen) {
+                    loadRecentConversations();
+                  }
+                  setIsConversationMenuOpen(!isConversationMenuOpen);
+                }}
+              >
+                {currentConversationId
+                  ? conversations.find((c) => c.id === currentConversationId)
+                      ?.title || 'Current Chat'
+                  : 'New Chat'}{' '}
+                ▾
+              </button>
+
+              {/* Conversation dropdown menu */}
+              {isConversationMenuOpen && (
+                <div style={styles.conversationMenu} ref={conversationMenuRef}>
+                  {/* New conversation option */}
+                  <div
+                    style={styles.conversationMenuCreate}
+                    onClick={startNewConversation}
+                  >
+                    + New Conversation
+                  </div>
+
+                  {/* Loading indicator */}
+                  {isLoadingConversations && (
+                    <div style={styles.conversationLoading}>
+                      Loading conversations...
+                    </div>
+                  )}
+
+                  {/* Conversation list */}
+                  {!isLoadingConversations &&
+                    conversations.map((conversation) => (
+                      <div
+                        key={conversation.id}
+                        style={{
+                          ...styles.conversationMenuItem,
+                          ...(conversation.id === currentConversationId
+                            ? styles.conversationMenuItemHover
+                            : {}),
+                        }}
+                        onClick={() => switchToConversation(conversation.id)}
+                      >
+                        <div style={styles.conversationMenuTitle}>
+                          {conversation.title || 'Untitled Conversation'}
+                          {conversation.id === currentConversationId &&
+                            ' (Current)'}
+                        </div>
+                        <div style={styles.conversationMenuDate}>
+                          {new Date(conversation.updatedAt).toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+
+                  {/* Empty state */}
+                  {!isLoadingConversations && conversations.length === 0 && (
+                    <div style={styles.conversationLoading}>
+                      No previous conversations
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Hide Split View toggle button in SMART_CHAT mode */}
           {uiMode !== AIAssistantUIMode.SMART_CHAT && (
             <button

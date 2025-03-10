@@ -46,3 +46,24 @@ model AIAssistantSettings {
   updatedAt         DateTime @updatedAt
   leftClickBehavior String   @default("switch_window") // "switch_window" or "ai_assistant"
 }
+
+model Conversation {
+  id           String    @id @default(uuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  title        String
+  sourceCode   String?   // Optional, used when conversation started from code analysis
+  codeLanguage String?   // Language of the source code if applicable
+  messages     Message[]
+  isFromCode   Boolean   @default(false) // Flag indicating if conversation started from code
+  initialMode  String    // Records the starting mode (INSIGHT_SPLIT, INSIGHT_CHAT, SMART_CHAT, etc.)
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  content        String       // The actual message content
+  role           String       // 'user', 'assistant', or 'system'
+  timestamp      DateTime     @default(now())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}

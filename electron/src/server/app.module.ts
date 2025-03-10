@@ -3,6 +3,8 @@ import { AIAssistantSettingsController } from './ai-assistant/ai-assistant-setti
 import { AIAssistantSettingsService } from './ai-assistant/ai-assistant-settings.service';
 import { AppController, AppEnvController } from './app.controller';
 import { AppService } from './app.service';
+import { ConversationsController } from './conversations/conversations.controller';
+import { ConversationsService } from './conversations/conversations.service';
 import { PrismaService } from './prisma.service';
 import { UserController } from './user/user.controller';
 import { UserService } from './user/user.service';
@@ -17,6 +19,7 @@ import { XWinService } from './xwins/xwins.service';
     XWinsController,
     UserController,
     AIAssistantSettingsController,
+    ConversationsController,
   ],
   providers: [
     AppService,
@@ -24,6 +27,7 @@ import { XWinService } from './xwins/xwins.service';
     XWinService,
     UserService,
     AIAssistantSettingsService,
+    ConversationsService,
   ],
 })
 export class AppModule {}
