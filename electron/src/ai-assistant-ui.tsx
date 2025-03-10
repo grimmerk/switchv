@@ -2,9 +2,9 @@
  * ai-assistant-ui.tsx
  *
  * This component provides an enhanced version of the AI Assistant interface with:
- * 1. Advanced markdown rendering for Claude's responses (including code blocks)
+ * 1. Advanced markdown rendering for AIAssistant's responses (including code blocks)
  * 2. Better styling and layout for the insight part
- * 3. Chat interface for continued conversation with Claude
+ * 3. Chat interface for continued conversation with AIAssistant
  */
 
 import * as React from 'react';
@@ -16,6 +16,10 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { detectLanguage } from './language-detector';
 import { AIAssistantUIMode } from './utility';
+
+const aiAssistantName = 'Liho';
+
+const firstAssistantMsg = `Hi, I’m ${aiAssistantName}! 👋 How can I help you today? Feel free to ask me anything or paste your code here.`;
 
 // Styles for the AI Assistant UI
 const styles = {
@@ -610,14 +614,14 @@ const AIAssistantApp: React.FC = () => {
           messagesRef.current.length === 0 ||
           messagesRef.current.length > 1 ||
           messagesRef.current[0].role !== 'assistant' ||
-          !messagesRef.current[0].content.includes("Hello! I'm Claude")
+          !messagesRef.current[0].content.includes('Hello! I’m Liho')
         ) {
           // Use a simple welcome message to avoid unnecessary rendering
           setMessages([
             {
               role: 'assistant',
               content:
-                "Hello! I'm Claude, an AI assistant. How can I help you with your code today?",
+                'Hi, I’m Liho! 👋 How can I help you today? Feel free to ask me anything or paste your code here.',
             },
           ]);
         }
@@ -676,8 +680,7 @@ const AIAssistantApp: React.FC = () => {
       setMessages([
         {
           role: 'assistant',
-          content:
-            "Hello! I'm Claude, an AI assistant. How can I help you with your code today?",
+          content: firstAssistantMsg,
         },
       ]);
     }
@@ -708,7 +711,9 @@ const AIAssistantApp: React.FC = () => {
     if ((window as any).electronAPI) {
       // New event names
       if ((window as any).electronAPI.onCodeToGenerateInsight) {
-        (window as any).electronAPI.onCodeToGenerateInsight(handleCodeToGenerateInsight);
+        (window as any).electronAPI.onCodeToGenerateInsight(
+          handleCodeToGenerateInsight,
+        );
       }
       if ((window as any).electronAPI.onInsightStart) {
         (window as any).electronAPI.onInsightStart(handleInsightStart);
@@ -727,10 +732,14 @@ const AIAssistantApp: React.FC = () => {
       }
 
       // Legacy event names - for backward compatibility
-      (window as any).electronAPI.onCodeToGenerateInsight(handleCodeToGenerateInsight);
+      (window as any).electronAPI.onCodeToGenerateInsight(
+        handleCodeToGenerateInsight,
+      );
       (window as any).electronAPI.onAIAssistantInsightStart(handleInsightStart);
       (window as any).electronAPI.onAIAssistantInsightChunk(handleInsightChunk);
-      (window as any).electronAPI.onAIAssistantInsightComplete(handleInsightComplete);
+      (window as any).electronAPI.onAIAssistantInsightComplete(
+        handleInsightComplete,
+      );
       (window as any).electronAPI.onAIAssistantInsightError(handleInsightError);
       (window as any).electronAPI.onSkipInsight(handleSkipInsight);
       (window as any).electronAPI.onDetectedLanguage(handleDetectedLanguage);
@@ -854,10 +863,7 @@ const AIAssistantApp: React.FC = () => {
   const renderMarkdown = React.useMemo(() => {
     const renderer = (content: string) => {
       // Fast path for simple welcome message in SMART_CHAT mode
-      if (
-        content ===
-        "Hello! I'm Claude, an AI assistant. How can I help you with your code today?"
-      ) {
+      if (content === firstAssistantMsg) {
         return (
           <p style={{ marginTop: '0.5em', marginBottom: '0.5em' }}>{content}</p>
         );
@@ -1085,7 +1091,7 @@ const AIAssistantApp: React.FC = () => {
                       } as any
                     }
                   >
-                    {msg.role === 'user' ? 'You' : 'Claude'}
+                    {msg.role === 'user' ? 'You' : aiAssistantName}
                   </div>
                   <div
                     style={
@@ -1130,7 +1136,7 @@ const AIAssistantApp: React.FC = () => {
               <div
                 style={{ ...styles.messageContainer, alignItems: 'flex-start' }}
               >
-                <div style={styles.messageSender}>Claude</div>
+                <div style={styles.messageSender}>{aiAssistantName}</div>
                 <div style={{ ...styles.assistantMessage, display: 'flex' }}>
                   <span>Thinking</span>
                   <span style={styles.loadingIndicator}>▋</span>
