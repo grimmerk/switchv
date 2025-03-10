@@ -932,13 +932,43 @@ const AIAssistantApp: React.FC = () => {
   };
 
   // Handler for chat response
-  const handleChatResponse = (_event: any, responseText: string) => {
+  const handleChatResponse = async (_event: any, responseText: string) => {
     // Add the assistant's response to the messages
     setMessages((prev) => [
       ...prev,
       { role: 'assistant', content: responseText },
     ]);
     setIsLoading(false);
+    
+    // If we have a conversation ID, fetch the updated conversation to get the latest title
+    if (currentConversationId) {
+      try {
+        console.log(`Chat response received, fetching updated conversation ${currentConversationId}`);
+        const conversation = await (window as any).electronAPI.getConversation(currentConversationId);
+        if (conversation) {
+          // Update our local conversations list
+          setConversations(prev => {
+            // Check if conversation already exists in the list
+            const exists = prev.some(c => c.id === conversation.id);
+            if (exists) {
+              // Replace existing conversation
+              return prev.map(c => c.id === conversation.id ? conversation : c);
+            } else {
+              // Add new conversation to the beginning
+              return [conversation, ...prev];
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching updated conversation:', error);
+      }
+    } else {
+      // If we don't have a conversation ID yet, wait a moment and then 
+      // try to load recent conversations to capture any newly created ones
+      setTimeout(() => {
+        loadRecentConversations();
+      }, 500);
+    }
   };
 
   // Handler for conversation saved notification
@@ -1141,8 +1171,37 @@ const AIAssistantApp: React.FC = () => {
 
   // Refresh conversations list when currentConversationId changes
   useEffect(() => {
-    if (currentConversationId && isConversationMenuOpen) {
-      loadRecentConversations();
+    if (currentConversationId) {
+      // Even if the menu is not open, fetch the conversation to update the title
+      const fetchConversation = async () => {
+        try {
+          console.log(`Fetching conversation details for ID: ${currentConversationId}`);
+          const conversation = await (window as any).electronAPI.getConversation(currentConversationId);
+          if (conversation) {
+            // Update our local conversations list
+            setConversations(prev => {
+              // Check if conversation already exists in the list
+              const exists = prev.some(c => c.id === conversation.id);
+              if (exists) {
+                // Replace existing conversation
+                return prev.map(c => c.id === conversation.id ? conversation : c);
+              } else {
+                // Add new conversation to the beginning
+                return [conversation, ...prev];
+              }
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching conversation details for ${currentConversationId}:`, error);
+        }
+      };
+      
+      fetchConversation();
+      
+      // Also refresh the full list if menu is open
+      if (isConversationMenuOpen) {
+        loadRecentConversations();
+      }
     }
   }, [currentConversationId]);
 
