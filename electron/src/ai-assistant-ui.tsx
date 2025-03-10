@@ -966,11 +966,11 @@ const AIAssistantApp: React.FC = () => {
 
   let title = '';
   if (uiMode === AIAssistantUIMode.INSIGHT_SPLIT) {
-    title = 'Insight in Split view';
+    title = 'Insight Split view';
   } else if (uiMode === AIAssistantUIMode.INSIGHT_CHAT) {
-    title = 'Insight with Chat';
+    title = 'Insight Chat';
   } else if (uiMode === AIAssistantUIMode.INSIGHT_SOURCE_CHAT) {
-    title = 'Insight with Chat';
+    title = 'Chat from Selection';
   } else if (uiMode === AIAssistantUIMode.SMART_CHAT) {
     title = 'Smart Chat';
   }
