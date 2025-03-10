@@ -942,7 +942,7 @@ const AIAssistantApp: React.FC = () => {
   };
 
   // Handler for conversation saved notification
-  const handleConversationSaved = (
+  const handleConversationSaved = async (
     _event: any,
     data: { conversationId: string },
   ) => {
@@ -950,7 +950,30 @@ const AIAssistantApp: React.FC = () => {
       setCurrentConversationId(data.conversationId);
       console.log(`Conversation saved with ID: ${data.conversationId}`);
 
-      // Refresh the conversation list if the menu is open
+      try {
+        // Immediately fetch the conversation to get its title
+        const conversation = await (window as any).electronAPI.getConversation(data.conversationId);
+        if (conversation) {
+          console.log(`Fetched saved conversation: ${conversation.title}`);
+          
+          // Update our local conversations list to include this new one
+          setConversations(prev => {
+            // Check if conversation already exists in the list
+            const exists = prev.some(c => c.id === conversation.id);
+            if (exists) {
+              // Replace existing conversation
+              return prev.map(c => c.id === conversation.id ? conversation : c);
+            } else {
+              // Add new conversation to the beginning
+              return [conversation, ...prev];
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching newly saved conversation:', error);
+      }
+      
+      // Also refresh the conversation list if the menu is open
       if (isConversationMenuOpen) {
         loadRecentConversations();
       }
@@ -1010,6 +1033,7 @@ const AIAssistantApp: React.FC = () => {
   // Function to start a new conversation
   const startNewConversation = () => {
     // Clear current conversation state
+    console.log('Starting a new conversation');
     setCurrentConversationId(null);
 
     if (uiMode === AIAssistantUIMode.SMART_CHAT) {
@@ -1040,6 +1064,11 @@ const AIAssistantApp: React.FC = () => {
         ]);
       }
     }
+    
+    // Force a refresh of the conversations list to ensure UI updates properly
+    setTimeout(() => {
+      loadRecentConversations();
+    }, 10);
 
     // Close the menu
     setIsConversationMenuOpen(false);
@@ -1066,12 +1095,48 @@ const AIAssistantApp: React.FC = () => {
 
   // Load the latest conversation when opening the app in SMART_CHAT mode
   useEffect(() => {
-    if (uiMode === AIAssistantUIMode.SMART_CHAT) {
-      loadLatestConversation(false);
-    } else if (uiMode === AIAssistantUIMode.INSIGHT_CHAT && !code) {
-      // If in insight chat mode but no code is set, try to load the latest code-based conversation
-      loadLatestConversation(true);
-    }
+    const loadConversation = async () => {
+      if (uiMode === AIAssistantUIMode.SMART_CHAT) {
+        const conversation = await loadLatestConversation(false);
+        
+        // Immediately update our conversations list with this conversation
+        if (conversation) {
+          console.log(`Initial load - updating conversations with: ${conversation.title}`);
+          setConversations(prev => {
+            // Check if conversation already exists in the list
+            const exists = prev.some(c => c.id === conversation.id);
+            if (exists) {
+              // Replace existing conversation
+              return prev.map(c => c.id === conversation.id ? conversation : c);
+            } else {
+              // Add new conversation to the beginning
+              return [conversation, ...prev];
+            }
+          });
+        }
+      } else if (uiMode === AIAssistantUIMode.INSIGHT_CHAT && !code) {
+        // If in insight chat mode but no code is set, try to load the latest code-based conversation
+        const conversation = await loadLatestConversation(true);
+        
+        // Immediately update our conversations list with this conversation
+        if (conversation) {
+          console.log(`Initial code load - updating conversations with: ${conversation.title}`);
+          setConversations(prev => {
+            // Check if conversation already exists in the list
+            const exists = prev.some(c => c.id === conversation.id);
+            if (exists) {
+              // Replace existing conversation
+              return prev.map(c => c.id === conversation.id ? conversation : c);
+            } else {
+              // Add new conversation to the beginning
+              return [conversation, ...prev];
+            }
+          });
+        }
+      }
+    };
+    
+    loadConversation();
   }, [uiMode]);
 
   // Refresh conversations list when currentConversationId changes
@@ -1482,11 +1547,26 @@ const AIAssistantApp: React.FC = () => {
                   setIsConversationMenuOpen(!isConversationMenuOpen);
                 }}
               >
-                {currentConversationId
-                  ? conversations.find((c) => c.id === currentConversationId)
-                      ?.title || 'Current Chat'
-                  : 'New Chat'}{' '}
-                ▾
+                {(() => {
+                  // First check if we're creating a new conversation
+                  if (!currentConversationId) {
+                    return 'New Chat ▾';
+                  }
+                  
+                  // Find current conversation in our list
+                  const currentConversation = conversations.find(c => c.id === currentConversationId);
+                  
+                  if (currentConversation && currentConversation.title) {
+                    // If we have the conversation in our list AND it has a title, use it
+                    const shortTitle = currentConversation.title.length > 20 
+                      ? currentConversation.title.substring(0, 18) + '...' 
+                      : currentConversation.title;
+                    return `${shortTitle} ▾`;
+                  } else {
+                    // Either conversation not in list or no title
+                    return 'Current Chat ▾';
+                  }
+                })()}
               </button>
 
               {/* Conversation dropdown menu */}
