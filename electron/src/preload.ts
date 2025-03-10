@@ -45,10 +45,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('ai-assistant-insight-completed', completed),
   onSetUIMode: (callback: any) => ipcRenderer.on('set-ui-mode', callback),
   notifyUIMode: (mode: string) => ipcRenderer.send('ui-mode-changed', mode),
+  onLoadLatestConversation: (callback: any) => ipcRenderer.on('load-latest-conversation', callback),
 
   // Chat-related events and methods
-  sendChatMessage: (message: string, messageHistory: any[]) =>
-    ipcRenderer.send('send-chat-message', message, messageHistory),
+  sendChatMessage: (message: string, messageHistory: any[], additionalContext?: any) =>
+    ipcRenderer.send('send-chat-message', message, messageHistory, additionalContext),
   onChatResponse: (callback: any) => ipcRenderer.on('chat-response', callback),
   onChatResponseStart: (callback: any) =>
     ipcRenderer.on('chat-response-start', callback),
@@ -58,6 +59,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('chat-response-complete', callback),
   onChatResponseError: (callback: any) =>
     ipcRenderer.on('chat-response-error', callback),
+  onChatConversationSaved: (callback: any) =>
+    ipcRenderer.on('chat-conversation-saved', callback),
 
   // Settings windows events
   onOpenAIAssistantSettings: (callback: any) =>
@@ -66,6 +69,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('open-api-key-settings', callback),
   onOpenLeftClickSettings: (callback: any) =>
     ipcRenderer.on('open-left-click-settings', callback),
+    
+  // Conversation history APIs
+  saveConversation: (conversation: any) => 
+    ipcRenderer.invoke('save-conversation', conversation),
+  updateConversation: (id: string, conversation: any) => 
+    ipcRenderer.invoke('update-conversation', id, conversation),
+  getConversation: (id: string) => 
+    ipcRenderer.invoke('get-conversation', id),
+  getConversations: (params: any) => 
+    ipcRenderer.invoke('get-conversations', params),
+  getLatestConversation: (isFromCode?: boolean) => 
+    ipcRenderer.invoke('get-latest-conversation', isFromCode),
+  deleteConversation: (id: string) => 
+    ipcRenderer.invoke('delete-conversation', id),
+  addMessageToConversation: (id: string, message: any) => 
+    ipcRenderer.invoke('add-message-to-conversation', id, message),
+  searchConversations: (searchTerm: string) => 
+    ipcRenderer.invoke('search-conversations', searchTerm),
 });
 
 // All of the Node.js APIs are available in the preload process.

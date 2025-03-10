@@ -72,12 +72,12 @@ const showAIAssistantWindow = () => {
 };
 
 // Handle chat messages from the AI Assistant window
-ipcMain.on('send-chat-message', (event, message, messageHistory) => {
+ipcMain.on('send-chat-message', (event, message, messageHistory, additionalContext) => {
   // Get the window that sent this message
   const sender = BrowserWindow.fromWebContents(event.sender);
   if (sender && !sender.isDestroyed()) {
-    // Forward the message to AnthropicService
-    anthropicService.handleChatMessage(message, sender, messageHistory);
+    // Forward the message to AnthropicService with additional context
+    anthropicService.handleChatMessage(message, sender, messageHistory, additionalContext);
   }
 });
 
@@ -94,6 +94,90 @@ ipcMain.on('insight-completed', (event, completed) => {
 // Legacy event for backward compatibility
 ipcMain.on('ai-assistant-insight-completed', (event, completed) => {
   lastInsightCompleted = completed;
+});
+
+// Conversation history IPC handlers
+ipcMain.handle('save-conversation', async (_, conversation) => {
+  try {
+    const response = await axios.post(`${API_URL}/conversations`, conversation);
+    return response.data;
+  } catch (error) {
+    console.error('Error saving conversation:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('update-conversation', async (_, id, conversation) => {
+  try {
+    const response = await axios.put(`${API_URL}/conversations/${id}`, conversation);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating conversation:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('get-conversation', async (_, id) => {
+  try {
+    const response = await axios.get(`${API_URL}/conversations/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching conversation:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('get-conversations', async (_, params = {}) => {
+  try {
+    const response = await axios.get(`${API_URL}/conversations`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching conversations:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('get-latest-conversation', async (_, isFromCode) => {
+  try {
+    const params = isFromCode !== undefined ? { isFromCode } : {};
+    const response = await axios.get(`${API_URL}/conversations/latest`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching latest conversation:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('delete-conversation', async (_, id) => {
+  try {
+    const response = await axios.delete(`${API_URL}/conversations/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting conversation:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('add-message-to-conversation', async (_, id, message) => {
+  try {
+    const response = await axios.post(`${API_URL}/conversations/${id}/messages`, message);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding message to conversation:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('search-conversations', async (_, searchTerm) => {
+  try {
+    const response = await axios.get(`${API_URL}/conversations/search`, {
+      params: { term: searchTerm }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error searching conversations:', error);
+    throw error;
+  }
 });
 
 const hideWindow = () => {
@@ -472,6 +556,10 @@ ipcMain.on('open-left-click-settings', () => {
 
 // Import our Anthropic service
 import anthropicService from './AnthropicService';
+import axios from 'axios';
+
+// API URL for the local NestJS server
+const API_URL = 'http://localhost:55688';
 
 // Track user settings
 let userSettings = {
@@ -853,10 +941,23 @@ const trayToggleEvtHandler = async () => {
 
         // Use setTimeout with 0ms to ensure show() completes first
         setTimeout(() => {
-          aiAssistantWindow.webContents.send(
-            'set-ui-mode',
-            AIAssistantUIMode.SMART_CHAT,
-          );
+          // We need to first load the latest conversation and THEN set UI mode
+          // This ensures we have the conversation data before switching modes
+          // Otherwise, setting mode will reinitialize messages and lose conversation data
+          
+          // First load the conversation
+          console.log('Sending load-latest-conversation event to restore previous chat');
+          aiAssistantWindow.webContents.send('load-latest-conversation');
+          
+          // Add a small delay before setting UI mode to ensure conversation loads first
+          setTimeout(() => {
+            console.log('Setting UI mode to SMART_CHAT');
+            aiAssistantWindow.webContents.send(
+              'set-ui-mode',
+              AIAssistantUIMode.SMART_CHAT,
+              { keepExistingMessages: true } // Add flag to keep existing messages
+            );
+          }, 100); // Small delay to ensure conversation loads first
         }, 0);
         return;
       }
@@ -873,17 +974,34 @@ const trayToggleEvtHandler = async () => {
     // Set UI mode after a minimal delay to ensure window is visible first
     if (aiAssistantWindow.webContents.isLoadingMainFrame()) {
       aiAssistantWindow.webContents.once('did-finish-load', () => {
+        // First load the conversation
+        console.log('New window ready - loading latest conversation first');
+        aiAssistantWindow.webContents.send('load-latest-conversation');
+        
+        // Add a small delay before setting UI mode
+        setTimeout(() => {
+          console.log('Setting UI mode to SMART_CHAT in new window');
+          aiAssistantWindow.webContents.send(
+            'set-ui-mode',
+            AIAssistantUIMode.SMART_CHAT,
+            { keepExistingMessages: true } // Flag to keep existing messages
+          );
+        }, 100);
+      });
+    } else {
+      // First load the conversation
+      console.log('New window already loaded - loading latest conversation first');
+      aiAssistantWindow.webContents.send('load-latest-conversation');
+      
+      // Add a small delay before setting UI mode
+      setTimeout(() => {
+        console.log('Setting UI mode to SMART_CHAT in new window');
         aiAssistantWindow.webContents.send(
           'set-ui-mode',
           AIAssistantUIMode.SMART_CHAT,
+          { keepExistingMessages: true } // Flag to keep existing messages
         );
-      });
-    } else {
-      // Immediate mode set is better for performance
-      aiAssistantWindow.webContents.send(
-        'set-ui-mode',
-        AIAssistantUIMode.SMART_CHAT,
-      );
+      }, 100);
     }
 
     // Focus window to bring it to front
