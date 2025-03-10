@@ -207,7 +207,7 @@ const AIAssistantSettingsForm: React.FC<AIAssistantSettingsFormProps> = ({
 
       <form style={styles.form} onSubmit={handleSubmit}>
         <label style={styles.label}>
-          Custom Prompt Template:
+          Custom Prompt Template for Getting Insight:
           <textarea
             style={styles.textarea}
             value={customPrompt}

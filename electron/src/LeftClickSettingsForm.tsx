@@ -199,7 +199,7 @@ const LeftClickSettingsForm: React.FC<LeftClickSettingsFormProps> = ({
               checked={leftClickBehavior === 'ai_assistant'}
               onChange={() => setLeftClickBehavior('ai_assistant')}
             />
-            <span style={styles.radioLabel}>Open AI Assistant Insight</span>
+            <span style={styles.radioLabel}>Open AI Assistant Insight Chat</span>
           </label>
           <div style={styles.description}>
             Left-clicking the menu bar icon will open the AI Assistant with the
